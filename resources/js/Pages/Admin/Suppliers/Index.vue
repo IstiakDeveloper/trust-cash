@@ -1,0 +1,514 @@
+<template>
+    <AdminLayout :title="t('সাপ্লায়ার ও মহাজন খাতা', 'Suppliers')">
+        <Head :title="t('সাপ্লায়ার ও মহাজন খাতা', 'Suppliers')" />
+
+        <div class="space-y-6">
+            <!-- Stats Header -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            {{ t('মোট সাপ্লায়ার সংখ্যা', 'Total Suppliers') }}
+                        </p>
+                        <h3 class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_suppliers }}</h3>
+                    </div>
+                    <div class="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <UsersIcon class="w-5 h-5" />
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            {{ t('সাপ্লায়ারদের মোট দেনা / পাওনা', 'Total Payable to Suppliers') }}
+                        </p>
+                        <h3 class="mt-1 text-2xl font-black text-rose-600 dark:text-rose-400">৳{{ formatNumber(stats.total_payable) }}</h3>
+                    </div>
+                    <div class="w-11 h-11 bg-rose-50 dark:bg-rose-950/50 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400">
+                        <DollarSignIcon class="w-5 h-5" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-80">
+                        <input
+                            type="text"
+                            v-model="search"
+                            :placeholder="t('নাম, কোম্পানি বা মোবাইল খুঁজুন...', 'Search by name, company, phone...')"
+                            class="w-full rounded-xl border-slate-200 bg-white pl-9 pr-4 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                        <SearchIcon class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    </div>
+                    <select
+                        v-model="filters.status"
+                        class="rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                        <option value="">{{ t('সকল অবস্থা', 'All Status') }}</option>
+                        <option value="active">{{ t('সক্রিয়', 'Active') }}</option>
+                        <option value="inactive">{{ t('নিষ্ক্রিয়', 'Inactive') }}</option>
+                    </select>
+                </div>
+                <button
+                    @click="openCreateModal"
+                    class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all"
+                >
+                    <PlusIcon class="w-4 h-4" />
+                    <span>{{ t('নতুন সাপ্লায়ার যোগ', 'Add Supplier') }}</span>
+                </button>
+            </div>
+
+            <!-- Suppliers Table -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="px-5 py-3 text-left">{{ t('সাপ্লায়ার / কোম্পানি', 'Supplier / Company') }}</th>
+                                <th class="px-4 py-3 text-left">{{ t('যোগাযোগ', 'Contact') }}</th>
+                                <th class="px-4 py-3 text-right">{{ t('মোট ক্রয়', 'Total Purchases') }}</th>
+                                <th class="px-4 py-3 text-right">{{ t('বর্তমান পাওনা (দেনা)', 'Payable Due') }}</th>
+                                <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
+                                <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-for="supplier in suppliers.data" :key="supplier.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                <td class="px-5 py-3.5">
+                                    <div class="font-bold text-slate-900 dark:text-slate-100">{{ supplier.name }}</div>
+                                    <div v-if="supplier.company_name" class="text-[11px] text-slate-400 mt-0.5">{{ supplier.company_name }}</div>
+                                </td>
+                                <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+                                    <div class="font-mono">{{ supplier.phone || '—' }}</div>
+                                    <div v-if="supplier.email" class="text-[11px] text-slate-400">{{ supplier.email }}</div>
+                                </td>
+                                <td class="px-4 py-3.5 text-right font-bold text-slate-900 dark:text-slate-100">
+                                    ৳{{ formatNumber(supplier.total_purchases || 0) }}
+                                </td>
+                                <td class="px-4 py-3.5 text-right">
+                                    <span v-if="supplier.current_balance > 0" class="font-bold text-rose-600 dark:text-rose-400">
+                                        ৳{{ formatNumber(supplier.current_balance) }}
+                                    </span>
+                                    <span v-else class="text-emerald-600 dark:text-emerald-400 font-bold">৳0.00</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span
+                                        class="inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold"
+                                        :class="supplier.status === 'active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
+                                    >
+                                        {{ supplier.status === 'active' ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right font-medium">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button
+                                            v-if="supplier.current_balance > 0"
+                                            @click="openPaymentModal(supplier)"
+                                            class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 transition"
+                                        >
+                                            {{ t('দেনা পরিশোধ', 'Pay Due') }}
+                                        </button>
+                                        <Link
+                                            :href="route('admin.suppliers.show', supplier.id)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400"
+                                        >
+                                            <EyeIcon class="w-4 h-4" />
+                                        </Link>
+                                        <button
+                                            @click="openEditModal(supplier)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                        >
+                                            <PencilIcon class="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="suppliers.data.length === 0">
+                                <td colspan="6" class="px-6 py-10 text-center text-slate-400">
+                                    {{ t('কোনো সাপ্লায়ার পাওয়া যায়নি।', 'No suppliers found.') }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="suppliers.links && suppliers.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex justify-between items-center text-xs text-slate-500">
+                        <div>{{ t('মোট সাপ্লায়ার:', 'Total:') }} {{ suppliers.total }}</div>
+                        <nav class="inline-flex rounded-xl bg-white shadow-xs border border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
+                            <Link
+                                v-for="(link, i) in suppliers.links"
+                                :key="i"
+                                :href="link.url || '#'"
+                                v-html="link.label"
+                                class="px-3 py-1.5 text-xs font-semibold"
+                                :class="link.active ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'"
+                            />
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create / Edit Modal -->
+            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                            {{ isEditing ? t('সাপ্লায়ার তথ্য সম্পাদন', 'Edit Supplier') : t('নতুন সাপ্লায়ার যোগ করুন', 'Add New Supplier') }}
+                        </h3>
+                        <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitSupplier" class="mt-4 space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('সাপ্লায়ার / প্রতিনিধির নাম *', 'Contact Name *') }}</label>
+                            <input
+                                type="text"
+                                v-model="form.name"
+                                required
+                                :placeholder="t('যেমনঃ মোঃ রহিম উল্লাহ', 'e.g. Rahim Ullah')"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('কোম্পানি / ব্র্যান্ডের নাম', 'Company / Brand Name') }}</label>
+                            <input
+                                type="text"
+                                v-model="form.company_name"
+                                :placeholder="t('যেমনঃ মেঘনা গ্রুপ, আকিজ ফুডস...', 'e.g. Meghna Group')"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('মোবাইল নম্বর', 'Phone Number') }}</label>
+                                <input
+                                    type="text"
+                                    v-model="form.phone"
+                                    placeholder="017xxxxxxxx"
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('ইমেইল', 'Email') }}</label>
+                                <input
+                                    type="email"
+                                    v-model="form.email"
+                                    placeholder="supplier@company.com"
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        <div v-if="!isEditing">
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('পূর্বের পাওনা / প্রারম্ভিক দেনা (৳)', 'Opening Payable Balance (BDT)') }}</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="form.opening_balance"
+                                placeholder="0.00"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('ঠিকানা / নোট', 'Address / Notes') }}</label>
+                            <textarea
+                                v-model="form.address"
+                                rows="2"
+                                :placeholder="t('অফিস বা গুদামের ঠিকানা...', 'Shop/Office location...')"
+                                class="w-full rounded-xl border-slate-200 bg-white p-2.5 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('অবস্থা', 'Status') }}</label>
+                            <select
+                                v-model="form.status"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            >
+                                <option value="active">{{ t('সক্রিয়', 'Active') }}</option>
+                                <option value="inactive">{{ t('নিষ্ক্রিয়', 'Inactive') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                                type="button"
+                                @click="showModal = false"
+                                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                {{ t('বাতিল', 'Cancel') }}
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="submitting"
+                                class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
+                            >
+                                {{ isEditing ? t('পরিবর্তন সংরক্ষণ', 'Update Supplier') : t('সংরক্ষণ করুন', 'Save Supplier') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pay Supplier Due Modal -->
+            <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('সাপ্লায়ার দেনা পরিশোধ', 'Pay Supplier Due') }}</h3>
+                            <p class="text-xs text-slate-500">{{ activeSupplier?.name }} ({{ t('পাওনা:', 'Due:') }} ৳{{ formatNumber(activeSupplier?.current_balance) }})</p>
+                        </div>
+                        <button @click="showPaymentModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitPayment" class="mt-4 space-y-3 text-xs">
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('পরিশোধের পরিমাণ (টাকা) *', 'Payment Amount *') }}</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                v-model="paymentForm.amount"
+                                :max="activeSupplier?.current_balance"
+                                required
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base font-bold text-rose-600 dark:bg-slate-800 dark:border-slate-700 dark:text-rose-400"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('যে হিসাব থেকে পরিশোধ হবে *', 'Pay From Account *') }}</label>
+                            <select
+                                v-model="paymentForm.bank_account_id"
+                                required
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            >
+                                <option value="" disabled>{{ t('হিসাব নির্বাচন করুন', 'Select Account') }}</option>
+                                <option v-for="acc in bankAccounts" :key="acc.id" :value="acc.id">
+                                    {{ acc.bank_name }} - {{ acc.account_number || t('ক্যাশ', 'Cash') }} ({{ t('ব্যালেন্স:', 'Bal:') }} ৳{{ formatNumber(acc.current_balance) }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('মাধ্যম', 'Payment Method') }}</label>
+                                <select
+                                    v-model="paymentForm.payment_method"
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                >
+                                    <option value="cash">{{ t('নগদ (Cash)', 'Cash') }}</option>
+                                    <option value="bank">{{ t('ব্যাংক ট্রান্সফার', 'Bank Transfer') }}</option>
+                                    <option value="mobile">{{ t('মোবাইল ব্যাংকিং', 'Mobile') }}</option>
+                                    <option value="check">{{ t('চেক (Cheque)', 'Cheque') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('তারিখ *', 'Date *') }}</label>
+                                <input
+                                    type="date"
+                                    v-model="paymentForm.payment_date"
+                                    required
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('রেফারেন্স নং / নোট', 'Reference / Note') }}</label>
+                            <input
+                                type="text"
+                                v-model="paymentForm.reference_no"
+                                :placeholder="t('যেমনঃ চেক নম্বর বা রসিদ নং', 'e.g. Check # or Receipt #')"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                                type="button"
+                                @click="showPaymentModal = false"
+                                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                {{ t('বাতিল', 'Cancel') }}
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="submittingPayment"
+                                class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50"
+                            >
+                                {{ t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </AdminLayout>
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
+import debounce from 'lodash/debounce'
+import {
+    Users as UsersIcon,
+    DollarSign as DollarSignIcon,
+    Search as SearchIcon,
+    Plus as PlusIcon,
+    Eye as EyeIcon,
+    Pencil as PencilIcon
+} from 'lucide-vue-next'
+import { useLanguage } from '@/composables/useLanguage'
+
+const { t } = useLanguage()
+
+const props = defineProps({
+    suppliers: Object,
+    bankAccounts: Array,
+    filters: Object,
+    stats: Object,
+})
+
+const search = ref(props.filters?.search || '')
+const filters = ref({
+    search: props.filters?.search || '',
+    status: props.filters?.status || '',
+})
+
+const showModal = ref(false)
+const isEditing = ref(false)
+const submitting = ref(false)
+const editingId = ref(null)
+
+const form = ref({
+    name: '',
+    company_name: '',
+    phone: '',
+    email: '',
+    address: '',
+    opening_balance: 0,
+    status: 'active',
+})
+
+const showPaymentModal = ref(false)
+const submittingPayment = ref(false)
+const activeSupplier = ref(null)
+
+const paymentForm = ref({
+    amount: 0,
+    bank_account_id: '',
+    payment_method: 'cash',
+    payment_date: new Date().toISOString().split('T')[0],
+    reference_no: '',
+})
+
+const formatNumber = (val) => {
+    return Number(val || 0).toLocaleString('bn-BD', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })
+}
+
+watch(search, debounce((val) => {
+    filters.value.search = val
+    router.get(route('admin.suppliers.index'), filters.value, {
+        preserveState: true,
+        preserveScroll: true,
+    })
+}, 350))
+
+watch(() => filters.value.status, () => {
+    router.get(route('admin.suppliers.index'), filters.value, {
+        preserveState: true,
+        preserveScroll: true,
+    })
+})
+
+const openCreateModal = () => {
+    isEditing.value = false
+    editingId.value = null
+    form.value = {
+        name: '',
+        company_name: '',
+        phone: '',
+        email: '',
+        address: '',
+        opening_balance: 0,
+        status: 'active',
+    }
+    showModal.value = true
+}
+
+const openEditModal = (supplier) => {
+    isEditing.value = true
+    editingId.value = supplier.id
+    form.value = {
+        name: supplier.name,
+        company_name: supplier.company_name || '',
+        phone: supplier.phone || '',
+        email: supplier.email || '',
+        address: supplier.address || '',
+        opening_balance: supplier.opening_balance || 0,
+        status: supplier.status || 'active',
+    }
+    showModal.value = true
+}
+
+const submitSupplier = () => {
+    submitting.value = true
+    if (isEditing.value) {
+        router.put(route('admin.suppliers.update', editingId.value), form.value, {
+            onSuccess: () => {
+                showModal.value = false
+                submitting.value = false
+            },
+            onError: () => {
+                submitting.value = false
+            }
+        })
+    } else {
+        router.post(route('admin.suppliers.store'), form.value, {
+            onSuccess: () => {
+                showModal.value = false
+                submitting.value = false
+            },
+            onError: () => {
+                submitting.value = false
+            }
+        })
+    }
+}
+
+const openPaymentModal = (supplier) => {
+    activeSupplier.value = supplier
+    paymentForm.value = {
+        amount: supplier.current_balance,
+        bank_account_id: props.bankAccounts?.[0]?.id || '',
+        payment_method: 'cash',
+        payment_date: new Date().toISOString().split('T')[0],
+        reference_no: '',
+    }
+    showPaymentModal.value = true
+}
+
+const submitPayment = () => {
+    if (!activeSupplier.value) return
+    submittingPayment.value = true
+    router.post(route('admin.suppliers.pay-due', activeSupplier.value.id), paymentForm.value, {
+        onSuccess: () => {
+            showPaymentModal.value = false
+            submittingPayment.value = false
+        },
+        onError: () => {
+            submittingPayment.value = false
+        }
+    })
+}
+</script>
