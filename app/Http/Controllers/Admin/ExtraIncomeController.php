@@ -107,7 +107,7 @@ class ExtraIncomeController extends Controller
             // Get category name for description
             $categoryName = $extraIncome->category ? $extraIncome->category->name : 'Uncategorized';
 
-            // Create bank transaction
+            // Create bank transaction (Observer automatically adds to bank account balance)
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => 'in',
@@ -116,11 +116,6 @@ class ExtraIncomeController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
-
-            // Update bank account balance
-            $bankAccount = BankAccount::find($validated['bank_account_id']);
-            $bankAccount->current_balance += $validated['amount'];
-            $bankAccount->save();
         });
 
         return redirect()->route('admin.extra-incomes.index')
@@ -148,10 +143,12 @@ class ExtraIncomeController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $extraIncome) {
-            // Update bank account balance (reverse previous transaction)
-            $oldBankAccount = BankAccount::find($extraIncome->bank_account_id);
-            $oldBankAccount->current_balance -= $extraIncome->amount;
-            $oldBankAccount->save();
+            // Find existing bank transaction model
+            $bankTransaction = BankTransaction::where([
+                'bank_account_id' => $extraIncome->getOriginal('bank_account_id'),
+                'amount' => $extraIncome->getOriginal('amount'),
+                'date' => $extraIncome->getOriginal('date'),
+            ])->first();
 
             // Update extra income
             $extraIncome->update($validated);
@@ -159,22 +156,25 @@ class ExtraIncomeController extends Controller
             // Get updated category name
             $categoryName = $extraIncome->category ? $extraIncome->category->name : 'Uncategorized';
 
-            // Update bank transaction
-            BankTransaction::where([
-                'bank_account_id' => $extraIncome->getOriginal('bank_account_id'),
-                'amount' => $extraIncome->getOriginal('amount'),
-                'date' => $extraIncome->getOriginal('date'),
-            ])->update([
-                'bank_account_id' => $validated['bank_account_id'],
-                'amount' => $validated['amount'],
-                'description' => "Extra Income ({$categoryName}): {$validated['title']}",
-                'date' => $validated['date'],
-            ]);
-
-            // Update new bank account balance
-            $newBankAccount = BankAccount::find($validated['bank_account_id']);
-            $newBankAccount->current_balance += $validated['amount'];
-            $newBankAccount->save();
+            // Update bank transaction through Eloquent model so observer handles balance update
+            if ($bankTransaction) {
+                $bankTransaction->update([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => 'in',
+                    'amount' => $validated['amount'],
+                    'description' => "Extra Income ({$categoryName}): {$validated['title']}",
+                    'date' => $validated['date'],
+                ]);
+            } else {
+                BankTransaction::create([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => 'in',
+                    'amount' => $validated['amount'],
+                    'description' => "Extra Income ({$categoryName}): {$validated['title']}",
+                    'date' => $validated['date'],
+                    'created_by' => auth()->id(),
+                ]);
+            }
         });
 
         return redirect()->route('admin.extra-incomes.index')
@@ -184,17 +184,16 @@ class ExtraIncomeController extends Controller
     public function destroy(ExtraIncome $extraIncome)
     {
         DB::transaction(function () use ($extraIncome) {
-            // Update bank account balance
-            $bankAccount = BankAccount::find($extraIncome->bank_account_id);
-            $bankAccount->current_balance -= $extraIncome->amount;
-            $bankAccount->save();
-
-            // Delete related bank transaction
-            BankTransaction::where([
+            // Delete related bank transaction through model so observer reverses bank balance
+            $bankTransaction = BankTransaction::where([
                 'bank_account_id' => $extraIncome->bank_account_id,
                 'amount' => $extraIncome->amount,
                 'date' => $extraIncome->date,
-            ])->delete();
+            ])->first();
+
+            if ($bankTransaction) {
+                $bankTransaction->delete();
+            }
 
             // Delete extra income
             $extraIncome->delete();

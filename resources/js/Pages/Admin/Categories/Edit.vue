@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { getImageUrl } from '@/utils/image'
 
 // Define props for existing category and parent categories
 const props = defineProps({
@@ -37,7 +38,7 @@ const generateSlug = () => {
 }
 
 // Handle image upload
-const imagePreview = ref(props.category.image ? `/storage/${props.category.image}` : null)
+const imagePreview = ref(getImageUrl(props.category.image_url || props.category.image))
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
   form.image = file

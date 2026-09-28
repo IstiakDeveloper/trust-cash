@@ -29,12 +29,10 @@ class DashboardController extends Controller
             ->selectRaw('COALESCE(SUM(total), 0) as total, COALESCE(SUM(due), 0) as due, COUNT(*) as cnt')
             ->first();
 
-        $expensesTotal = (float) DB::table('expenses as e')
-            ->join('expense_categories as ec', 'e.expense_category_id', '=', 'ec.id')
-            ->whereBetween('e.date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->where('ec.name', '!=', 'Fixed Asset')
-            ->whereNull('e.deleted_at')
-            ->sum('e.amount');
+        $expensesTotal = (float) DB::table('expenses')
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->whereNull('deleted_at')
+            ->sum('amount');
 
         $extraIncome = (float) ExtraIncome::query()
             ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])

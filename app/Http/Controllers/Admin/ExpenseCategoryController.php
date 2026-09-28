@@ -20,6 +20,12 @@ class ExpenseCategoryController extends Controller
 
     public function store(Request $request)
     {
+        if (preg_match('/fixed\s*asset|স্থায়ী\s*সম্পদ/ui', $request->name)) {
+            return redirect()->back()->withErrors([
+                'name' => 'স্থায়ী সম্পদ (Fixed Asset) কোনো খরচের ক্যাটাগরি নয়। স্থায়ী সম্পদের জন্য অনুগ্রহ করে ডেডিকেটেড "স্থায়ী সম্পদ" মডিউল ব্যবহার করুন।'
+            ])->withInput();
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:expense_categories',
             'description' => 'nullable|string',
@@ -33,6 +39,12 @@ class ExpenseCategoryController extends Controller
 
     public function update(Request $request, ExpenseCategory $category)
     {
+        if (preg_match('/fixed\s*asset|স্থায়ী\s*সম্পদ/ui', $request->name)) {
+            return redirect()->back()->withErrors([
+                'name' => 'স্থায়ী সম্পদ (Fixed Asset) কোনো খরচের ক্যাটাগরি নয়। স্থায়ী সম্পদের জন্য অনুগ্রহ করে ডেডিকেটেড "স্থায়ী সম্পদ" মডিউল ব্যবহার করুন।'
+            ])->withInput();
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:expense_categories,name,'.$category->id,
             'description' => 'nullable|string',

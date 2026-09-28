@@ -74,6 +74,33 @@ Route::get('/contact', fn() => Inertia::render('Contact'))->name('contact');
 Route::get('/privacy', fn() => Inertia::render('Privacy'))->name('privacy');
 Route::get('/terms', fn() => Inertia::render('Terms'))->name('terms');
 
+Route::get('/storage/{path}', function (string $path) {
+    // 1. Try active tenant context if initialized
+    if (function_exists('tenant') && tenant()) {
+        $tenantFile = storage_path("app/public/{$path}");
+        if (is_file($tenantFile)) {
+            return response()->file($tenantFile);
+        }
+    }
+
+    // 2. Check host subdomain for tenant storage folder
+    $host = request()->getHost();
+    $subdomain = explode('.', $host)[0];
+    if ($subdomain && is_dir(base_path("storage/tenant{$subdomain}"))) {
+        $tenantFile = base_path("storage/tenant{$subdomain}/app/public/{$path}");
+        if (is_file($tenantFile)) {
+            return response()->file($tenantFile);
+        }
+    }
+
+    // 3. Fallback to central storage
+    $centralFile = base_path("storage/app/public/{$path}");
+    if (is_file($centralFile)) {
+        return response()->file($centralFile);
+    }
+
+    abort(404);
+})->where('path', '.*')->name('storage.file');
 
 Route::get('/storage-link', function () {
     Artisan::call('storage:link');
@@ -131,9 +158,6 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('products/optimize-images', [ProductController::class, 'optimizeImages'])
         ->name('products.optimize-images');
 
-    Route::post('/products/barcode/print', [ProductController::class, 'printBarcodes'])
-        ->name('products.barcode.print');
-
     Route::resource('product-stocks', ProductStockController::class)
         ->only(['index', 'create', 'store', 'destroy']);
     Route::get('product-stocks/history/{productId}', [ProductStockController::class, 'getStockHistory'])
@@ -149,6 +173,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('suppliers', SupplierController::class);
     Route::post('suppliers/{supplier}/add-payment', [SupplierController::class, 'addPayment'])
         ->name('suppliers.add-payment');
+    Route::post('suppliers/{supplier}/pay-due', [SupplierController::class, 'addPayment'])
+        ->name('suppliers.pay-due');
 
     // Purchase Management
     Route::resource('purchases', PurchaseController::class);
@@ -197,8 +223,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::delete('/{sale}', [SaleController::class, 'destroy'])->name('destroy');
         Route::get('/print/{id}', [SaleController::class, 'printReceipt'])->name('print-receipt');
     });
-    Route::post('/products/{product}/barcode', [BarcodeController::class, 'generate']);
-    Route::post('/products/barcode/print', [BarcodeController::class, 'print']);
+    Route::post('/products/{product}/barcode', [BarcodeController::class, 'generate'])->name('products.barcode.generate');
+    Route::match(['get', 'post'], '/products/barcode/print', [BarcodeController::class, 'print'])->name('products.barcode.print');
 
     // Pending public orders approval
     Route::get('/pending-sales', [PendingSaleController::class, 'index'])->name('pending-sales.index');
@@ -248,6 +274,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('expenses', ExpenseController::class);
     Route::post('expenses/{expense}/restore', [ExpenseController::class, 'restore'])->name('expenses.restore');
     Route::resource('expense-categories', ExpenseCategoryController::class);
+
+    // Fixed Asset Management
+    Route::resource('fixed-assets', \App\Http\Controllers\Admin\FixedAssetController::class);
+    Route::post('fixed-assets/{fixedAsset}/items', [\App\Http\Controllers\Admin\FixedAssetController::class, 'storeItem'])->name('fixed-assets.items.store');
+    Route::put('fixed-assets/items/{item}', [\App\Http\Controllers\Admin\FixedAssetController::class, 'updateItem'])->name('fixed-assets.items.update');
+    Route::delete('fixed-assets/items/{item}', [\App\Http\Controllers\Admin\FixedAssetController::class, 'destroyItem'])->name('fixed-assets.items.destroy');
+    Route::post('fixed-assets/{fixedAsset}/restore', [\App\Http\Controllers\Admin\FixedAssetController::class, 'restore'])->name('fixed-assets.restore');
 
     Route::controller(ProductAnalysisReportController::class)->group(function () {
         Route::get('/reports/product-analysis', 'index')->name('reports.product-analysis');

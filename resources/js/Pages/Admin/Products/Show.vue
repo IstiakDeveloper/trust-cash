@@ -1,188 +1,297 @@
 <template>
-    <Head title="Product" />
-    <AdminLayout>
-        <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <!-- Header Section -->
-            <header class="bg-white dark:bg-gray-800 shadow">
-                <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 min-w-0">
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white truncate">
-                                {{ product.name }}
-                            </h2>
-                            <div class="mt-1 flex items-center space-x-4">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    SKU: {{ product.sku }}
-                                </span>
-                                <span class="text-sm text-gray-500 dark:text-gray-400" v-if="product.barcode">
-                                    Barcode: {{ product.barcode }}
+    <AdminLayout :title="product.name + ' - ' + t('পণ্যের বিবরণ', 'Product Details')">
+        <Head :title="product.name + ' - ' + t('পণ্যের বিবরণ', 'Product Details')" />
+
+        <div class="mx-auto max-w-7xl space-y-5 pb-10">
+            <!-- Breadcrumbs & Header Bar -->
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
+                        <Link :href="route('admin.products.index')" class="hover:underline flex items-center gap-1">
+                            <CubeIcon class="h-3.5 w-3.5" />
+                            <span>{{ t('পণ্য তালিকা', 'Products') }}</span>
+                        </Link>
+                        <span>/</span>
+                        <span class="text-slate-400 dark:text-slate-500">{{ t('বিস্তারিত বিবরণ', 'Details') }}</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                            {{ product.name }}
+                        </h1>
+                        <!-- Status Badge -->
+                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold"
+                            :class="product.status
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'">
+                            <span class="h-1.5 w-1.5 rounded-full" :class="product.status ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                            <span>{{ product.status ? t('সক্রিয় পণ্য', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Toolbar -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <BarcodePrintSelection :products="[product]" />
+                    <BarcodeGenerator :product-id="product.id" />
+
+                    <Link :href="route('admin.products.edit', product.id)"
+                        class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all">
+                        <PencilIcon class="h-3.5 w-3.5" />
+                        <span>{{ t('সম্পাদনা', 'Edit') }}</span>
+                    </Link>
+
+                    <Link :href="route('admin.products.index')"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-all">
+                        <ArrowLeftIcon class="h-3.5 w-3.5" />
+                        <span>{{ t('তালিকায় ফিরুন', 'Back') }}</span>
+                    </Link>
+                </div>
+            </div>
+
+            <!-- Compact Main Grid -->
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-12 items-start">
+                
+                <!-- Left Column (4 cols): Product Gallery & Core Identifiers -->
+                <div class="space-y-5 lg:col-span-4">
+                    
+                    <!-- Image Card with Thumbnail Switcher -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+                        <!-- Main Featured Image -->
+                        <div class="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center">
+                            <img v-if="activeImage" :src="getImageUrl(activeImage)" :alt="product.name"
+                                class="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
+                            <div v-else class="text-center p-6">
+                                <CubeIcon class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 mb-1" />
+                                <span class="text-xs font-medium text-slate-400 dark:text-slate-500">
+                                    {{ t('কোনো ছবি সংযুক্ত নেই', 'No image available') }}
                                 </span>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <BarcodeGenerator :product-id="product.id" />
-                            <BarcodePrintSelection :products="[product]" />
-                            <Link
-                                :href="route('admin.products.edit', product.id)"
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
-                            >
-                                <PencilIcon class="h-5 w-5 mr-2" />
-                                Edit
-                            </Link>
-                            <Link
-                                :href="route('admin.products.index')"
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                            >
-                                Back
-                            </Link>
+
+                        <!-- Thumbnails list (if multiple) -->
+                        <div v-if="product.images && product.images.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-1">
+                            <button v-for="(img, idx) in product.images" :key="img.id || idx"
+                                type="button" @click="activeImage = img.image || img.url"
+                                class="relative h-14 w-14 shrink-0 rounded-lg overflow-hidden border-2 transition-all"
+                                :class="(activeImage === img.image || activeImage === img.url)
+                                    ? 'border-indigo-600 ring-2 ring-indigo-600/30'
+                                    : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100'">
+                                <img :src="getImageUrl(img.image || img.url)" class="h-full w-full object-cover" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Core Identifiers & Meta Card -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            {{ t('শনাক্তকারী কোড ও তথ্য', 'Identifiers & Taxonomy') }}
+                        </h3>
+
+                        <div class="space-y-2.5 text-xs">
+                            <!-- SKU -->
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="font-semibold text-slate-500 dark:text-slate-400">{{ t('SKU কোড', 'SKU') }}:</span>
+                                <div class="flex items-center gap-1.5 font-mono font-bold text-slate-900 dark:text-white">
+                                    <span>{{ product.sku }}</span>
+                                    <button type="button" @click="copyToClipboard(product.sku)"
+                                        :title="t('কপি করুন', 'Copy SKU')"
+                                        class="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                        <ClipboardDocumentCheckIcon v-if="copiedSku" class="h-4 w-4 text-emerald-600" />
+                                        <ClipboardDocumentIcon v-else class="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Barcode -->
+                            <div v-if="product.barcode" class="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <QrCodeIcon class="h-3.5 w-3.5" />
+                                    <span>{{ t('বারকোড', 'Barcode') }}:</span>
+                                </span>
+                                <span class="font-mono font-bold text-slate-900 dark:text-white">{{ product.barcode }}</span>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                                <span class="text-slate-500 dark:text-slate-400">{{ t('ক্যাটাগরি', 'Category') }}</span>
+                                <span class="font-bold text-indigo-600 dark:text-indigo-400">
+                                    {{ product.category?.name || '—' }}
+                                </span>
+                            </div>
+
+                            <!-- Brand -->
+                            <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                                <span class="text-slate-500 dark:text-slate-400">{{ t('ব্র্যান্ড', 'Brand') }}</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200">
+                                    {{ product.brand?.name || t('কোনো ব্র্যান্ড নেই', 'None') }}
+                                </span>
+                            </div>
+
+                            <!-- Unit -->
+                            <div class="flex items-center justify-between py-1">
+                                <span class="text-slate-500 dark:text-slate-400">{{ t('পরিমাপের একক', 'Unit') }}</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200">
+                                    {{ product.unit?.name }} <span class="text-slate-400">({{ product.unit?.short_name }})</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </header>
 
-            <!-- Main Content -->
-            <main class="py-10">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        <!-- Left Column: Images and Quick Info -->
-                        <div class="lg:col-span-2 space-y-6">
-                            <!-- Product Images -->
-                            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Product Images</h3>
-                                </div>
-                                <div class="px-4 py-5 sm:p-6">
-                                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                                        <div v-for="image in product.images" :key="image.id"
-                                            class="relative aspect-w-1 aspect-h-1 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 group">
-                                            <img :src="getImageUrl(image.image)" :alt="product.name"
-                                                class="object-cover group-hover:opacity-75">
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- Right Column (8 cols): Financials, Stock, Specs & Description -->
+                <div class="space-y-5 lg:col-span-8">
+                    
+                    <!-- Pricing & Margin KPI Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <!-- Selling Price -->
+                        <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    {{ t('বিক্রয় মূল্য', 'Selling Price') }}
+                                </span>
+                                <span class="h-6 w-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center dark:bg-emerald-950/60 dark:text-emerald-400 text-xs font-bold">
+                                    ৳
+                                </span>
                             </div>
-
-                            <!-- Quick Info -->
-                            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Quick Information</h3>
-                                </div>
-                                <div class="border-t border-gray-200 dark:border-gray-700">
-                                    <dl>
-                                        <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Category</dt>
-                                            <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                                                {{ product.category.name }}
-                                            </dd>
-                                        </div>
-                                        <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 bg-gray-50 dark:bg-gray-700">
-                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</dt>
-                                            <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                                                {{ product.brand?.name || 'N/A' }}
-                                            </dd>
-                                        </div>
-                                        <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Unit</dt>
-                                            <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                                                {{ product.unit.name }} ({{ product.unit.short_name }})
-                                            </dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                            </div>
+                            <h3 class="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                {{ formatCurrency(product.selling_price) }}
+                            </h3>
+                            <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                                / {{ product.unit?.short_name || t('একক', 'Unit') }}
+                            </p>
                         </div>
 
-                        <!-- Right Column: Pricing, Stock, and Details -->
-                        <div class="space-y-6">
-                            <!-- Pricing Card -->
-                            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Pricing Information</h3>
-                                </div>
-                                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
-                                    <div class="space-y-4">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-gray-500 dark:text-gray-400">Cost Price</span>
-                                            <span class="text-lg font-semibold text-gray-900 dark:text-white">
-                                                {{ formatPrice(product.cost_price) }}
-                                            </span>
-                                        </div>
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-sm text-gray-500 dark:text-gray-400">Selling Price</span>
-                                            <span class="text-lg font-semibold text-green-600 dark:text-green-400">
-                                                {{ formatPrice(product.selling_price) }}
-                                            </span>
-                                        </div>
-                                        <div class="flex justify-between items-center pt-4 border-t dark:border-gray-700">
-                                            <span class="text-sm text-gray-500 dark:text-gray-400">Profit Margin</span>
-                                            <span class="text-lg font-semibold" :class="marginColor">
-                                                {{ calculateMargin }}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <!-- Cost Price -->
+                        <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    {{ t('ক্রয় / খরচ মূল্য', 'Cost Price') }}
+                                </span>
+                                <span class="h-6 w-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center dark:bg-slate-800 dark:text-slate-300 text-xs font-bold">
+                                    ৳
+                                </span>
                             </div>
-
-                            <!-- Stock Alert -->
-                            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Stock Information</h3>
-                                </div>
-                                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">Alert Quantity</span>
-                                        <span class="text-lg font-semibold text-gray-900 dark:text-white">
-                                            {{ product.alert_quantity }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Specifications -->
-                            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                                <div class="px-4 py-5 sm:px-6">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Specifications</h3>
-                                </div>
-                                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
-                                    <dl v-if="Object.keys(product.specifications || {}).length">
-                                        <div v-for="(value, key) in product.specifications" :key="key"
-                                            class="grid grid-cols-2 gap-4 py-2">
-                                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ key }}</dt>
-                                            <dd class="text-sm text-gray-900 dark:text-white">{{ value }}</dd>
-                                        </div>
-                                    </dl>
-                                    <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-                                        No specifications available
-                                    </p>
-                                </div>
-                            </div>
+                            <h3 class="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+                                {{ formatCurrency(product.cost_price || 0) }}
+                            </h3>
+                            <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                                {{ product.cost_price ? t('নির্ধারিত ক্রয়মূল্য', 'Default purchase cost') : t('ক্রয়মূল্য সেট করা হয়নি', 'Not set') }}
+                            </p>
                         </div>
-                    </div>
 
-                    <!-- Description Section -->
-                    <div class="mt-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden">
-                        <div class="px-4 py-5 sm:px-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Product Description</h3>
-                        </div>
-                        <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-6">
-                            <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line">
-                                {{ product.description || 'No description available' }}
+                        <!-- Profit Margin -->
+                        <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    {{ t('আনুমানিক মুনাফা', 'Profit Margin') }}
+                                </span>
+                                <span class="h-6 w-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center dark:bg-indigo-950/60 dark:text-indigo-400 text-xs font-bold">
+                                    %
+                                </span>
+                            </div>
+                            <h3 class="mt-2 text-2xl font-black" :class="marginColor">
+                                {{ formatNumber(calculateMargin) }}%
+                            </h3>
+                            <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                                {{ estimatedProfitText }}
                             </p>
                         </div>
                     </div>
+
+                    <!-- Stock Alert Limit Card -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 font-bold">
+                                <ExclamationTriangleIcon class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white">
+                                    {{ t('সীমিত স্টক সতর্কতা সীমা (Low Stock Alert)', 'Low Stock Alert Limit') }}
+                                </h4>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {{ t('দোকানে স্টক এই পরিমাণের নিচে নামলে নোটিফিকেশন দেবে', 'Notification triggers when inventory reaches this number') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <span class="text-xl font-black text-slate-900 dark:text-white">
+                                {{ formatNumber(product.alert_quantity || 0) }}
+                            </span>
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">
+                                {{ product.unit?.short_name || t('একক', 'Unit') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Specifications Card -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                <TagIcon class="h-4 w-4 text-indigo-500" />
+                                <span>{{ t('পণ্যের বৈশিষ্ট্য ও স্পেসিফিকেশন', 'Product Specifications') }}</span>
+                            </h3>
+                            <span class="text-[10px] font-bold text-slate-400">
+                                {{ hasSpecifications ? formatNumber(Object.keys(product.specifications).length) + ' ' + t('টি বৈশিষ্ট্য', 'specs') : '' }}
+                            </span>
+                        </div>
+
+                        <div v-if="hasSpecifications" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div v-for="(val, key) in product.specifications" :key="key"
+                                class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                                <span class="font-bold text-slate-600 dark:text-slate-400">{{ key }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-white">{{ val }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-4 text-xs text-slate-400 dark:text-slate-500">
+                            {{ t('কোনো স্পেসিফিকেশন বা অতিরিক্ত বৈশিষ্ট্য উল্লেখ করা নেই।', 'No specifications added for this product.') }}
+                        </div>
+                    </div>
+
+                    <!-- Description & Notes Card -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <DocumentTextIcon class="h-4 w-4 text-indigo-500" />
+                            <span>{{ t('পণ্যের বিবরণ ও নোট', 'Description & Notes') }}</span>
+                        </h3>
+                        
+                        <p v-if="product.description" class="text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-line p-2">
+                            {{ product.description }}
+                        </p>
+                        <div v-else class="text-center py-4 text-xs text-slate-400 dark:text-slate-500">
+                            {{ t('কোনো বিস্তারিত বিবরণ বা নোট যোগ করা হয়নি।', 'No description or notes provided for this product.') }}
+                        </div>
+                    </div>
+
                 </div>
-            </main>
+
+            </div>
         </div>
     </AdminLayout>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { PencilIcon } from '@heroicons/vue/24/outline';
+import {
+    PencilIcon,
+    ArrowLeftIcon,
+    CubeIcon,
+    TagIcon,
+    DocumentTextIcon,
+    ExclamationTriangleIcon,
+    ClipboardDocumentIcon,
+    ClipboardDocumentCheckIcon,
+    QrCodeIcon
+} from '@heroicons/vue/24/outline';
 import BarcodeGenerator from '@/Components/BarcodeGenerator.vue';
 import BarcodePrintSelection from '@/Components/BarcodePrintSelection.vue';
-import { computed } from 'vue';
+import { useLanguage } from '@/composables/useLanguage';
+import { getImageUrl } from '@/utils/image';
+
+const { t, formatCurrency, formatNumber } = useLanguage();
 
 const props = defineProps({
     product: {
@@ -191,17 +300,31 @@ const props = defineProps({
     }
 });
 
-const formatPrice = (price) => {
-    const number = new Intl.NumberFormat('en-BD', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(price || 0);
-    return `৳ ${number}`
+// Active image state
+const activeImage = ref(
+    props.product.image_url ||
+    props.product.images?.find(i => i.is_primary)?.image ||
+    props.product.images?.[0]?.image ||
+    null
+);
+
+// Copy SKU feedback
+const copiedSku = ref(false);
+const copyToClipboard = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        copiedSku.value = true;
+        setTimeout(() => {
+            copiedSku.value = false;
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy', err);
+    }
 };
 
-const getImageUrl = (path) => {
-    return `/storage/${path}`;
-};
+const hasSpecifications = computed(() => {
+    return Boolean(props.product.specifications && Object.keys(props.product.specifications).length > 0);
+});
 
 const calculateMargin = computed(() => {
     if (!props.product.cost_price || !props.product.selling_price) return 0;
@@ -211,8 +334,16 @@ const calculateMargin = computed(() => {
 
 const marginColor = computed(() => {
     const margin = Number(calculateMargin.value);
-    if (margin >= 30) return 'text-green-600 dark:text-green-400';
-    if (margin >= 15) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (margin >= 25) return 'text-emerald-600 dark:text-emerald-400';
+    if (margin > 0) return 'text-amber-600 dark:text-amber-400';
+    return 'text-rose-600 dark:text-rose-400';
+});
+
+const estimatedProfitText = computed(() => {
+    if (!props.product.cost_price || !props.product.selling_price) {
+        return t('লাভের হার হিসাব করা সম্ভব নয়', 'Cost price needed');
+    }
+    const diff = Number(props.product.selling_price) - Number(props.product.cost_price);
+    return t(`লাভ: ${formatCurrency(diff)} / একক`, `Profit: ${formatCurrency(diff)}/unit`);
 });
 </script>

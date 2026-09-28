@@ -13,6 +13,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Unit;
+use App\Services\PurchaseReversalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -242,10 +243,7 @@ class PurchaseController extends Controller
                     'created_by' => auth()->id(),
                 ]);
 
-                // Deduct from bank account
-                $bankAccount->decrement('current_balance', $paidAmount);
-
-                // Create bank transaction
+                // Create bank transaction (Observer automatically deducts from bank account balance)
                 BankTransaction::create([
                     'bank_account_id' => $bankAccount->id,
                     'transaction_type' => 'out',
@@ -287,47 +285,15 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function destroy(Purchase $purchase)
+    public function destroy(Purchase $purchase, PurchaseReversalService $reversalService)
     {
-        DB::beginTransaction();
         try {
-            // Revert stock
-            foreach ($purchase->items as $item) {
-                // Deduct from product stocks
-                ProductStock::where('product_id', $item->product_id)
-                    ->where('note', 'like', "%{$purchase->purchase_number}%")
-                    ->delete();
-            }
+            $result = $reversalService->reversePurchase($purchase);
 
-            // Revert supplier balance
-            if ($purchase->due_amount > 0) {
-                $purchase->supplier->decrement('current_balance', $purchase->due_amount);
-            }
-
-            // If there were payments, refund to bank account
-            foreach ($purchase->payments as $payment) {
-                if ($payment->bankAccount) {
-                    $payment->bankAccount->increment('current_balance', $payment->amount);
-                    BankTransaction::create([
-                        'bank_account_id' => $payment->bank_account_id,
-                        'transaction_type' => 'in',
-                        'amount' => $payment->amount,
-                        'description' => "Purchase Cancelled Reversal: #{$purchase->purchase_number}",
-                        'date' => now()->toDateString(),
-                        'created_by' => auth()->id(),
-                    ]);
-                }
-                $payment->delete();
-            }
-
-            $purchase->delete();
-
-            DB::commit();
             return redirect()->route('admin.purchases.index')
-                ->with('success', 'Purchase cancelled and stock/balances reverted successfully.');
+                ->with('success', $result['message']);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to delete purchase: ' . $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

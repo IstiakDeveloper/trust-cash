@@ -148,15 +148,8 @@ class IncomeExpenditureController extends Controller
 
     private function calculateExpenditure(Carbon $startDate, Carbon $endDate)
     {
-        // Exclude Fixed Assets category
-        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
-
         // Get all active expense categories
-        $expenseCategories = ExpenseCategory::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-            return $query->where('id', '!=', $fixedAssetsCategory->id);
-        })
-            ->where('status', true)
-            ->get();
+        $expenseCategories = ExpenseCategory::where('status', true)->get();
 
         // Prepare categories with their expenses
         $categoriesWithExpenses = $expenseCategories->map(function ($category) use ($startDate, $endDate) {
@@ -165,7 +158,7 @@ class IncomeExpenditureController extends Controller
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount');
 
-            // FIX: Cumulative expenses up to endDate only
+            // Cumulative expenses up to endDate only
             $cumulativeExpenses = Expense::where('expense_category_id', $category->id)
                 ->where('date', '<=', $endDate)
                 ->sum('amount');
@@ -177,17 +170,13 @@ class IncomeExpenditureController extends Controller
             ];
         });
 
-        // FIX: Calculate total expenses up to endDate only
-        $totalExpensesPeriod = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-            return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
-        })
-            ->whereBetween('date', [$startDate, $endDate])
+        // Calculate total expenses up to endDate only
+        $totalExpensesPeriod = Expense::whereBetween('date', [$startDate, $endDate])
+            ->whereNull('deleted_at')
             ->sum('amount');
 
-        $totalExpensesCumulative = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-            return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
-        })
-            ->where('date', '<=', $endDate)
+        $totalExpensesCumulative = Expense::where('date', '<=', $endDate)
+            ->whereNull('deleted_at')
             ->sum('amount');
 
         return [
@@ -236,16 +225,21 @@ class IncomeExpenditureController extends Controller
         // Calculate Expenditure Section
         $expenditureData = $this->calculateExpenditure($startDate, $endDate);
 
+        $locale = $request->input('locale', 'bn');
+        $isBn = ($locale === 'bn');
+
         // Prepare data for PDF - using same structure as index, but with added month info
         $data = [
             'income' => $incomeData,
             'expenditure' => $expenditureData,
+            'isBn' => $isBn,
+            'locale' => $locale,
             'filters' => [
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
-                'year' => $year,
+                'year' => $isBn ? to_bangla_number($year) : $year,
                 'month' => $month,
-                'month_name' => $monthName,
+                'month_name' => $isBn ? to_bangla_month($month) : $monthName,
             ],
         ];
 

@@ -75,14 +75,19 @@ class ProductAnalysisReportController extends Controller
             // Get analysis data
             $analysis = Product::getProductAnalysis($startDate, $endDate);
 
+            $locale = $request->input('locale', 'bn');
+            $isBn = ($locale === 'bn');
+
             // Prepare data for PDF
             $data = [
                 'products' => $analysis['products'],
                 'totals' => $analysis['totals'],
-                'start_date' => $startDate->format('d M Y'),
-                'end_date' => $endDate->format('d M Y'),
-                'generated_at' => Carbon::now($timezone)->format('d M Y h:i A'),
+                'start_date' => $isBn ? to_bangla_date($startDate, 'd M Y') : $startDate->format('d M Y'),
+                'end_date' => $isBn ? to_bangla_date($endDate, 'd M Y') : $endDate->format('d M Y'),
+                'generated_at' => $isBn ? to_bangla_date(Carbon::now($timezone), 'd M Y h:i A') : Carbon::now($timezone)->format('d M Y h:i A'),
                 'company_name' => config('app.name', 'Your Company Name'),
+                'isBn' => $isBn,
+                'locale' => $locale,
             ];
 
             // Generate PDF

@@ -197,6 +197,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import { useLanguage } from '@/composables/useLanguage';
+import { getImageUrl } from '@/utils/image';
 
 const { t } = useLanguage();
 
@@ -219,11 +220,6 @@ const form = useForm({
     logo: null,
     status: true
 });
-
-const getImageUrl = (path) => {
-    if (!path) return null;
-    return `${usePage().props.appUrl}/storage/${path}`;
-};
 
 const openModal = () => {
     editing.value = false;

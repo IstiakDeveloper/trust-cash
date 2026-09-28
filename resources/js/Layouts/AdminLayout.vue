@@ -375,6 +375,7 @@ const navItems = [
         children: [
             { nameBn: 'দোকানের খরচ', nameEn: 'Expenses', href: '/admin/expenses' },
             { nameBn: 'খরচের ক্যাটাগরি', nameEn: 'Expense Categories', href: '/admin/expense-categories' },
+            { nameBn: 'স্থায়ী সম্পদ', nameEn: 'Fixed Assets', href: '/admin/fixed-assets' },
             { nameBn: 'ব্যাংক ও ক্যাশ অ্যাকাউন্ট', nameEn: 'Bank Accounts', href: '/admin/bank-accounts' },
             { nameBn: 'ফান্ড ট্রান্সফার', nameEn: 'Fund Transfer', href: '/admin/funds' },
             { nameBn: 'লেনদেনের হিস্ট্রি', nameEn: 'Transactions', href: '/admin/bank-transactions' },

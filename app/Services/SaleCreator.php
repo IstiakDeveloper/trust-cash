@@ -105,7 +105,6 @@ class SaleCreator
                     'description' => "Payment received for invoice {$sale->invoice_no}",
                     'created_by' => $createdBy,
                 ]);
-                $bankAccount->increment('current_balance', $paid);
             }
 
             return $sale;

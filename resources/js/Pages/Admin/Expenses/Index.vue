@@ -6,9 +6,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                 <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট সাধারণ খরচ', 'Total Operational Expenses') }}</p>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট খরচ', 'Total Operational Expenses') }}</p>
                         <h3 class="text-2xl font-black text-rose-600 mt-1">
-                            {{ formatAmount(summary.totalExpenses - summary.fixedAssetExpenses) }}
+                            {{ formatAmount(summary.totalExpenses) }}
                         </h3>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
@@ -18,10 +18,12 @@
 
                 <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('স্থায়ী সম্পদ / ক্যাপিটাল খরচ', 'Fixed Asset Expenses') }}</p>
-                        <h3 class="text-2xl font-black text-blue-600 mt-1">
-                            {{ formatAmount(summary.fixedAssetExpenses) }}
-                        </h3>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('স্থায়ী সম্পদ মডিউল', 'Fixed Assets Module') }}</p>
+                        <div class="mt-2">
+                            <a :href="route('admin.fixed-assets.index')" class="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                {{ t('স্থায়ী সম্পদ তালিকা দেখুন →', 'Go to Fixed Assets →') }}
+                            </a>
+                        </div>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
                         <BuildingIcon class="w-6 h-6" />
@@ -222,8 +224,7 @@ const props = defineProps({
     summary: {
         type: Object,
         default: () => ({
-            totalExpenses: 0,
-            fixedAssetExpenses: 0
+            totalExpenses: 0
         })
     }
 })

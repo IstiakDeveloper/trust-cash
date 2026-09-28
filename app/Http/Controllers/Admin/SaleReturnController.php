@@ -157,8 +157,8 @@ class SaleReturnController extends Controller
             // If cash/bank refund given
             if ($validated['refund_status'] === 'completed' && $refundAmount > 0 && !empty($validated['bank_account_id'])) {
                 $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
-                $bankAccount->decrement('current_balance', $refundAmount);
 
+                // Create bank transaction (Observer automatically deducts from bank account balance)
                 BankTransaction::create([
                     'bank_account_id' => $bankAccount->id,
                     'transaction_type' => 'out',

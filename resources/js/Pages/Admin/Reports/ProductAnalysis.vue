@@ -1,7 +1,7 @@
 <template>
     <AdminLayout :title="t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report')">
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between no-print">
                 <h2 class="text-base font-semibold text-gray-800">{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</h2>
                 <div class="flex items-center space-x-2">
                     <!-- Date Range Selector -->
@@ -59,6 +59,16 @@
                         </svg>
                         <span>{{ isDownloading ? t('জেনারেট হচ্ছে...', 'Generating...') : t('পিডিএফ', 'PDF') }}</span>
                     </button>
+
+                    <!-- Print Button -->
+                    <button @click="printReport"
+                        class="flex items-center px-3 py-1 space-x-1 text-xs text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span>{{ t('প্রিন্ট', 'Print') }}</span>
+                    </button>
+
 
                     <!-- Refresh Button -->
                     <button @click="refreshData" :disabled="isRefreshing"
@@ -381,8 +391,60 @@
                 </div>
             </div>
         </div>
+
+        <!-- PRINT AREA -->
+        <div class="print-area">
+            <div class="print-header">
+                <h1>{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</h1>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ t('পণ্য', 'Product') }}</th>
+                        <th class="text-right">{{ t('শুরু স্টক', 'Opening') }}</th>
+                        <th class="text-right">{{ t('ক্রয়', 'Purchased') }}</th>
+                        <th class="text-right">{{ t('বিক্রয় পরিমাণ', 'Sold Qty') }}</th>
+                        <th class="text-right">{{ t('বিক্রয় মোট', 'Sold Total') }}</th>
+                        <th class="text-right">{{ t('লাভ', 'Profit') }}</th>
+                        <th class="text-right">{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
+                        <th class="text-right">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="product in filteredProducts" :key="product.serial">
+                        <td>{{ product.serial }}</td>
+                        <td>{{ product.product_name }}</td>
+                        <td class="text-right">{{ formatNumber(product.before_stock_quantity) }}</td>
+                        <td class="text-right">{{ formatNumber(product.purchased_quantity) }}</td>
+                        <td class="text-right">{{ formatNumber(product.sold_quantity) }}</td>
+                        <td class="text-right">{{ formatCurrency(product.sold_total) }}</td>
+                        <td class="text-right">{{ formatCurrency(product.profit_total) }}</td>
+                        <td class="text-right">{{ formatNumber(product.available_quantity) }}</td>
+                        <td class="text-right">{{ formatCurrency(product.available_value) }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>{{ t('সর্বমোট', 'Grand Total') }}</strong></td>
+                        <td class="text-right"><strong>{{ formatNumber(totalSoldQuantity) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(totalSoldTotal) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(totalProfitTotal) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatNumber(totalAvailableQuantity) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(totalAvailableValue) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="print-footer">
+                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
+                <span>{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</span>
+            </div>
+        </div>
     </AdminLayout>
 </template>
+
 
 <script>
 import { defineComponent, computed, ref } from 'vue'
@@ -413,7 +475,7 @@ export default defineComponent({
     },
 
     setup(props) {
-        const { currentLang, t } = useLanguage()
+        const { currentLang, t, isBangla } = useLanguage()
         const searchQuery = ref('')
         const isLoading = ref(false)
         const isDownloading = ref(false)
@@ -535,17 +597,21 @@ export default defineComponent({
         }
 
         const formatNumber = (number) => {
+            const num = Number(number || 0)
+            const hasDecimal = Math.abs(num - Math.round(num)) >= 0.0001
             return new Intl.NumberFormat(getNumberLocale(), {
-                minimumFractionDigits: 2,
+                minimumFractionDigits: hasDecimal ? 2 : 0,
                 maximumFractionDigits: 2
-            }).format(number || 0)
+            }).format(num)
         }
 
         const formatCurrency = (amount) => {
+            const num = Number(amount || 0)
+            const hasDecimal = Math.abs(num - Math.round(num)) >= 0.0001
             return new Intl.NumberFormat(getNumberLocale(), {
-                minimumFractionDigits: 2,
+                minimumFractionDigits: hasDecimal ? 2 : 0,
                 maximumFractionDigits: 2,
-            }).format(amount || 0)
+            }).format(num)
         }
 
         const downloadPDF = async () => {
@@ -557,6 +623,7 @@ export default defineComponent({
                     params: {
                         start_date: props.filters.start_date,
                         end_date: props.filters.end_date,
+                        locale: isBangla.value ? 'bn' : 'en',
                     },
                     responseType: 'blob'
                 })
@@ -575,6 +642,10 @@ export default defineComponent({
             } finally {
                 isDownloading.value = false
             }
+        }
+
+        const printReport = () => {
+            window.print()
         }
 
         const exportToExcel = async () => {
@@ -684,6 +755,10 @@ export default defineComponent({
             window.URL.revokeObjectURL(url)
         }
 
+        const printReport = () => {
+            window.print()
+        }
+
         return {
             currentLang,
             t,
@@ -721,6 +796,7 @@ export default defineComponent({
             formatCurrency,
             downloadPDF,
             exportToExcel,
+            printReport,
         }
     },
 })

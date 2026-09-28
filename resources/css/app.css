@@ -16,3 +16,183 @@
         font-family: 'Inter', 'Noto Sans Bengali', 'Hind Siliguri', system-ui, -apple-system, sans-serif;
     }
 }
+
+/* .print-area is hidden on screen — always */
+.print-area {
+    display: none !important;
+}
+
+/* ============================================================
+   @media print
+   Technique: visibility:hidden on everything, then
+   visibility:visible on .print-area and its children.
+   This works regardless of DOM nesting depth.
+   ============================================================ */
+@media print {
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm 14mm 12mm 14mm;
+    }
+
+    /* Step 1 — make EVERYTHING invisible */
+    * {
+        visibility: hidden !important;
+    }
+
+    /* Step 2 — make body/html transparent, no bg */
+    html, body {
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Step 3 — bring .print-area and ALL its children back */
+    .print-area,
+    .print-area * {
+        visibility: visible !important;
+    }
+
+    /* Step 4 — position .print-area at top-left of the page */
+    .print-area {
+        display: block !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Inter', 'Noto Sans Bengali', Arial, sans-serif !important;
+        font-size: 10pt !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: 99999 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* === Print Header === */
+    .print-area .print-header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+    }
+
+    .print-area .print-header h1 {
+        font-size: 15pt;
+        font-weight: 700;
+        margin: 0 0 3px 0;
+        color: #000;
+    }
+
+    .print-area .print-header p {
+        font-size: 9pt;
+        margin: 2px 0;
+        color: #333;
+    }
+
+    /* === Summary Cards === */
+    .print-area .print-summary {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .print-area .print-summary-card {
+        border: 1px solid #bbb;
+        padding: 6px 8px;
+        text-align: center;
+    }
+
+    .print-area .print-summary-card .label {
+        font-size: 8pt;
+        color: #555;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .print-area .print-summary-card .value {
+        font-size: 11pt;
+        font-weight: 700;
+        display: block;
+        color: #000;
+    }
+
+    /* === Section Title === */
+    .print-area .section-title {
+        font-size: 10pt;
+        font-weight: 700;
+        border-bottom: 1px solid #000;
+        padding-bottom: 3px;
+        margin: 12px 0 5px 0;
+        color: #000;
+    }
+
+    /* === Tables === */
+    .print-area table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 8.5pt !important;
+        margin-bottom: 10px;
+        page-break-inside: auto;
+        background: #ffffff !important;
+    }
+
+    .print-area table thead {
+        display: table-header-group;
+    }
+
+    .print-area table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    .print-area table th {
+        background: #e8e8e8 !important;
+        border: 1px solid #555 !important;
+        padding: 4px 6px !important;
+        font-weight: 700 !important;
+        font-size: 8pt !important;
+        color: #000 !important;
+        text-align: left;
+    }
+
+    .print-area table td {
+        border: 1px solid #aaa !important;
+        padding: 3px 6px !important;
+        color: #000 !important;
+        background: #ffffff !important;
+        vertical-align: top;
+    }
+
+    .print-area table tfoot tr td,
+    .print-area table tfoot tr th {
+        background: #dedede !important;
+        border: 1px solid #555 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Alignment */
+    .print-area .text-right { text-align: right !important; }
+    .print-area .text-center { text-align: center !important; }
+    .print-area .text-left { text-align: left !important; }
+
+    /* === Footer === */
+    .print-area .print-footer {
+        margin-top: 18px;
+        border-top: 1px solid #ccc;
+        padding-top: 5px;
+        font-size: 8pt;
+        color: #555;
+        display: flex !important;
+        justify-content: space-between;
+    }
+
+    /* Page break */
+    .print-page-break {
+        page-break-after: always !important;
+    }
+}

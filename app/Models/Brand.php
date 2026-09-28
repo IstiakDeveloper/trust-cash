@@ -21,6 +21,17 @@ class Brand extends Model
         'status' => 'boolean'
     ];
 
+    protected $appends = ['logo_url'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (! $this->logo) {
+            return null;
+        }
+
+        return url('/storage/' . ltrim($this->logo, '/'));
+    }
+
     public function products()
     {
         return $this->hasMany(Product::class);

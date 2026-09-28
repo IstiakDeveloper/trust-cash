@@ -75,7 +75,7 @@
                                                     <td class="px-2.5 py-1.5">
                                                         <div class="flex items-center">
                                                             <div class="flex-shrink-0 w-7 h-7 mr-2 bg-slate-100 rounded-lg dark:bg-slate-700 overflow-hidden">
-                                                                <img v-if="item.image" :src="item.image" :alt="item.name"
+                                                                <img v-if="item.image" :src="getImageUrl(item.image)" :alt="item.name"
                                                                      class="object-cover w-full h-full" />
                                                             </div>
                                                             <div class="min-w-0">
@@ -279,6 +279,7 @@ import PosProductGrid from './components/PosProductGrid.vue'
 import PosSuccessModal from './components/PosSuccessModal.vue'
 import { Howl } from 'howler'
 import { useLanguage } from '@/composables/useLanguage'
+import { getImageUrl } from '@/utils/image'
 
 const { t } = useLanguage()
 
@@ -394,7 +395,7 @@ const addToCart = (product) => {
     }
 
     const existingItem = cartItems.value.find(item => item.product_id === product.id)
-    const imageUrl = product.image_url ?? (product.image ? `/storage/${product.image}` : null)
+    const imageUrl = getImageUrl(product.image_url || product.image || product.images?.[0]?.url || product.images?.[0]?.image)
 
     if (existingItem) {
         // Check if we can increment quantity

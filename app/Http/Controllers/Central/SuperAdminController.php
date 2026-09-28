@@ -215,6 +215,9 @@ class SuperAdminController extends Controller
                     'role_id'    => $adminRole->id,
                     'status'     => 1,
                 ]);
+
+                // Ensure default units and roles are seeded for this new shop owner
+                (new \Database\Seeders\TenantDatabaseSeeder())->run();
             });
         } catch (\Throwable $e) {
             // Log tenant seeding warning

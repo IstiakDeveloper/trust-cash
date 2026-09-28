@@ -63,7 +63,16 @@ class ProductImageProcessor
     private function encodeToWebpAndSave(string $sourceAbsolutePath, string $targetRelativePath, int $maxSize, int $quality): void
     {
         $disk = Storage::disk('public');
+        $relativeDir = dirname($targetRelativePath);
+        if ($relativeDir && $relativeDir !== '.' && ! $disk->exists($relativeDir)) {
+            $disk->makeDirectory($relativeDir);
+        }
+
         $targetAbsolute = $disk->path($targetRelativePath);
+        $targetDir = dirname($targetAbsolute);
+        if (! is_dir($targetDir)) {
+            @mkdir($targetDir, 0755, true);
+        }
 
         $image = $this->images->read($sourceAbsolutePath);
 

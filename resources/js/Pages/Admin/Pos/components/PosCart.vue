@@ -38,9 +38,10 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden bg-gray-100 rounded-lg dark:bg-gray-600">
-                                    <img v-if="item.image" :src="item.image" :alt="item.name"
-                                         class="object-cover w-full h-full" />
-                                    <span v-else class="text-gray-400">
+                                    <img v-if="item.image" :src="getImageUrl(item.image)" :alt="item.name"
+                                         class="object-cover w-full h-full"
+                                         @error="(e) => { e.target.style.display = 'none'; }" />
+                                    <span v-if="!item.image" class="text-gray-400">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -58,7 +59,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm text-right text-gray-500 whitespace-nowrap dark:text-gray-400">
-                            ৳{{ formatNumber(item.unit_price) }}
+                            {{ formatCurrency(item.unit_price) }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center justify-end space-x-2">
@@ -82,7 +83,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm font-medium text-right text-gray-900 whitespace-nowrap dark:text-gray-200">
-                            ৳{{ formatNumber(item.quantity * item.unit_price) }}
+                            {{ formatCurrency(item.quantity * item.unit_price) }}
                         </td>
                         <td class="px-6 py-4 text-sm text-right whitespace-nowrap">
                             <button @click="$emit('remove-item', index)"
@@ -101,17 +102,17 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            Cart is empty
+                            {{ t('কার্ট খালি', 'Cart is empty') }}
                         </td>
                     </tr>
                 </tbody>
                 <tfoot v-if="items.length > 0" class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <td colspan="3" class="px-6 py-3 text-sm font-medium text-right text-gray-500 dark:text-gray-400">
-                            Total Items: {{ items.length }}
+                            {{ t('মোট পণ্য:', 'Total Items:') }} {{ formatNumber(items.length) }}
                         </td>
                         <td class="px-6 py-3 text-sm font-medium text-right text-gray-900 dark:text-gray-200">
-                            ৳{{ formatNumber(totalAmount) }}
+                            {{ formatCurrency(totalAmount) }}
                         </td>
                         <td></td>
                     </tr>
@@ -123,12 +124,16 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getImageUrl } from '@/utils/image'
+import { useLanguage } from '@/composables/useLanguage'
 import {
     MinusCircle as MinusCircleIcon,
     PlusCircle as PlusCircleIcon,
     Trash as TrashIcon,
     ShoppingCart as ShoppingCartIcon
 } from 'lucide-vue-next'
+
+const { t, formatNumber, formatCurrency } = useLanguage()
 
 const props = defineProps({
     items: {
@@ -142,13 +147,6 @@ const emit = defineEmits(['update-quantity', 'remove-item'])
 const totalAmount = computed(() => {
     return props.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0)
 })
-
-const formatNumber = (value) => {
-    return Number(value).toLocaleString('en-BD', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })
-}
 
 const incrementQuantity = (index) => {
     emit('update-quantity', index, props.items[index].quantity + 1)

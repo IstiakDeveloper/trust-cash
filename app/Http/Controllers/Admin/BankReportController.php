@@ -423,13 +423,21 @@ class BankReportController extends Controller
                 ->sum('amount'),
         ];
 
+        $locale = $request->get('locale', app()->getLocale());
+        $isBn = ($locale === 'bn');
+        if ($isBn) {
+            app()->setLocale('bn');
+        }
+
         $data = [
             'reports' => $reports,
             'summary' => $summary,
             'date_range' => [
-                'from' => $fromDate->format('d M, Y'),
-                'to' => $toDate->format('d M, Y'),
+                'from' => $isBn ? to_bangla_date($fromDate->format('Y-m-d')) : $fromDate->format('d M, Y'),
+                'to' => $isBn ? to_bangla_date($toDate->format('Y-m-d')) : $toDate->format('d M, Y'),
             ],
+            'isBn' => $isBn,
+            'locale' => $locale,
         ];
 
         $pdf = PDF::loadView('reports.bank-report-pdf', $data);

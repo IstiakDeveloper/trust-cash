@@ -8,6 +8,10 @@ use App\Models\BankTransaction;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
+use App\Models\Supplier;
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
+use App\Services\PurchaseReversalService;
 use App\Traits\ManagesStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,9 +32,10 @@ class ProductStockController extends Controller
                 'products.alert_quantity',
                 // Get latest available quantity from any type
                 DB::raw('(
-                    SELECT available_quantity
+                    SELECT COALESCE(available_quantity, 0)
                     FROM product_stocks ps2
                     WHERE ps2.product_id = product_stocks.product_id
+                    AND ps2.deleted_at IS NULL
                     ORDER BY id DESC LIMIT 1
                 ) as current_available'),
                 // Calculate total purchase quantity and value (only from purchase type)
@@ -39,18 +44,22 @@ class ProductStockController extends Controller
                     FROM product_stocks ps2
                     WHERE ps2.product_id = product_stocks.product_id
                     AND ps2.type = "purchase"
+                    AND ps2.deleted_at IS NULL
                 ) as total_purchase_quantity'),
                 DB::raw('(
                     SELECT COALESCE(SUM(quantity * unit_cost), 0)
                     FROM product_stocks ps2
                     WHERE ps2.product_id = product_stocks.product_id
                     AND ps2.type = "purchase"
+                    AND ps2.deleted_at IS NULL
                 ) as total_purchase_cost')
             )
             ->join('products', 'products.id', '=', 'product_stocks.product_id')
+            ->whereNull('product_stocks.deleted_at')
             ->whereIn('product_stocks.id', function ($query) {
                 $query->select(DB::raw('MAX(id)'))
                     ->from('product_stocks')
+                    ->whereNull('deleted_at')
                     ->groupBy('product_id');
             });
 
@@ -85,7 +94,7 @@ class ProductStockController extends Controller
                 : 0;
 
             // Calculate current stock value using weighted average
-            $currentStockValue = bcmul($stock->current_available, $averageUnitCost, 6);
+            $currentStockValue = bcmul($stock->current_available ?? 0, $averageUnitCost, 6);
 
             return [
                 'id' => $stock->id,
@@ -95,14 +104,14 @@ class ProductStockController extends Controller
                     'sku' => $stock->sku,
                     'alert_quantity' => $stock->alert_quantity,
                 ],
-                'quantity' => $stock->current_available,
+                'quantity' => $stock->current_available ?? 0,
                 'total_purchased' => $stock->total_purchase_quantity,
                 'average_unit_cost' => round($averageUnitCost, 2),
                 'current_stock_value' => round($currentStockValue, 2),
                 'total_purchase_cost' => round($stock->total_purchase_cost, 2),
                 'created_by' => $stock->createdBy?->name ?? 'N/A',
                 'created_at' => $stock->created_at,
-                'stock_status' => $stock->current_available <= 0 ? 'out' : ($stock->current_available <= $stock->alert_quantity ? 'low' : 'in'),
+                'stock_status' => ($stock->current_available ?? 0) <= 0 ? 'out' : (($stock->current_available ?? 0) <= $stock->alert_quantity ? 'low' : 'in'),
             ];
         })->toArray();
 
@@ -117,6 +126,7 @@ class ProductStockController extends Controller
 
         // Summary query
         $summaryQuery = DB::table('product_stocks as ps')
+            ->whereNull('ps.deleted_at')
             ->select([
                 DB::raw('COUNT(DISTINCT ps.product_id) as total_products'),
                 // Get total current quantity from latest entries
@@ -124,6 +134,7 @@ class ProductStockController extends Controller
                     CASE WHEN ps.id IN (
                         SELECT MAX(id)
                         FROM product_stocks
+                        WHERE deleted_at IS NULL
                         GROUP BY product_id
                     )
                     THEN ps.available_quantity
@@ -135,6 +146,7 @@ class ProductStockController extends Controller
                     CASE WHEN ps.id IN (
                         SELECT MAX(id)
                         FROM product_stocks
+                        WHERE deleted_at IS NULL
                         GROUP BY product_id
                     )
                     THEN (
@@ -148,6 +160,7 @@ class ProductStockController extends Controller
                             FROM product_stocks ps2
                             WHERE ps2.product_id = ps.product_id
                             AND ps2.type = "purchase"
+                            AND ps2.deleted_at IS NULL
                         )
                     )
                     ELSE 0
@@ -159,9 +172,11 @@ class ProductStockController extends Controller
         // Low stock calculation
         $lowStockItems = DB::table('product_stocks as ps')
             ->join('products as p', 'p.id', '=', 'ps.product_id')
+            ->whereNull('ps.deleted_at')
             ->whereIn('ps.id', function ($query) {
                 $query->select(DB::raw('MAX(id)'))
                     ->from('product_stocks')
+                    ->whereNull('deleted_at')
                     ->groupBy('product_id');
             })
             ->where('ps.available_quantity', '<=', DB::raw('p.alert_quantity'))
@@ -182,46 +197,69 @@ class ProductStockController extends Controller
 
     public function create()
     {
-        return Inertia::render('Admin/ProductStocks/Create', [
-            'products' => Product::with([
-                'productStocks' => function ($query) {
-                    $query->latest();
-                },
-            ])->get()->map(fn ($product) => [
+        $products = Product::all()->map(function ($product) {
+            $latestStock = ProductStock::where('product_id', $product->id)->latest('id')->first();
+            return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
-                'current_stock' => $product->productStocks->sum('quantity'),
-                'last_unit_cost' => $product->productStocks->first()?->unit_cost ?? 0,
-            ]),
-            'bankAccounts' => BankAccount::where('status', true)
-                ->select('id', 'account_name', 'bank_name', 'current_balance')
-                ->get(),
+                'current_stock' => $latestStock ? (float) $latestStock->available_quantity : 0,
+                'last_unit_cost' => $latestStock ? (float) $latestStock->unit_cost : (float) ($product->cost_price ?? 0),
+            ];
+        });
+
+        $bankAccounts = BankAccount::where('status', true)
+            ->select('id', 'account_name', 'bank_name', 'account_number', 'current_balance')
+            ->get();
+
+        $suppliers = Supplier::where('status', 'active')
+            ->orWhereNull('status')
+            ->select('id', 'name', 'company_name', 'phone', 'current_balance')
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('Admin/ProductStocks/Create', [
+            'products' => $products,
+            'bankAccounts' => $bankAccounts,
+            'suppliers' => $suppliers,
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $isCredit = filter_var($request->input('is_credit'), FILTER_VALIDATE_BOOLEAN);
+
+        $rules = [
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|numeric|min:0.01',
             'total_cost' => 'required|numeric|min:0.01',
             'date' => 'required|date|before_or_equal:today',
             'note' => 'nullable|string',
-            'bank_account_id' => 'required|exists:bank_accounts,id',
-        ]);
+            'is_credit' => 'nullable|boolean',
+        ];
+
+        if ($isCredit) {
+            $rules['supplier_id'] = 'required|exists:suppliers,id';
+        } else {
+            $rules['bank_account_id'] = 'required|exists:bank_accounts,id';
+        }
+
+        $validated = $request->validate($rules);
 
         try {
             DB::beginTransaction();
 
-            // Check bank balance
-            $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
-            if (bccomp($bankAccount->current_balance, $validated['total_cost'], 4) < 0) {
-                throw new \Exception('Insufficient bank balance');
+            $bankAccount = null;
+            if (! $isCredit) {
+                // Check bank balance
+                $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
+                if (bccomp((string) $bankAccount->current_balance, (string) $validated['total_cost'], 4) < 0) {
+                    throw new \Exception('নির্বাচিত ব্যাংক অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই (Insufficient bank balance)');
+                }
             }
 
             // Calculate unit cost precisely
-            $unitCost = bcdiv($validated['total_cost'], $validated['quantity'], 6);
+            $unitCost = bcdiv((string) $validated['total_cost'], (string) $validated['quantity'], 6);
 
             // Get current available quantity with row lock to prevent race conditions
             $currentStock = ProductStock::where('product_id', $validated['product_id'])
@@ -230,25 +268,35 @@ class ProductStockController extends Controller
                 ->first();
 
             $currentAvailableQuantity = $currentStock ? $currentStock->available_quantity : 0;
-            $newAvailableQuantity = bcadd($currentAvailableQuantity, $validated['quantity'], 6);
+            $newAvailableQuantity = bcadd((string) $currentAvailableQuantity, (string) $validated['quantity'], 6);
 
             // Convert date input to datetime for created_at
             $stockDate = \Carbon\Carbon::parse($validated['date'])->startOfDay();
+
+            $supplier = null;
+            $note = $validated['note'] ?? null;
+            $purchaseNumber = null;
+            if ($isCredit) {
+                $supplier = Supplier::findOrFail($validated['supplier_id']);
+                $purchaseNumber = 'PUR-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -4));
+                $creditPrefix = "বাকিতে ক্রয় (Credit Purchase) | সরবরাহকারী: {$supplier->name} | Ref #{$purchaseNumber}";
+                $note = $note ? "{$creditPrefix} | {$note}" : $creditPrefix;
+            }
 
             // Create stock entry with custom created_at timestamp
             $stock = new ProductStock([
                 'product_id' => $validated['product_id'],
                 'quantity' => $validated['quantity'],
+                'total_quantity' => $validated['quantity'],
                 'available_quantity' => $newAvailableQuantity,
                 'total_cost' => $validated['total_cost'],
                 'unit_cost' => $unitCost,
                 'type' => 'purchase',
                 'date' => $validated['date'],
-                'note' => $validated['note'],
+                'note' => $note,
                 'created_by' => Auth::id(),
             ]);
 
-            // Manually set timestamps to match date input
             $stock->created_at = $stockDate;
             $stock->updated_at = $stockDate;
             $stock->save();
@@ -265,41 +313,75 @@ class ProductStockController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            // Set timestamps to match stock date
             $movement->created_at = $stockDate;
             $movement->updated_at = $stockDate;
             $movement->save();
 
-            // Create bank transaction with matching timestamp
-            $transaction = new BankTransaction([
-                'bank_account_id' => $validated['bank_account_id'],
-                'transaction_type' => 'out',
-                'amount' => $validated['total_cost'],
-                'description' => "Stock purchase for product ID: {$validated['product_id']}",
-                'date' => $stockDate,
-                'created_by' => Auth::id(),
-            ]);
+            if ($isCredit && $supplier) {
+                // Update supplier payable balance (we owe the supplier)
+                $supplier->increment('current_balance', $validated['total_cost']);
 
-            // Set timestamps to match stock date
-            $transaction->created_at = $stockDate;
-            $transaction->updated_at = $stockDate;
-            $transaction->save();
+                // Create Purchase record for accounting and ledger completeness
+                $purchase = Purchase::create([
+                    'purchase_number' => $purchaseNumber,
+                    'supplier_id' => $supplier->id,
+                    'bank_account_id' => null,
+                    'purchase_date' => $validated['date'],
+                    'subtotal' => $validated['total_cost'],
+                    'total_amount' => $validated['total_cost'],
+                    'paid_amount' => 0,
+                    'due_amount' => $validated['total_cost'],
+                    'payment_status' => 'due',
+                    'purchase_status' => 'received',
+                    'note' => $note,
+                    'created_by' => Auth::id(),
+                ]);
 
-            // Update bank balance
-            $newBalance = bcsub($bankAccount->current_balance, $validated['total_cost'], 4);
-            $bankAccount->update(['current_balance' => $newBalance]);
+                PurchaseItem::create([
+                    'purchase_id' => $purchase->id,
+                    'product_id' => $validated['product_id'],
+                    'purchase_price' => $unitCost,
+                    'selling_price' => null,
+                    'quantity' => $validated['quantity'],
+                    'subtotal' => $validated['total_cost'],
+                ]);
+            } else {
+                // Cash/Bank Payment (Observer automatically deducts from bank account balance)
+                $transaction = new BankTransaction([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => 'out',
+                    'amount' => $validated['total_cost'],
+                    'description' => "Stock purchase for product ID: {$validated['product_id']}",
+                    'date' => $stockDate,
+                    'created_by' => Auth::id(),
+                ]);
+
+                $transaction->created_at = $stockDate;
+                $transaction->updated_at = $stockDate;
+                $transaction->save();
+            }
 
             // Update product's weighted average cost
             $this->updateProductWeightedAverageCost($validated['product_id']);
 
+            // Update product's cost_price
+            $product = Product::find($validated['product_id']);
+            if ($product && (float) $unitCost > 0) {
+                $product->update(['cost_price' => round((float) $unitCost, 2)]);
+            }
+
             DB::commit();
 
+            $successMsg = $isCredit 
+                ? 'বাকিতে স্টক সফলভাবে যুক্ত করা হয়েছে এবং সরবরাহকারীর বকেয়া হালনাগাদ করা হয়েছে।'
+                : 'স্টক সফলভাবে যুক্ত হয়েছে এবং ব্যাংক লেনদেন সম্পন্ন হয়েছে।';
+
             return redirect()->route('admin.product-stocks.index')
-                ->with('success', 'Stock added and bank transaction recorded successfully.');
+                ->with('success', $successMsg);
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Error: '.$e->getMessage());
+            return back()->with('error', 'ত্রুটি: '.$e->getMessage());
         }
     }
 
@@ -321,62 +403,20 @@ class ProductStockController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy($id, PurchaseReversalService $reversalService)
     {
         try {
-            DB::beginTransaction();
-
             $stock = ProductStock::with('product')->findOrFail($id);
-
-            // Only allow deleting purchase type entries
-            if ($stock->type !== 'purchase') {
-                throw new \Exception('Only purchase entries can be deleted.');
-            }
-
-            // Find the original bank transaction
-            $bankTransaction = BankTransaction::where('transaction_type', 'out')
-                ->where('amount', $stock->total_cost)
-                ->where('description', 'like', "%Stock purchase for product ID: {$stock->product_id}%")
-                ->whereRaw('DATE(date) = ?', [$stock->created_at->toDateString()])
-                ->first();
-
-            // Handle bank transaction reversal if found
-            if ($bankTransaction) {
-                // CRITICAL FIX: Only delete the original transaction
-                // The Observer will automatically reverse the effect (+1080 back to bank)
-                // DO NOT create a refund transaction - that would add money TWICE!
-                $bankTransaction->delete();
-
-                // Observer's deleted() event handles:
-                // - Original was 'out' (-1080)
-                // - Delete reverses it: bank balance += 1080
-                // - Perfect! Money returned once.
-            }
-
-            // Delete related stock movement
-            StockMovement::where('reference_type', 'purchase')
-                ->where('reference_id', $stock->id)
-                ->delete();
-
-            // Delete the stock entry
-            $stock->delete();
-
-            // Update product's average cost
-            $this->updateProductWeightedAverageCost($stock->product_id);
-
-            DB::commit();
+            $result = $reversalService->reverseStockEntry($stock);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Stock entry deleted and bank balance updated successfully',
+                'message' => $result['message'],
             ]);
-
         } catch (\Exception $e) {
-            DB::rollBack();
-
             return response()->json([
                 'success' => false,
-                'message' => 'Error: '.$e->getMessage(),
+                'message' => $e->getMessage(),
             ], 422);
         }
     }

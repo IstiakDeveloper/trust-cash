@@ -72,14 +72,14 @@
             text-align: center;
             font-size: 12pt;
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             margin-bottom: 8px;
         }
 
         .report-period {
             text-align: center;
             font-size: 9pt;
-            color: #7f8c8d;
+            color: #333;
             margin-bottom: 12px;
         }
 
@@ -93,17 +93,15 @@
         table th,
         table td {
             padding: 4px 3px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
+            color: #000;
         }
 
         table th {
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             text-align: center;
-        }
-
-        .text-center {
-            text-align: right;
+            background-color: #f0f0f0;
         }
 
         .text-center {
@@ -115,28 +113,29 @@
         }
 
         .bg-purple {
-            background-color: #f8efff;
+            background-color: #f9f9f9;
         }
 
         .bg-blue {
-            background-color: #e8f4ff;
+            background-color: #ffffff;
         }
 
         .bg-green {
-            background-color: #e8fff0;
+            background-color: #f9f9f9;
         }
 
         .bg-orange {
-            background-color: #fff3e8;
+            background-color: #ffffff;
         }
 
         .bg-yellow {
-            background-color: #fffde8;
+            background-color: #f9f9f9;
         }
 
         .total-row {
             font-weight: bold;
-            background-color: #f2f2f2;
+            background-color: #e5e5e5;
+            color: #000;
         }
 
         .footer {
@@ -173,10 +172,9 @@
         </div>
 
         <!-- Report Title and Period -->
-        <div class="report-title">Product Analysis Report</div>
+        <div class="report-title">{{ ($isBn ?? false) ? 'পণ্য অ্যানালাইসিস রিপোর্ট' : 'Product Analysis Report' }}</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            {{ ($isBn ?? false) ? 'সময়কাল:' : 'Period:' }} {{ $start_date }} {{ ($isBn ?? false) ? 'হতে' : 'to' }} {{ $end_date }}
         </div>
 
         <!-- Product Analysis Table -->
@@ -184,128 +182,129 @@
             <thead>
                 <tr>
                     <!-- Product Info Section -->
-                    <th rowspan="2" style="width: 2%;">SL</th>
-                    <th rowspan="2" style="width: 12%;">Product Name</th>
+                    <th rowspan="2" style="width: 3%;">{{ ($isBn ?? false) ? 'ক্র.নং' : 'SL' }}</th>
+                    <th rowspan="2" style="width: 13%;">{{ ($isBn ?? false) ? 'পণ্যের নাম' : 'Product Name' }}</th>
 
                     <!-- Before Stock Section -->
-                    <th colspan="3" class="bg-purple" style="width: 14%;">Before Stock Information</th>
+                    <th colspan="3" class="bg-purple" style="width: 14%;">{{ ($isBn ?? false) ? 'পূর্বের স্টক তথ্য' : 'Before Stock Information' }}</th>
 
                     <!-- Buy Info Section -->
-                    <th colspan="3" class="bg-blue" style="width: 14%;">Buy Information</th>
+                    <th colspan="3" class="bg-blue" style="width: 14%;">{{ ($isBn ?? false) ? 'ক্রয় তথ্য' : 'Buy Information' }}</th>
 
                     <!-- Sale Info Section -->
-                    <th colspan="5" class="bg-green" style="width: 24%;">Sale Information</th>
+                    <th colspan="5" class="bg-green" style="width: 24%;">{{ ($isBn ?? false) ? 'বিক্রয় তথ্য' : 'Sale Information' }}</th>
 
                     <!-- Profit Info Section -->
-                    <th colspan="3" class="bg-orange" style="width: 15%;">Profit Information</th>
+                    <th colspan="3" class="bg-orange" style="width: 15%;">{{ ($isBn ?? false) ? 'মুনাফা তথ্য' : 'Profit Information' }}</th>
 
                     <!-- Available Info Section -->
-                    <th colspan="2" class="bg-yellow" style="width: 10%;">Available Information</th>
+                    <th colspan="2" class="bg-yellow" style="width: 11%;">{{ ($isBn ?? false) ? 'বর্তমান স্টক তথ্য' : 'Available Information' }}</th>
                 </tr>
                 <tr>
                     <!-- Before Stock Headers -->
-                    <th class="bg-purple">Qty</th>
-                    <th class="bg-purple">Price</th>
-                    <th class="bg-purple">Value</th>
+                    <th class="bg-purple">{{ ($isBn ?? false) ? 'পরিমাণ' : 'Qty' }}</th>
+                    <th class="bg-purple">{{ ($isBn ?? false) ? 'দর' : 'Price' }}</th>
+                    <th class="bg-purple">{{ ($isBn ?? false) ? 'মোট' : 'Value' }}</th>
 
                     <!-- Buy Info Headers -->
-                    <th class="bg-blue">Qty</th>
-                    <th class="bg-blue">Price</th>
-                    <th class="bg-blue">Total</th>
+                    <th class="bg-blue">{{ ($isBn ?? false) ? 'পরিমাণ' : 'Qty' }}</th>
+                    <th class="bg-blue">{{ ($isBn ?? false) ? 'দর' : 'Price' }}</th>
+                    <th class="bg-blue">{{ ($isBn ?? false) ? 'মোট' : 'Total' }}</th>
 
                     <!-- Sale Info Headers -->
-                    <th class="bg-green">Qty</th>
-                    <th class="bg-green">Price</th>
-                    <th class="bg-green">Subtotal</th>
-                    <th class="bg-green">Discount</th>
-                    <th class="bg-green">Total</th>
+                    <th class="bg-green">{{ ($isBn ?? false) ? 'পরিমাণ' : 'Qty' }}</th>
+                    <th class="bg-green">{{ ($isBn ?? false) ? 'দর' : 'Price' }}</th>
+                    <th class="bg-green">{{ ($isBn ?? false) ? 'উপমোট' : 'Subtotal' }}</th>
+                    <th class="bg-green">{{ ($isBn ?? false) ? 'ছাড়' : 'Discount' }}</th>
+                    <th class="bg-green">{{ ($isBn ?? false) ? 'মোট' : 'Total' }}</th>
 
                     <!-- Profit Info Headers -->
-                    <th class="bg-orange">Per Unit</th>
-                    <th class="bg-orange">Total</th>
+                    <th class="bg-orange">{{ ($isBn ?? false) ? 'একক প্রতি' : 'Per Unit' }}</th>
+                    <th class="bg-orange">{{ ($isBn ?? false) ? 'মোট' : 'Total' }}</th>
                     <th class="bg-orange">%</th>
 
                     <!-- Available Info Headers -->
-                    <th class="bg-yellow">Stock</th>
-                    <th class="bg-yellow">Value</th>
+                    <th class="bg-yellow">{{ ($isBn ?? false) ? 'মজুদ' : 'Stock' }}</th>
+                    <th class="bg-yellow">{{ ($isBn ?? false) ? 'মোট মূল্য' : 'Value' }}</th>
                 </tr>
             </thead>
             <tbody>
 
                 @foreach ($products as $product)
                     <tr>
-                        <td class="text-center">{{ $product['serial'] }}</td>
+                        <td class="text-center">{{ ($isBn ?? false) ? to_bangla_number($product['serial']) : $product['serial'] }}</td>
                         <td class="product-cell">{{ $product['product_name'] }}</td>
 
                         <!-- Before Stock Info -->
-                        <td class="text-center bg-purple">{{ number_format($product['before_quantity'], 2) }}</td>
-                        <td class="text-center bg-purple">{{ number_format($product['before_price'], 2) }}</td>
-                        <td class="text-center bg-purple">{{ number_format($product['before_value'], 2) }}</td>
+                        <td class="text-center bg-purple">{{ format_amount($product['before_quantity'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-purple">{{ format_amount($product['before_price'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-purple">{{ format_amount($product['before_value'], true, $isBn ?? false) }}</td>
 
                         <!-- Buy Info -->
-                        <td class="text-center bg-blue">{{ number_format($product['buy_quantity'], 2) }}</td>
-                        <td class="text-center bg-blue">{{ number_format($product['buy_price'], 2) }}</td>
-                        <td class="text-center bg-blue">{{ number_format($product['total_buy_price'], 2) }}</td>
+                        <td class="text-center bg-blue">{{ format_amount($product['buy_quantity'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-blue">{{ format_amount($product['buy_price'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-blue">{{ format_amount($product['total_buy_price'], true, $isBn ?? false) }}</td>
 
                         <!-- Sale Info -->
-                        <td class="text-center bg-green">{{ number_format($product['sale_quantity'], 2) }}</td>
-                        <td class="text-center bg-green">{{ number_format($product['sale_price'], 2) }}</td>
-                        <td class="text-center bg-green">{{ number_format($product['total_sale_price'], 2) }}</td>
-                        <td class="text-center bg-green">{{ number_format($product['sale_discount'] ?? 0, 2) }}</td>
-                        <td class="text-center bg-green">{{ number_format($product['sale_after_discount'] ?? $product['total_sale_price'], 2) }}</td>
+                        <td class="text-center bg-green">{{ format_amount($product['sale_quantity'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-green">{{ format_amount($product['sale_price'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-green">{{ format_amount($product['total_sale_price'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-green">{{ format_amount($product['sale_discount'] ?? 0, true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-green">{{ format_amount($product['sale_after_discount'] ?? $product['total_sale_price'], true, $isBn ?? false) }}</td>
 
                         <!-- Profit Info -->
-                        <td class="text-center bg-orange">{{ number_format($product['profit_per_unit'], 2) }}</td>
-                        <td class="text-center bg-orange">{{ number_format($product['total_profit'], 2) }}</td>
-                        <td class="text-center bg-orange">{{ number_format($product['profit_percentage'], 2) }}%</td>
+                        <td class="text-center bg-orange">{{ format_amount($product['profit_per_unit'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-orange">{{ format_amount($product['total_profit'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-orange">{{ format_amount($product['profit_percentage'], true, $isBn ?? false) }}%</td>
 
                         <!-- Available Info -->
-                        <td class="text-center bg-yellow">{{ number_format($product['available_quantity'], 2) }}</td>
-                        <td class="text-center bg-yellow">{{ number_format($product['available_stock_value'], 2) }}</td>
+                        <td class="text-center bg-yellow">{{ format_amount($product['available_quantity'], true, $isBn ?? false) }}</td>
+                        <td class="text-center bg-yellow">{{ format_amount($product['available_stock_value'], true, $isBn ?? false) }}</td>
                     </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr class="total-row">
-                    <td colspan="2" class="text-center">Totals:</td>
+                    <td colspan="2" class="text-center">{{ ($isBn ?? false) ? 'সর্বমোট:' : 'Totals:' }}</td>
                     <!-- Before Stock Totals -->
-                    <td class="text-center bg-purple">{{ number_format($totals['before_quantity'], 2) }}</td>
+                    <td class="text-center bg-purple">{{ format_amount($totals['before_quantity'], true, $isBn ?? false) }}</td>
                     <td class="text-center bg-purple">-</td>
-                    <td class="text-center bg-purple">{{ number_format($totals['before_value'], 2) }}</td>
+                    <td class="text-center bg-purple">{{ format_amount($totals['before_value'], true, $isBn ?? false) }}</td>
                     <!-- Buy Info Totals -->
-                    <td class="text-center bg-blue">{{ number_format($totals['buy_quantity'], 2) }}</td>
+                    <td class="text-center bg-blue">{{ format_amount($totals['buy_quantity'], true, $isBn ?? false) }}</td>
                     <td class="text-center bg-blue">-</td>
-                    <td class="text-center bg-blue">{{ number_format($totals['total_buy_price'], 2) }}</td>
+                    <td class="text-center bg-blue">{{ format_amount($totals['total_buy_price'], true, $isBn ?? false) }}</td>
                     <!-- Sale Info Totals -->
-                    <td class="text-center bg-green">{{ number_format($totals['sale_quantity'], 2) }}</td>
+                    <td class="text-center bg-green">{{ format_amount($totals['sale_quantity'], true, $isBn ?? false) }}</td>
                     <td class="text-center bg-green">-</td>
-                    <td class="text-center bg-green">{{ number_format($totals['total_sale_price'], 2) }}</td>
-                    <td class="text-center bg-green">{{ number_format($totals['sale_discount'] ?? 0, 2) }}</td>
-                    <td class="text-center bg-green">{{ number_format($totals['sale_after_discount'] ?? $totals['total_sale_price'], 2) }}</td>
+                    <td class="text-center bg-green">{{ format_amount($totals['total_sale_price'], true, $isBn ?? false) }}</td>
+                    <td class="text-center bg-green">{{ format_amount($totals['sale_discount'] ?? 0, true, $isBn ?? false) }}</td>
+                    <td class="text-center bg-green">{{ format_amount($totals['sale_after_discount'] ?? $totals['total_sale_price'], true, $isBn ?? false) }}</td>
                     <!-- Profit Info Totals -->
                     <td class="text-center bg-orange">-</td>
-                    <td class="text-center bg-orange">{{ number_format($totals['total_profit'], 2) }}</td>
+                    <td class="text-center bg-orange">{{ format_amount($totals['total_profit'], true, $isBn ?? false) }}</td>
                     <td class="text-center bg-orange">
                         @php
                             $totalSaleAfterDiscount = $totals['sale_after_discount'] ?? $totals['total_sale_price'];
                             $profitMargin = $totalSaleAfterDiscount > 0 ? ($totals['total_profit'] / $totalSaleAfterDiscount) * 100 : 0;
                         @endphp
-                        {{ number_format($profitMargin, 2) }}%
+                        {{ format_amount($profitMargin, true, $isBn ?? false) }}%
                     </td>
                     <!-- Available Info Totals -->
-                    <td class="text-center bg-yellow">{{ number_format($totals['available_quantity'], 2) }}</td>
-                    <td class="text-center bg-yellow">{{ number_format($totals['available_stock_value'], 2) }}</td>
+                    <td class="text-center bg-yellow">{{ format_amount($totals['available_quantity'], true, $isBn ?? false) }}</td>
+                    <td class="text-center bg-yellow">{{ format_amount($totals['available_stock_value'], true, $isBn ?? false) }}</td>
                 </tr>
             </tfoot>
         </table>
 
         <!-- Footer -->
         <div class="footer">
-            Page <span class="page-number"></span>
+            {{ ($isBn ?? false) ? 'পৃষ্ঠা' : 'Page' }} <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            {{ ($isBn ?? false) ? 'তৈরির সময়:' : 'Generated on:' }} {{ $generated_at }}
         </div>
     </div>
 </body>
 
 </html>
+

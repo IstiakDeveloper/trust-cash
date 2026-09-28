@@ -102,8 +102,16 @@ class SupplierController extends Controller
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
+            'opening_balance' => 'nullable|numeric|min:0',
             'status' => 'required|string|in:active,inactive',
         ]);
+
+        $newOpeningBalance = isset($validated['opening_balance']) ? (float) $validated['opening_balance'] : (float) $supplier->opening_balance;
+        $oldOpeningBalance = (float) $supplier->opening_balance;
+        $difference = $newOpeningBalance - $oldOpeningBalance;
+
+        $validated['opening_balance'] = $newOpeningBalance;
+        $validated['current_balance'] = max(0, (float) $supplier->current_balance + $difference);
 
         $supplier->update($validated);
 
@@ -132,11 +140,22 @@ class SupplierController extends Controller
             'note' => 'nullable|string|max:500',
         ]);
 
+        // 1. Verify payment amount does not exceed supplier's due
+        if (bccomp((string) $validated['amount'], (string) $supplier->current_balance, 4) > 0) {
+            return redirect()->back()->with('error', 'পরিশোধের পরিমাণ সাপ্লায়ারের মোট দেনা (৳' . number_format($supplier->current_balance, 2) . ') এর চেয়ে বেশি হতে পারে না।');
+        }
+
+        // 2. Check bank account sufficient balance
+        $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
+        if (bccomp((string) $bankAccount->current_balance, (string) $validated['amount'], 4) < 0) {
+            return redirect()->back()->with('error', 'নির্বাচিত ব্যাংক হিসাবে পর্যাপ্ত ব্যালেন্স নেই! বর্তমান ব্যালেন্স: ৳' . number_format($bankAccount->current_balance, 2) . ', কিন্তু পরিশোধ করতে চেয়েছেন: ৳' . number_format($validated['amount'], 2));
+        }
+
         DB::beginTransaction();
         try {
             $payment = SupplierPayment::create([
                 'supplier_id' => $supplier->id,
-                'bank_account_id' => $validated['bank_account_id'],
+                'bank_account_id' => $bankAccount->id,
                 'amount' => $validated['amount'],
                 'payment_method' => $validated['payment_method'],
                 'payment_date' => $validated['payment_date'],
@@ -148,11 +167,7 @@ class SupplierController extends Controller
             // Deduct from supplier payable balance
             $supplier->decrement('current_balance', $validated['amount']);
 
-            // Deduct from bank account balance
-            $bankAccount = BankAccount::findOrFail($validated['bank_account_id']);
-            $bankAccount->decrement('current_balance', $validated['amount']);
-
-            // Create bank transaction record
+            // Create bank transaction record (Observer automatically decrements bank account current_balance)
             BankTransaction::create([
                 'bank_account_id' => $bankAccount->id,
                 'transaction_type' => 'out',

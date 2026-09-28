@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
+use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\ExtraIncome;
+use App\Models\FixedAsset;
+use App\Models\FixedAssetItem;
 use App\Models\Fund;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -71,12 +75,9 @@ class BalanceSheetController extends Controller
         $extraIncomeAmount = ExtraIncome::where('date', '<=', $endDate)
             ->sum('amount');
 
-        // Expenses up to the end date (excluding fixed assets)
-        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
-        $expensesAmount = Expense::when($fixedAssetsCategory, function ($query) use ($fixedAssetsCategory) {
-            return $query->where('expense_category_id', '!=', $fixedAssetsCategory->id);
-        })
-            ->where('date', '<=', $endDate)
+        // Expenses up to the end date
+        $expensesAmount = Expense::where('date', '<=', $endDate)
+            ->whereNull('deleted_at')
             ->sum('amount');
 
         // Cost of Goods Sold up to the end date
@@ -86,9 +87,12 @@ class BalanceSheetController extends Controller
         $cumulativeStartDate = Carbon::parse('2024-12-29')->startOfDay();
         $productTotalProfit = Product::getProductAnalysis($cumulativeStartDate, $endDate)['totals']['total_profit'];
 
+        // Supplier Due (Accounts Payable) up to the end date
+        $supplierDue = $this->calculateSupplierDue($endDate);
+
         // Net Profit calculation
         $netProfit = $productTotalProfit + $extraIncomeAmount - $expensesAmount;
-        $total = $fundAmount + $netProfit;
+        $total = $fundAmount + $netProfit + $supplierDue;
 
         return [
             'fund' => [
@@ -97,8 +101,45 @@ class BalanceSheetController extends Controller
             'net_profit' => [
                 'period' => (float) $netProfit,
             ],
+            'supplier_due' => [
+                'period' => (float) $supplierDue,
+            ],
             'total' => (float) $total,
         ];
+    }
+
+    private function calculateSupplierDue(Carbon $endDate)
+    {
+        // If end date is current (today or in the future), use the live current_balance of suppliers
+        $isCurrentPeriod = $endDate->greaterThanOrEqualTo(Carbon::today()->startOfDay());
+
+        if ($isCurrentPeriod) {
+            return (float) Supplier::where('created_at', '<=', $endDate)
+                ->where('current_balance', '>', 0)
+                ->sum('current_balance');
+        }
+
+        // For past date filters, roll back from current_balance using subsequent purchases and payments
+        $suppliers = Supplier::where('created_at', '<=', $endDate)->get();
+        $totalDue = 0;
+
+        foreach ($suppliers as $supplier) {
+            $purchasesAfter = (float) DB::table('purchases')
+                ->where('supplier_id', $supplier->id)
+                ->where('purchase_date', '>', $endDate)
+                ->whereNull('deleted_at')
+                ->sum('due_amount');
+
+            $paymentsAfter = (float) DB::table('supplier_payments')
+                ->where('supplier_id', $supplier->id)
+                ->where('payment_date', '>', $endDate)
+                ->sum('amount');
+
+            $historicalBalance = (float) $supplier->current_balance - $purchasesAfter + $paymentsAfter;
+            $totalDue += max(0, $historicalBalance);
+        }
+
+        return $totalDue;
     }
 
     private function calculatePropertyAndAssets(Carbon $startDate, Carbon $endDate)
@@ -106,19 +147,28 @@ class BalanceSheetController extends Controller
         // 1. Bank Balance - Calculate total balance for all accounts at end date
         $bankBalance = $this->calculateBankBalance($endDate);
 
-        $customerDue = 0;
+        // 2. Customer Due (Accounts Receivable) up to end date
+        $customerDue = (float) (Customer::where('created_at', '<=', $endDate)->sum('balance') ?? 0);
 
-        // 3. Fixed Assets up to the end date
-        $fixedAssetsCategory = ExpenseCategory::where('name', 'Fixed Asset')->first();
+        // 3. Fixed Assets up to the end date (from active items purchased on or before end date)
+        $fixedAssets = (float) FixedAssetItem::where('purchase_date', '<=', $endDate)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->sum('current_value');
 
-        // Initial newar karon hocche 555 taka barai dite hobe
-        $fixedAssetsInitial = $fixedAssetsCategory
-            ? Expense::where('expense_category_id', $fixedAssetsCategory->id)
-                ->where('date', '<=', $endDate)
-                ->sum('amount')
-            : 0;
-
-        $fixedAssets = $fixedAssetsInitial - 555;
+        // Optional breakdown by Asset head
+        $assetsBreakdown = FixedAsset::with(['items' => function ($q) use ($endDate) {
+            $q->where('purchase_date', '<=', $endDate)
+              ->where('status', 'active')
+              ->whereNull('deleted_at');
+        }])->get()->map(function ($asset) {
+            return [
+                'name' => $asset->name,
+                'code' => $asset->asset_code,
+                'amount' => (float) $asset->items->sum('current_value'),
+                'items_count' => $asset->items->count(),
+            ];
+        })->filter(fn ($item) => $item['amount'] > 0)->values()->toArray();
         // 4. Stock Value up to the end date
         // Use the actual first transaction date for accurate calculation
         $cumulativeStartDate = Carbon::parse('2024-12-29')->startOfDay();
@@ -136,6 +186,7 @@ class BalanceSheetController extends Controller
                 'period' => (float) $customerDue,
             ],
             'fixed_assets' => (float) $fixedAssets,
+            'fixed_assets_breakdown' => $assetsBreakdown,
             'stock_value' => [
                 'period' => (float) $stockValue,
             ],
@@ -238,12 +289,17 @@ class BalanceSheetController extends Controller
         // Property & Assets Section
         $propertyAndAssets = $this->calculatePropertyAndAssets($startDate, $endDate);
 
+        $locale = $request->input('locale', 'bn');
+        $isBn = ($locale === 'bn');
+
         // Prepare data for PDF
         $data = [
             'fund_and_liabilities' => $fundAndLiabilities,
             'property_and_assets' => $propertyAndAssets,
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d'),
+            'isBn' => $isBn,
+            'locale' => $locale,
         ];
 
         // Generate PDF

@@ -23,6 +23,17 @@ class Category extends Model
         'status' => 'boolean'
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+
+        return url('/storage/' . ltrim($this->image, '/'));
+    }
+
     public function parent()
     {
         return $this->belongsTo(Category::class, 'parent_id');

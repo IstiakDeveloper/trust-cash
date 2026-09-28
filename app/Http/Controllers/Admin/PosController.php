@@ -57,7 +57,7 @@ class PosController extends Controller
                     'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                     'image' => $img ? $img->image : null,
                     'image_url' => $img
-                        ? asset('storage/'.$img->image)
+                        ? ('/storage/'.ltrim($img->image, '/'))
                         : null,
                 ];
             });
@@ -88,7 +88,7 @@ class PosController extends Controller
                 'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                 'image' => $img ? $img->image : null,
                 'image_url' => $img
-                    ? asset('storage/'.$img->image)
+                    ? ('/storage/'.ltrim($img->image, '/'))
                     : null,
             ];
         });
@@ -124,7 +124,7 @@ class PosController extends Controller
                 'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
                 'image' => $img ? $img->image : null,
                 'image_url' => $img
-                    ? asset('storage/'.$img->image)
+                    ? ('/storage/'.ltrim($img->image, '/'))
                     : null,
             ];
         });
@@ -159,7 +159,7 @@ class PosController extends Controller
             'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
             'image' => $img ? $img->image : null,
             'image_url' => $img
-                ? asset('storage/'.$img->image)
+                ? ('/storage/'.ltrim($img->image, '/'))
                 : null,
         ]]);
     }

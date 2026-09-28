@@ -1,83 +1,108 @@
 <template>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <div v-for="product in products" :key="product.id"
-            class="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 transition-all flex flex-col justify-between">
-            <div>
-                <!-- Product Image -->
-                <div class="relative bg-slate-100 dark:bg-slate-800 h-44 flex items-center justify-center overflow-hidden">
-                    <img v-if="getProductImage(product)" :src="getImageUrl(getProductImage(product))" :alt="product.name"
-                        class="object-cover w-full h-full">
-                    <PhotoIcon v-else class="h-10 w-10 text-slate-400" />
+    <div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div v-for="product in products" :key="product.id"
+                class="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 transition-all flex flex-col justify-between">
+                <div>
+                    <!-- Product Image -->
+                    <div class="relative bg-slate-100 dark:bg-slate-800 h-44 flex items-center justify-center overflow-hidden">
+                        <img v-if="getProductImage(product)" :src="getImageUrl(getProductImage(product))" :alt="product.name"
+                            class="object-cover w-full h-full">
+                        <PhotoIcon v-else class="h-10 w-10 text-slate-400" />
 
-                    <div class="absolute top-2.5 right-2.5">
-                        <span :class="[
-                            'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold shadow-xs',
-                            getStockStatusClass(product.stock_status)
-                        ]">
-                            {{ getStockStatusText(product.stock_status) }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Product Info -->
-                <div class="p-4">
-                    <div class="min-h-[44px]">
-                        <h3 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
-                            {{ product.name }}
-                        </h3>
-                        <p class="mt-0.5 text-[11px] font-mono text-slate-400">
-                            SKU: {{ product.sku }}
-                        </p>
-                    </div>
-
-                    <div class="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
-                        <div>
-                            <p class="text-[11px] font-medium text-slate-400">{{ t('বিক্রয় মূল্য', 'Selling Price') }}</p>
-                            <p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                                {{ formatPrice(product.selling_price) }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-medium text-slate-400">{{ t('মজুদ স্টক', 'Stock') }}</p>
-                            <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                                {{ formatNumber(product.available_quantity) }}
-                            </p>
+                        <div class="absolute top-2.5 right-2.5">
+                            <span :class="[
+                                'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold shadow-xs',
+                                getStockStatusClass(product.stock_status)
+                            ]">
+                                {{ getStockStatusText(product.stock_status) }}
+                            </span>
                         </div>
                     </div>
 
-                    <div class="mt-2 text-xs">
-                        <p class="text-[11px] text-slate-400">
-                            {{ t('স্টক মূল্য:', 'Stock Value:') }} <span class="font-bold text-slate-700 dark:text-slate-300">{{ formatPrice(product.current_stock_value) }}</span>
-                        </p>
+                    <!-- Product Info -->
+                    <div class="p-4">
+                        <div class="min-h-[44px]">
+                            <h3 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
+                                {{ product.name }}
+                            </h3>
+                            <p class="mt-0.5 text-[11px] font-mono text-slate-400">
+                                SKU: {{ product.sku }}
+                            </p>
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
+                            <div>
+                                <p class="text-[11px] font-medium text-slate-400">{{ t('বিক্রয় মূল্য', 'Selling Price') }}</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                                    {{ formatCurrency(product.selling_price) }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-medium text-slate-400">{{ t('মজুদ স্টক', 'Stock') }}</p>
+                                <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                    {{ formatNumber(product.available_quantity) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-xs">
+                            <p class="text-[11px] text-slate-400">
+                                {{ t('স্টক মূল্য:', 'Stock Value:') }} <span class="font-bold text-slate-700 dark:text-slate-300">{{ formatCurrency(product.current_stock_value) }}</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Actions -->
-            <div class="p-3 bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex justify-end items-center gap-1.5">
-                <Link v-if="user?.role?.name?.toLowerCase() === 'admin'" :href="route('admin.products.show', product.id)"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                    <EyeIcon class="h-4 w-4" />
-                </Link>
-                <Link v-if="user?.role?.name?.toLowerCase() === 'admin'" :href="route('admin.products.edit', product.id)"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
-                    <PencilIcon class="h-4 w-4" />
-                </Link>
-                <button v-if="user?.role?.name?.toLowerCase() === 'admin'" @click="$emit('delete', product)"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
-                    <TrashIcon class="h-4 w-4" />
-                </button>
+                <!-- Actions -->
+                <div class="p-3 bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex justify-end items-center gap-1.5">
+                    <!-- Print Barcode Quick Button -->
+                    <button
+                        type="button"
+                        @click="openSinglePrint(product)"
+                        :title="t('বারকোড প্রিন্ট', 'Print Barcode')"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
+                    >
+                        <QrCodeIcon class="h-4 w-4" />
+                    </button>
+
+                    <Link v-if="user?.role?.name?.toLowerCase() === 'admin'" :href="route('admin.products.show', product.id)"
+                        :title="t('বিবরণ', 'Details')"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 transition-all">
+                        <EyeIcon class="h-4 w-4" />
+                    </Link>
+                    <Link v-if="user?.role?.name?.toLowerCase() === 'admin'" :href="route('admin.products.edit', product.id)"
+                        :title="t('সম্পাদনা', 'Edit')"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 transition-all">
+                        <PencilIcon class="h-4 w-4" />
+                    </Link>
+                    <button v-if="user?.role?.name?.toLowerCase() === 'admin'" @click="$emit('delete', product)"
+                        :title="t('মুছে ফেলুন', 'Delete')"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400 transition-all cursor-pointer">
+                        <TrashIcon class="h-4 w-4" />
+                    </button>
+                </div>
             </div>
         </div>
+
+        <!-- Hidden component for single product barcode printing modal -->
+        <BarcodePrintSelection
+            ref="singlePrintRef"
+            :products="singlePrintProduct ? [singlePrintProduct] : []"
+            :show-button="false"
+        />
     </div>
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { EyeIcon, PencilIcon, TrashIcon, PhotoIcon } from '@heroicons/vue/24/outline';
+import { EyeIcon, PencilIcon, TrashIcon, PhotoIcon, QrCodeIcon } from '@heroicons/vue/24/outline';
+import BarcodePrintSelection from '@/Components/BarcodePrintSelection.vue';
 import { useLanguage } from '@/composables/useLanguage';
+import { getImageUrl } from '@/utils/image';
 
-const { t } = useLanguage();
+const { t, formatCurrency, formatNumber } = useLanguage();
 
 const props = defineProps({
     products: {
@@ -85,35 +110,27 @@ const props = defineProps({
         required: true
     }
 });
+
 const page = usePage();
 const user = page.props.auth.user;
 
 defineEmits(['delete']);
 
+const singlePrintRef = ref(null);
+const singlePrintProduct = ref(null);
+
+const openSinglePrint = (product) => {
+    singlePrintProduct.value = product;
+    if (singlePrintRef.value) {
+        singlePrintRef.value.openModal([product]);
+    }
+};
+
 const getProductImage = (product) => {
+    if (product.image_url) return product.image_url;
     if (!product.images?.length) return null;
     const primaryImage = product.images.find(img => img.is_primary);
-    return primaryImage ? primaryImage.image : product.images[0].image;
-};
-
-const getImageUrl = (path) => {
-    if (!path) return null;
-    return `/storage/${path}`;
-};
-
-const formatPrice = (price) => {
-    const number = Number(price || 0).toLocaleString('bn-BD', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-    return `৳ ${number}`;
-};
-
-const formatNumber = (number) => {
-    if (Number.isInteger(Number(number))) {
-        return Math.round(number);
-    }
-    return Number(number).toFixed(2);
+    return primaryImage ? (primaryImage.url || primaryImage.image) : (product.images[0].url || product.images[0].image);
 };
 
 const getStockStatusText = (status) => {

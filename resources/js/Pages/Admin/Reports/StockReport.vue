@@ -5,16 +5,23 @@
                 <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}
                 </h2>
-                <button @click="downloadReport"
-                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                    <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
-                    {{ t('রিপোর্ট রপ্তানি', 'Export Report') }}
-                </button>
+                <div class="flex items-center space-x-2 no-print">
+                    <button @click="downloadReport"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                        <DocumentArrowDownIcon class="h-5 w-5 mr-1" />
+                        {{ t('পিডিএফ', 'PDF') }}
+                    </button>
+                    <button @click="printReport"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700">
+                        <PrinterIcon class="h-5 w-5 mr-1" />
+                        {{ t('প্রিন্ট', 'Print') }}
+                    </button>
+                </div>
             </div>
         </template>
 
         <!-- Filters -->
-        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 no-print">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -97,7 +104,7 @@
                             <div class="flex justify-between border-b pb-2">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
                                 <span class="font-medium text-green-600">
-                                    {{ summary.total_purchase_quantity }}
+                                    {{ formatQty(summary.total_purchase_quantity) }}
                                 </span>
                             </div>
                             <div class="flex justify-between">
@@ -116,7 +123,7 @@
                             <div class="flex justify-between border-b pb-2">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
                                 <span class="font-medium text-red-600">
-                                    {{ summary.total_sales_quantity }}
+                                    {{ formatQty(summary.total_sales_quantity) }}
                                 </span>
                             </div>
                             <div class="flex justify-between">
@@ -135,7 +142,7 @@
                             <div class="flex justify-between border-b pb-2">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
                                 <span class="font-medium">
-                                    {{ summary.total_current_stock }}
+                                    {{ formatQty(summary.total_current_stock) }}
                                 </span>
                             </div>
                             <div class="flex justify-between">
@@ -168,12 +175,12 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <p class="text-gray-500">{{ t('শুরুর স্টক', 'Opening Stock') }}:</p>
-                                <p class="font-medium">{{ report.summary.opening_stock }}</p>
+                                <p class="font-medium">{{ formatQty(report.summary.opening_stock) }}</p>
                             </div>
                             <div>
                                 <p class="text-gray-500">{{ t('চলতি স্টক', 'Current Stock') }}:</p>
                                 <p class="font-medium" :class="getStockClass(report.summary.current_stock)">
-                                    {{ report.summary.current_stock }}
+                                    {{ formatQty(report.summary.current_stock) }}
                                 </p>
                             </div>
                         </div>
@@ -186,13 +193,13 @@
                 <div>
                     <p class="text-sm text-gray-500">{{ t('মোট ক্রয়', 'Total Purchased') }}</p>
                     <p class="text-lg font-medium text-gray-900 dark:text-white">
-                        {{ report.summary.total_purchased }}
+                        {{ formatQty(report.summary.total_purchased) }}
                     </p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">{{ t('মোট বিক্রয়', 'Total Sold') }}</p>
                     <p class="text-lg font-medium text-red-600 dark:text-red-400">
-                        {{ report.summary.total_sold }}
+                        {{ formatQty(report.summary.total_sold) }}
                     </p>
                 </div>
                 <div>
@@ -229,16 +236,16 @@
                                     <tr v-for="purchase in report.purchases" :key="purchase.date"
                                         class="text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <td class="px-4 py-2">{{ formatDate(purchase.date) }}</td>
-                                        <td class="px-4 py-2 text-right">{{ purchase.quantity }}</td>
+                                        <td class="px-4 py-2 text-right">{{ formatQty(purchase.quantity) }}</td>
                                         <td class="px-4 py-2 text-right">{{ formatPrice(purchase.unit_cost) }}</td>
                                         <td class="px-4 py-2 text-right">{{ formatPrice(purchase.total_cost) }}</td>
-                                        <td class="px-4 py-2 text-right">{{ purchase.available_quantity }}</td>
+                                        <td class="px-4 py-2 text-right">{{ formatQty(purchase.available_quantity) }}</td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr class="font-medium bg-gray-50 dark:bg-gray-700">
                                         <td class="px-4 py-2">{{ t('মোট', 'Total') }}</td>
-                                        <td class="px-4 py-2 text-right">{{ report.summary.total_purchased }}</td>
+                                        <td class="px-4 py-2 text-right">{{ formatQty(report.summary.total_purchased) }}</td>
                                         <td class="px-4 py-2 text-right">{{ formatPrice(report.summary.avg_cost) }}</td>
                                         <td class="px-4 py-2 text-right" colspan="2">
                                             {{ formatPrice(report.purchases.reduce((sum, p) => sum + p.total_cost, 0))
@@ -268,17 +275,17 @@
                                     <tr v-for="sale in report.sales" :key="sale.date"
                                         class="text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <td class="px-4 py-2">{{ formatDate(sale.date) }}</td>
-                                        <td class="px-4 py-2 text-right text-red-600">{{ sale.quantity }}</td>
+                                        <td class="px-4 py-2 text-right text-red-600">{{ formatQty(sale.quantity) }}</td>
                                         <td class="px-4 py-2 text-right">{{ formatPrice(sale.unit_cost) }}</td>
                                         <td class="px-4 py-2 text-right">{{ formatPrice(sale.total_cost) }}</td>
-                                        <td class="px-4 py-2 text-right">{{ sale.available_quantity }}</td>
+                                        <td class="px-4 py-2 text-right">{{ formatQty(sale.available_quantity) }}</td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr class="font-medium bg-gray-50 dark:bg-gray-700">
                                         <td class="px-4 py-2">{{ t('মোট', 'Total') }}</td>
                                         <td class="px-4 py-2 text-right text-red-600">
-                                            {{ report.summary.total_sold }}
+                                            {{ formatQty(report.summary.total_sold) }}
                                         </td>
                                         <td class="px-4 py-2"></td>
                                         <td class="px-4 py-2 text-right" colspan="2">
@@ -292,14 +299,107 @@
                 </div>
             </div>
         </div>
+
+        <!-- PRINT AREA -->
+        <div class="print-area">
+            <div class="print-header">
+                <h1>{{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}</h1>
+                <p>{{ t('সময়কাল', 'Period') }}: {{ filters.from_date }} — {{ filters.to_date }}</p>
+            </div>
+
+            <template v-for="report in reports" :key="'sp_' + report.product.id">
+                <div class="section-title">
+                    {{ report.product.name }}
+                    ({{ t('SKU', 'SKU') }}: {{ report.product.sku }})
+                    &nbsp;|&nbsp; {{ t('বর্তমান স্টক', 'Current Stock') }}: {{ formatQty(report.summary.current_stock) }}
+                    &nbsp;|&nbsp; {{ t('স্টক মূল্য', 'Stock Value') }}: {{ formatPrice(report.summary.stock_value) }}
+                </div>
+
+                <!-- Summary row -->
+                <table style="margin-bottom:6px">
+                    <thead>
+                        <tr>
+                            <th>{{ t('শুরু স্টক', 'Opening Stock') }}</th>
+                            <th>{{ t('মোট ক্রয়', 'Total Purchased') }}</th>
+                            <th>{{ t('মোট বিক্রয়', 'Total Sold') }}</th>
+                            <th>{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
+                            <th>{{ t('গড় খরচ', 'Avg Cost') }}</th>
+                            <th>{{ t('স্টক মূল্য', 'Stock Value') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-right">{{ formatQty(report.summary.opening_stock) }}</td>
+                            <td class="text-right">{{ formatQty(report.summary.total_purchased) }}</td>
+                            <td class="text-right">{{ formatQty(report.summary.total_sold) }}</td>
+                            <td class="text-right">{{ formatQty(report.summary.current_stock) }}</td>
+                            <td class="text-right">{{ formatPrice(report.summary.avg_cost) }}</td>
+                            <td class="text-right">{{ formatPrice(report.summary.stock_value) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Purchases -->
+                <div style="font-size:8.5pt;font-weight:600;margin-bottom:2px">{{ t('ক্রয় ইতিহাস', 'Purchase History') }}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t('তারিখ', 'Date') }}</th>
+                            <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                            <th class="text-right">{{ t('ইউনিট খরচ', 'Unit Cost') }}</th>
+                            <th class="text-right">{{ t('মোট', 'Total') }}</th>
+                            <th class="text-right">{{ t('উপলব্ধ', 'Available') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="purchase in report.purchases" :key="purchase.date + '_p'">
+                            <td>{{ formatDate(purchase.date) }}</td>
+                            <td class="text-right">{{ formatQty(purchase.quantity) }}</td>
+                            <td class="text-right">{{ formatPrice(purchase.unit_cost) }}</td>
+                            <td class="text-right">{{ formatPrice(purchase.total_cost) }}</td>
+                            <td class="text-right">{{ formatQty(purchase.available_quantity) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Sales -->
+                <div style="font-size:8.5pt;font-weight:600;margin-bottom:2px;margin-top:6px">{{ t('বিক্রয় ইতিহাস', 'Sales History') }}</div>
+                <table style="margin-bottom:14px">
+                    <thead>
+                        <tr>
+                            <th>{{ t('তারিখ', 'Date') }}</th>
+                            <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                            <th class="text-right">{{ t('ইনভয়েস', 'Invoice') }}</th>
+                            <th class="text-right">{{ t('ইউনিট মূল্য', 'Unit Price') }}</th>
+                            <th class="text-right">{{ t('মোট', 'Total') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="sale in report.sales" :key="sale.date + '_s'">
+                            <td>{{ formatDate(sale.date) }}</td>
+                            <td class="text-right">{{ formatQty(sale.quantity) }}</td>
+                            <td>{{ sale.invoice_no ?? '—' }}</td>
+                            <td class="text-right">{{ formatPrice(sale.unit_price ?? 0) }}</td>
+                            <td class="text-right">{{ formatPrice(sale.total ?? 0) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+
+            <div class="print-footer">
+                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
+                <span>{{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}</span>
+            </div>
+        </div>
     </AdminLayout>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { DocumentArrowDownIcon } from '@heroicons/vue/24/outline'
+import { DocumentArrowDownIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 import { getNumberLocale } from '@/utils'
 
@@ -397,12 +497,23 @@ const handleTypedDate = (field, value) => {
 
 
 const formatPrice = (amount) => {
+    const num = Number(amount || 0);
+    const hasDecimal = Math.abs(num % 1) > 0.00001;
     return new Intl.NumberFormat(getNumberLocale(), {
         style: 'currency',
         currency: 'BDT',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(amount || 0);
+        minimumFractionDigits: hasDecimal ? 2 : 0,
+        maximumFractionDigits: hasDecimal ? 2 : 0
+    }).format(num);
+};
+
+const formatQty = (amount) => {
+    const num = Number(amount || 0);
+    const hasDecimal = Math.abs(num % 1) > 0.00001;
+    return new Intl.NumberFormat(getNumberLocale(), {
+        minimumFractionDigits: hasDecimal ? 2 : 0,
+        maximumFractionDigits: hasDecimal ? 2 : 0
+    }).format(num);
 };
 
 const formatDate = (dateString) => {
@@ -441,10 +552,15 @@ const downloadReport = () => {
         product_id: filters.value.product_id || '',
         category_id: filters.value.category_id || '',
         from_date: filters.value.from_date || '',
-        to_date: filters.value.to_date || ''
+        to_date: filters.value.to_date || '',
+        locale: currentLang.value === 'bn' ? 'bn' : 'en',
     }).toString()
 
     window.location.href = `${route('admin.reports.stock.download')}?${params}`
+}
+
+const printReport = () => {
+    window.print();
 }
 
 

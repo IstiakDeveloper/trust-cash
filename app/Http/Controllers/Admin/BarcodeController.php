@@ -86,24 +86,81 @@ class BarcodeController extends Controller
 
     public function print(Request $request)
     {
+        // Handle GET requests with missing products gracefully
+        if ($request->isMethod('get') && ! $request->has('products') && ! $request->has('product_id')) {
+            return redirect()->route('admin.products.index')
+                ->with('warning', 'বারকোড প্রিন্ট করার জন্য অন্তত একটি পণ্য নির্বাচন করুন / Please select at least one product to print barcodes.');
+        }
+
+        // Handle single product query parameter via GET
+        if ($request->isMethod('get') && $request->has('product_id')) {
+            $request->merge([
+                'products' => [
+                    [
+                        'id' => (int) $request->product_id,
+                        'copies' => (int) ($request->copies ?? 1),
+                    ],
+                ],
+                'paperSize' => $request->paperSize ?? 'A4',
+            ]);
+        } elseif ($request->isMethod('get') && is_string($request->products)) {
+            $decoded = json_decode($request->products, true);
+            if (is_array($decoded)) {
+                $request->merge(['products' => $decoded]);
+            }
+        }
+
         $request->validate([
-            'products' => 'required|array',
+            'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
             'products.*.copies' => 'required|integer|min:1|max:100',
-            'paperSize' => 'required|in:A4,Letter,80mm',
+            'paperSize' => 'nullable|in:A4,Letter,80mm',
         ]);
+
+        $generator = new BarcodeGeneratorPNG();
+        $paperSize = $request->paperSize ?? 'A4';
 
         $products = Product::whereIn('id', collect($request->products)->pluck('id'))
             ->get()
-            ->map(function ($product) use ($request) {
+            ->map(function ($product) use ($request, $generator) {
                 // Find the copies for this product
                 $productRequest = collect($request->products)
                     ->firstWhere('id', $product->id);
 
                 // Generate barcode if it doesn't exist
                 if (! $product->barcode) {
-                    $this->generate($product);
+                    $product->barcode = $this->generateUniqueBarcode();
+                    $product->save();
                 }
+
+                $barcode = $generator->getBarcode(
+                    $product->barcode,
+                    $generator::TYPE_CODE_128,
+                    1,
+                    30,
+                    [0, 0, 0]
+                );
+
+                $path = 'barcodes/'.$product->barcode.'.png';
+                Storage::disk('public')->makeDirectory('barcodes');
+
+                $originalImage = imagecreatefromstring($barcode);
+                $width = imagesx($originalImage);
+                $height = imagesy($originalImage);
+
+                $paddedImage = imagecreatetruecolor($width + 10, $height + 10);
+                $white = imagecolorallocate($paddedImage, 255, 255, 255);
+                imagefill($paddedImage, 0, 0, $white);
+                imagecopy($paddedImage, $originalImage, 5, 5, 0, 0, $width, $height);
+
+                ob_start();
+                imagepng($paddedImage, null, 0);
+                $barcodeData = ob_get_clean();
+
+                imagedestroy($originalImage);
+                imagedestroy($paddedImage);
+
+                Storage::disk('public')->put($path, $barcodeData);
 
                 return [
                     'id' => $product->id,
@@ -111,14 +168,15 @@ class BarcodeController extends Controller
                     'barcode' => $product->barcode,
                     'sku' => $product->sku,
                     'price' => $product->selling_price,
-                    'copies' => $productRequest['copies'],
-                    'image_url' => Storage::disk('public')->url('barcodes/'.$product->barcode.'.png'),
+                    'copies' => (int) ($productRequest['copies'] ?? 1),
+                    'image_url' => 'data:image/png;base64,'.base64_encode($barcodeData),
+                    'file_url' => Storage::disk('public')->url($path),
                 ];
             });
 
         return Inertia::render('Admin/Products/BarcodePrint', [
             'products' => $products,
-            'paperSize' => $request->paperSize,
+            'paperSize' => $paperSize,
         ]);
     }
 }

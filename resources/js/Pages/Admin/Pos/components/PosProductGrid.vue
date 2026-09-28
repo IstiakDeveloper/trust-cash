@@ -20,17 +20,18 @@
                 <div class="bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden
                            group-hover:shadow-md transition-shadow duration-200">
                     <!-- Product Image -->
-                    <div class="aspect-square bg-gray-100 dark:bg-gray-600 relative">
-                        <img v-if="product.image"
-                            :src="getImageUrl(product.image)"
+                    <div class="aspect-square bg-slate-100 dark:bg-slate-700/60 relative overflow-hidden flex items-center justify-center">
+                        <img v-if="product.image || product.image_url"
+                            :src="getImageUrl(product.image_url || product.image)"
                             :alt="product.name"
-                            class="w-full h-full object-contain p-4"
+                            class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                            loading="lazy"
+                            @error="(e) => { e.target.style.display = 'none'; if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'; }"
                         />
-                        <div v-else
-                             class="w-full h-full flex items-center justify-center">
-                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        <div :class="['w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-500', (product.image || product.image_url) ? 'hidden' : '']">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                         </div>
 
@@ -41,7 +42,7 @@
                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                              ]">
-                            {{ product.stock > 0 ? (t('স্টক: ', 'Stock: ') + product.stock) : t('স্টক শেষ', 'Out of stock') }}
+                            {{ product.stock > 0 ? (t('স্টক: ', 'Stock: ') + formatNumber(product.stock)) : t('স্টক শেষ', 'Out of stock') }}
                         </div>
                     </div>
 
@@ -54,7 +55,7 @@
 
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
-                                ৳{{ formatNumber(product.selling_price) }}
+                                {{ formatCurrency(product.selling_price) }}
                             </span>
                             <button v-if="product.stock > 0"
                                     class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white dark:bg-slate-600 dark:text-slate-200 transition-all">
@@ -84,8 +85,9 @@
 
 <script setup>
 import { useLanguage } from '@/composables/useLanguage'
+import { getImageUrl } from '@/utils/image'
 
-const { t } = useLanguage()
+const { t, formatNumber, formatCurrency } = useLanguage()
 
 const props = defineProps({
     products: {
@@ -102,17 +104,6 @@ defineEmits(['add-to-cart'])
 
 const showOutOfStockAlert = (product) => {
     alert(`❌ ${product.name} ${t('স্টকে নেই!', 'is out of stock!')}`)
-}
-
-const getImageUrl = (path) => {
-    return path ? `/storage/${path}` : null
-}
-
-const formatNumber = (value) => {
-    return Number(value).toLocaleString('en-BD', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })
 }
 </script>
 

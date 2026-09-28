@@ -1,7 +1,7 @@
 <template>
     <AdminLayout :title="t('আয়-ব্যয় বিবরণী', 'Income & Expenditure Statement')">
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between no-print">
                 <h2 class="text-xl font-semibold text-gray-800">{{ t('আয়-ব্যয় বিবরণী', 'Income & Expenditure Statement') }}</h2>
                 <div class="flex items-center space-x-4">
                     <!-- Year Selection -->
@@ -37,6 +37,14 @@
                         {{ isDownloading ? t('ডাউনলোড হচ্ছে...', 'Downloading...') : t('পিডিএফ ডাউনলোড', 'Download PDF') }}
                     </button>
 
+                    <!-- Print Button -->
+                    <button @click="printReport"
+                        class="inline-flex items-center px-3 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        {{ t('প্রিন্ট', 'Print') }}
+                    </button>
                 </div>
             </div>
         </template>
@@ -174,8 +182,84 @@
                 </div>
             </div>
         </div>
+
+        <!-- PRINT AREA -->
+        <div class="print-area">
+            <div class="print-header">
+                <h1>{{ t('আয়-ব্যয় বিবরণী', 'Income & Expenditure Statement') }}</h1>
+                <p>{{ t('সময়কাল', 'Period') }}: {{ filters.start_date }}</p>
+            </div>
+
+            <!-- Income Table -->
+            <div class="section-title">{{ t('আয়', 'Income') }}</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t('বিবরণ', 'Description') }}</th>
+                        <th class="text-right">{{ t('মাস', 'Month') }}</th>
+                        <th class="text-right">{{ t('ক্রমবর্ধমান', 'Cumulative') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ t('বিক্রয় লাভ', 'Sales Profit') }}</td>
+                        <td class="text-right">{{ formatCurrency(income.sales_profit.period) }}</td>
+                        <td class="text-right">{{ formatCurrency(income.sales_profit.cumulative) }}</td>
+                    </tr>
+                    <tr v-for="cat in income.extra_income.categories" :key="cat.name + '_inc'">
+                        <td>{{ cat.name }} ({{ t('অন্যান্য আয়', 'Others') }})</td>
+                        <td class="text-right">{{ formatCurrency(cat.period) }}</td>
+                        <td class="text-right">{{ formatCurrency(cat.cumulative) }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>{{ t('মোট আয়', 'Total Income') }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(income.total.period) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(income.total.cumulative) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- Expenditure Table -->
+            <div class="section-title" style="margin-top:12px">{{ t('ব্যয়', 'Expenditure') }}</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t('বিবরণ', 'Description') }}</th>
+                        <th class="text-right">{{ t('মাস', 'Month') }}</th>
+                        <th class="text-right">{{ t('ক্রমবর্ধমান', 'Cumulative') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="cat in expenditure.categories" :key="cat.name + '_exp'">
+                        <td>{{ cat.name }}</td>
+                        <td class="text-right">{{ formatCurrency(cat.period) }}</td>
+                        <td class="text-right">{{ formatCurrency(cat.cumulative) }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>{{ t('মোট ব্যয়', 'Total Expenditure') }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(expenditure.total.period) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(expenditure.total.cumulative) }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>{{ t('নিট ফলাফল', 'Net Result') }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(income.total.period - expenditure.total.period) }}</strong></td>
+                        <td class="text-right"><strong>{{ formatCurrency(income.total.cumulative - expenditure.total.cumulative) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="print-footer">
+                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
+                <span>{{ t('আয়-ব্যয় বিবরণী', 'Income & Expenditure') }}</span>
+            </div>
+        </div>
     </AdminLayout>
 </template>
+
 
 <script>
 import { defineComponent } from 'vue';
@@ -187,8 +271,8 @@ import { useLanguage } from '@/composables/useLanguage';
 export default defineComponent({
     components: { AdminLayout },
     setup() {
-        const { t } = useLanguage()
-        return { t }
+        const { t, isBangla } = useLanguage()
+        return { t, isBangla }
     },
     props: {
         filters: { type: Object, required: true },
@@ -302,7 +386,7 @@ export default defineComponent({
 
                 // Create URL with properly formatted parameters
                 const url = route('admin.reports.income-expenditure.pdf') +
-                    `?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&selected_month=${month}&selected_year=${year}`;
+                    `?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&selected_month=${month}&selected_year=${year}&locale=${this.isBangla ? 'bn' : 'en'}`;
 
                 // Open in new window or redirect current window
                 window.location.href = url;
@@ -317,6 +401,9 @@ export default defineComponent({
                 this.isDownloading = false;
                 this.isDownloadDisabled = false;
             }
+        },
+        printReport() {
+            window.print();
         },
     }
 })

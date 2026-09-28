@@ -33,11 +33,6 @@ class ExpenseController extends Controller
 
         // Calculate summary
         $totalExpenses = $filteredExpenses->sum('amount');
-        $fixedAssetExpenses = $filteredExpenses
-            ->whereHas('category', function ($q) {
-                $q->where('name', 'LIKE', '%Fixed Asset%');
-            })
-            ->sum('amount');
 
         return Inertia::render('Admin/Expenses/Index', [
             'expenses' => $expenses,
@@ -46,7 +41,6 @@ class ExpenseController extends Controller
             'filters' => $request->only(['category_id', 'bank_id', 'from_date', 'to_date']),
             'summary' => [
                 'totalExpenses' => $totalExpenses,
-                'fixedAssetExpenses' => $fixedAssetExpenses,
             ],
         ]);
     }
@@ -76,7 +70,7 @@ class ExpenseController extends Controller
             // Create expense
             $expense = Expense::create($validated);
 
-            // Create bank transaction
+            // Create bank transaction (Observer automatically deducts from bank account balance)
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => 'out',
@@ -85,11 +79,6 @@ class ExpenseController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
-
-            // Update bank balance
-            $bankAccount = BankAccount::find($validated['bank_account_id']);
-            $bankAccount->current_balance -= $validated['amount'];
-            $bankAccount->save();
 
             DB::commit();
 
@@ -140,24 +129,16 @@ class ExpenseController extends Controller
             // Update expense
             $expense->update($validated);
 
-            // Handle bank transactions and balances
-            if ($oldBankAccountId !== $validated['bank_account_id']) {
-                // Restore old bank account balance
-                $oldBank = BankAccount::find($oldBankAccountId);
-                $oldBank->current_balance += $oldAmount;
-                $oldBank->save();
-
-                // Update new bank account balance
-                $newBank = BankAccount::find($validated['bank_account_id']);
-                $newBank->current_balance -= $validated['amount'];
-                $newBank->save();
-
-                // If found old transaction, delete it
-                if ($bankTransaction) {
-                    $bankTransaction->delete();
-                }
-
-                // Create new transaction for new bank
+            // Handle bank transaction (Observer handles balance changes)
+            if ($bankTransaction) {
+                $bankTransaction->update([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => 'out',
+                    'amount' => $validated['amount'],
+                    'description' => "Expense: {$validated['description']}",
+                    'date' => $validated['date'],
+                ]);
+            } else {
                 BankTransaction::create([
                     'bank_account_id' => $validated['bank_account_id'],
                     'transaction_type' => 'out',
@@ -166,32 +147,6 @@ class ExpenseController extends Controller
                     'date' => $validated['date'],
                     'created_by' => auth()->id(),
                 ]);
-            } else {
-                // Update bank balance for amount change
-                if ($oldAmount !== $validated['amount']) {
-                    $bank = BankAccount::find($validated['bank_account_id']);
-                    $bank->current_balance += $oldAmount - $validated['amount'];
-                    $bank->save();
-                }
-
-                // Update existing transaction if found
-                if ($bankTransaction) {
-                    $bankTransaction->update([
-                        'amount' => $validated['amount'],
-                        'description' => "Expense: {$validated['description']}",
-                        'date' => $validated['date'],
-                    ]);
-                } else {
-                    // Create new transaction if not found
-                    BankTransaction::create([
-                        'bank_account_id' => $validated['bank_account_id'],
-                        'transaction_type' => 'out',
-                        'amount' => $validated['amount'],
-                        'description' => "Expense: {$validated['description']}",
-                        'date' => $validated['date'],
-                        'created_by' => auth()->id(),
-                    ]);
-                }
             }
 
             DB::commit();
@@ -208,10 +163,18 @@ class ExpenseController extends Controller
     {
         DB::beginTransaction();
         try {
-            // Restore bank balance
-            $bankAccount = BankAccount::find($expense->bank_account_id);
-            $bankAccount->current_balance += $expense->amount;
-            $bankAccount->save();
+            // Find and soft delete bank transaction (Observer automatically restores bank balance)
+            $bankTransaction = BankTransaction::where([
+                'bank_account_id' => $expense->bank_account_id,
+                'transaction_type' => 'out',
+                'amount' => $expense->amount,
+                'date' => $expense->date,
+            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
+                ->first();
+
+            if ($bankTransaction) {
+                $bankTransaction->delete();
+            }
 
             // Soft delete expense
             $expense->delete();
@@ -232,10 +195,18 @@ class ExpenseController extends Controller
         try {
             $expense = Expense::withTrashed()->findOrFail($id);
 
-            // Update bank balance
-            $bankAccount = BankAccount::find($expense->bank_account_id);
-            $bankAccount->current_balance -= $expense->amount;
-            $bankAccount->save();
+            // Restore bank transaction (Observer automatically re-deducts bank balance)
+            $bankTransaction = BankTransaction::withTrashed()->where([
+                'bank_account_id' => $expense->bank_account_id,
+                'transaction_type' => 'out',
+                'amount' => $expense->amount,
+                'date' => $expense->date,
+            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
+                ->first();
+
+            if ($bankTransaction) {
+                $bankTransaction->restore();
+            }
 
             // Restore expense
             $expense->restore();

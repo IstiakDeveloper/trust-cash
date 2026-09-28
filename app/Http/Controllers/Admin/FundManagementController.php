@@ -74,7 +74,7 @@ class FundManagementController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            // Create bank transaction
+            // Create bank transaction (Observer automatically updates bank balance)
             BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => $validated['type'],
@@ -83,15 +83,6 @@ class FundManagementController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
-
-            // Update bank account balance
-            $bankAccount = BankAccount::find($validated['bank_account_id']);
-            if ($validated['type'] === 'in') {
-                $bankAccount->current_balance += $validated['amount'];
-            } else {
-                $bankAccount->current_balance -= $validated['amount'];
-            }
-            $bankAccount->save();
         });
 
         return redirect()->route('admin.funds.index')
@@ -118,39 +109,35 @@ class FundManagementController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $fund) {
-            // Revert previous transaction from bank balance
-            $oldBankAccount = BankAccount::find($fund->bank_account_id);
-            if ($fund->type === 'in') {
-                $oldBankAccount->current_balance -= $fund->amount;
-            } else {
-                $oldBankAccount->current_balance += $fund->amount;
-            }
-            $oldBankAccount->save();
+            // Find existing bank transaction model to trigger observer
+            $bankTransaction = BankTransaction::where([
+                'bank_account_id' => $fund->getOriginal('bank_account_id'),
+                'amount' => $fund->getOriginal('amount'),
+                'date' => $fund->getOriginal('date'),
+            ])->first();
 
             // Update fund record
             $fund->update($validated);
 
-            // Update bank transaction
-            BankTransaction::where([
-                'bank_account_id' => $fund->getOriginal('bank_account_id'),
-                'amount' => $fund->getOriginal('amount'),
-                'date' => $fund->getOriginal('date'),
-            ])->update([
-                'bank_account_id' => $validated['bank_account_id'],
-                'transaction_type' => $validated['type'],
-                'amount' => $validated['amount'],
-                'description' => "Fund {$validated['type']}: {$validated['from_who']}",
-                'date' => $validated['date'],
-            ]);
-
-            // Apply new transaction to bank balance
-            $newBankAccount = BankAccount::find($validated['bank_account_id']);
-            if ($validated['type'] === 'in') {
-                $newBankAccount->current_balance += $validated['amount'];
+            // Update bank transaction through Eloquent model so observer handles balance update
+            if ($bankTransaction) {
+                $bankTransaction->update([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => $validated['type'],
+                    'amount' => $validated['amount'],
+                    'description' => "Fund {$validated['type']}: {$validated['from_who']}",
+                    'date' => $validated['date'],
+                ]);
             } else {
-                $newBankAccount->current_balance -= $validated['amount'];
+                BankTransaction::create([
+                    'bank_account_id' => $validated['bank_account_id'],
+                    'transaction_type' => $validated['type'],
+                    'amount' => $validated['amount'],
+                    'description' => "Fund {$validated['type']}: {$validated['from_who']}",
+                    'date' => $validated['date'],
+                    'created_by' => auth()->id(),
+                ]);
             }
-            $newBankAccount->save();
         });
 
         return redirect()->route('admin.funds.index')
@@ -160,21 +147,16 @@ class FundManagementController extends Controller
     public function destroy(Fund $fund)
     {
         DB::transaction(function () use ($fund) {
-            // Update bank account balance
-            $bankAccount = BankAccount::find($fund->bank_account_id);
-            if ($fund->type === 'in') {
-                $bankAccount->current_balance -= $fund->amount;
-            } else {
-                $bankAccount->current_balance += $fund->amount;
-            }
-            $bankAccount->save();
-
-            // Delete related bank transaction
-            BankTransaction::where([
+            // Delete related bank transaction through model so observer reverses bank balance
+            $bankTransaction = BankTransaction::where([
                 'bank_account_id' => $fund->bank_account_id,
                 'amount' => $fund->amount,
                 'date' => $fund->date,
-            ])->delete();
+            ])->first();
+
+            if ($bankTransaction) {
+                $bankTransaction->delete();
+            }
 
             // Delete fund record
             $fund->delete();

@@ -8,7 +8,7 @@
         </template>
 
         <!-- Filters -->
-        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 no-print">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Account Select -->
                 <div>
@@ -54,7 +54,12 @@
                     <button @click="exportReport"
                         class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                         <DocumentArrowDownIcon class="h-5 w-5 mr-2" />
-                        {{ t('এক্সপোর্ট', 'Export') }}
+                        {{ t('পিডিএফ', 'PDF') }}
+                    </button>
+                    <button @click="printReport"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700">
+                        <PrinterIcon class="h-5 w-5 mr-2" />
+                        {{ t('প্রিন্ট', 'Print') }}
                     </button>
                 </div>
             </div>
@@ -217,18 +222,86 @@
                 </div>
             </TransitionGroup>
         </div>
+
+        <!-- PRINT AREA -->
+        <div class="print-area">
+            <div class="print-header">
+                <h1>{{ t('ব্যাংক ব্যালেন্স রিপোর্ট', 'Bank Balance Report') }}</h1>
+                <p>{{ t('সময়কাল', 'Period') }}: {{ filters.from_date }} — {{ filters.to_date }}</p>
+            </div>
+
+            <div class="print-summary">
+                <div class="print-summary-card">
+                    <span class="label">{{ t('মোট অ্যাকাউন্ট', 'Total Accounts') }}</span>
+                    <span class="value">{{ summary.total_accounts }}</span>
+                </div>
+                <div class="print-summary-card">
+                    <span class="label">{{ t('মোট ব্যালেন্স', 'Total Balance') }}</span>
+                    <span class="value">{{ formatPrice(summary.total_balance) }}</span>
+                </div>
+                <div class="print-summary-card">
+                    <span class="label">{{ t('মোট ইনফ্লো', 'Total Inflows') }}</span>
+                    <span class="value">{{ formatPrice(summary.total_inflows) }}</span>
+                </div>
+                <div class="print-summary-card">
+                    <span class="label">{{ t('মোট আউটফ্লো', 'Total Outflows') }}</span>
+                    <span class="value">{{ formatPrice(summary.total_outflows) }}</span>
+                </div>
+            </div>
+
+            <template v-for="report in reports" :key="'pr_' + report.account.id">
+                <div class="section-title">
+                    {{ report.account.bank }} — {{ report.account.name }}
+                    ({{ t('একাউন্ট', 'Acc') }}: {{ report.account.number }})
+                    &nbsp;|&nbsp; {{ t('বর্তমান ব্যালেন্স', 'Balance') }}: {{ formatPrice(report.current_balance) }}
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ t('তারিখ', 'Date') }}</th>
+                            <th>{{ t('বিবরণ', 'Description') }}</th>
+                            <th>{{ t('ধরন', 'Type') }}</th>
+                            <th class="text-right">{{ t('পরিমাণ', 'Amount') }}</th>
+                            <th class="text-right">{{ t('ব্যালেন্স', 'Balance') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="tx in report.transactions" :key="tx.id">
+                            <td>{{ formatDate(tx.date) }}</td>
+                            <td>{{ tx.description }}</td>
+                            <td>{{ formatTransactionType(tx.type) }}</td>
+                            <td class="text-right">{{ formatPrice(tx.amount) }}</td>
+                            <td class="text-right">{{ formatPrice(tx.running_balance) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-right"><strong>{{ t('নেট', 'Net') }}</strong></td>
+                            <td class="text-right"><strong>{{ formatPrice(report.summary?.net ?? 0) }}</strong></td>
+                            <td class="text-right"><strong>{{ formatPrice(report.current_balance) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </template>
+
+            <div class="print-footer">
+                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
+                <span>{{ t('ব্যাংক ব্যালেন্স রিপোর্ট', 'Bank Balance Report') }}</span>
+            </div>
+        </div>
     </AdminLayout>
 </template>
+
 
 <script setup>
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { DocumentArrowDownIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { DocumentArrowDownIcon, ArrowPathIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 import { getNumberLocale } from '@/utils'
 
-const { t } = useLanguage()
+const { currentLang, t } = useLanguage()
 
 const props = defineProps({
     accounts: {
@@ -265,11 +338,14 @@ const filters = ref({
 })
 
 const formatPrice = (amount) => {
+    const num = Number(amount || 0)
+    const hasDecimal = Math.abs(num % 1) > 0.00001
     return new Intl.NumberFormat(getNumberLocale(), {
         style: 'currency',
         currency: 'BDT',
-        minimumFractionDigits: 2
-    }).format(amount || 0)
+        minimumFractionDigits: hasDecimal ? 2 : 0,
+        maximumFractionDigits: hasDecimal ? 2 : 0
+    }).format(num)
 }
 
 const formatDate = (dateString) => {
@@ -316,10 +392,15 @@ const exportReport = () => {
     const params = new URLSearchParams({
         account_id: filters.value.account_id || '',
         from_date: filters.value.from_date || '',
-        to_date: filters.value.to_date || ''
+        to_date: filters.value.to_date || '',
+        locale: currentLang.value === 'bn' ? 'bn' : 'en'
     }).toString()
 
     window.location.href = `${route('admin.reports.bank.download')}?${params}`
+}
+
+const printReport = () => {
+    window.print()
 }
 
 const resetFilters = () => {

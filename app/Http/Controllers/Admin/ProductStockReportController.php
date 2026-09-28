@@ -295,6 +295,12 @@ class ProductStockReportController extends Controller
 
     public function downloadPdf(Request $request)
     {
+        $locale = $request->get('locale', app()->getLocale());
+        $isBn = ($locale === 'bn');
+        if ($isBn) {
+            app()->setLocale('bn');
+        }
+
         $request->validate([
             'product_id' => 'nullable|exists:products,id',
             'category_id' => 'nullable|exists:categories,id',
@@ -314,10 +320,10 @@ class ProductStockReportController extends Controller
         }
 
         $products = $query->get();
-        $reports = $this->generateReports($products, $fromDate, $toDate); // Using the updated method
+        $reportData = $this->generateReports($products, $fromDate, $toDate); // Using the updated method
 
         $data = [
-            'reports' => $reports,
+            'reports' => $reportData['data'],
             'company' => [
                 'name' => config('app.name'),
                 'address' => config('app.address', 'Company Address'),
@@ -325,9 +331,11 @@ class ProductStockReportController extends Controller
                 'email' => config('app.email', 'Company Email'),
             ],
             'filters' => [
-                'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y'),
+                'from_date' => $isBn ? to_bangla_date($fromDate->format('Y-m-d')) : $fromDate->format('d M, Y'),
+                'to_date' => $isBn ? to_bangla_date($toDate->format('Y-m-d')) : $toDate->format('d M, Y'),
             ],
+            'isBn' => $isBn,
+            'locale' => $locale,
         ];
 
         $pdf = PDF::loadView('reports.stock-report-pdf', $data);

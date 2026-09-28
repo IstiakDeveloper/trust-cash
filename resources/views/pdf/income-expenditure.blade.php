@@ -51,14 +51,14 @@
             text-align: center;
             font-size: 12pt;
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             margin-bottom: 15px;
         }
 
         .report-period {
             text-align: center;
             font-size: 8pt;
-            color: #7f8c8d;
+            color: #222;
             margin-bottom: 20px;
         }
 
@@ -77,10 +77,10 @@
         .section-header {
             background-color: #f2f2f2;
             padding: 8px 10px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
             font-weight: bold;
             font-size: 9pt;
-            color: #2c3e50;
+            color: #000;
             margin-bottom: 10px;
         }
 
@@ -93,14 +93,15 @@
         table th,
         table td {
             padding: 6px 10px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
             font-size: 7pt;
+            color: #000;
         }
 
         table th {
             background-color: #f8f9fa;
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             text-align: left;
         }
 
@@ -111,22 +112,24 @@
         .total-row {
             font-weight: bold;
             background-color: #f2f2f2;
+            color: #000;
         }
 
         .green {
-            color: #27ae60;
+            color: #000;
         }
 
         .red {
-            color: #c0392b;
+            color: #000;
         }
 
         .net-result {
             margin-top: 20px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
             padding: 10px;
             background-color: #f8f9fa;
             clear: both;
+            color: #000;
         }
 
         .footer {
@@ -136,7 +139,7 @@
             right: 0;
             text-align: center;
             font-size: 8pt;
-            color: #7f8c8d;
+            color: #444;
         }
 
         .page-number:before {
@@ -158,13 +161,13 @@
         </div>
 
         <!-- Report Title and Period -->
-        <div class="report-title">Income & Expenditure Statement</div>
+        <div class="report-title">{{ ($isBn ?? false) ? 'লাভ-ক্ষতি ও আয়-ব্যয় বিবরণী' : 'Income & Expenditure Statement' }}</div>
         <div class="report-period">
             @if (isset($filters['month_name']))
-                Period: {{ $filters['month_name'] }} {{ $filters['year'] }}
+                {{ ($isBn ?? false) ? 'সময়কাল:' : 'Period:' }} {{ $filters['month_name'] }} {{ $filters['year'] }}
             @else
-                Period: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} to
-                {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
+                {{ ($isBn ?? false) ? 'সময়কাল:' : 'Period:' }} {{ ($isBn ?? false) ? to_bangla_date($filters['start_date'], 'd M Y') : \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} {{ ($isBn ?? false) ? 'হতে' : 'to' }}
+                {{ ($isBn ?? false) ? to_bangla_date($filters['end_date'], 'd M Y') : \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}
             @endif
         </div>
 
@@ -172,65 +175,63 @@
         <div class="statement-content">
             <!-- Income Section -->
             <div class="section">
-                <div class="section-header">Income</div>
+                <div class="section-header">{{ ($isBn ?? false) ? 'আয়' : 'Income' }}</div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Description</th>
-                            <th class="text-right">Month</th>
-                            <th class="text-right">Cumulative</th>
+                            <th>{{ ($isBn ?? false) ? 'বিবরণ' : 'Description' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'চলতি সময়' : 'Month' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'ক্রমপুঞ্জিত' : 'Cumulative' }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <!-- Sales Profit Row -->
                         <tr>
-                            <td class="font-bold">Sales Profit</td>
-                            <td class="text-right {{ $income['sales_profit']['period'] >= 0 ? 'green' : 'red' }}">
-                                {{ number_format($income['sales_profit']['period'], 2) }}
+                            <td class="font-bold">{{ ($isBn ?? false) ? 'বিক্রয় মুনাফা' : 'Sales Profit' }}</td>
+                            <td class="text-right">
+                                {{ format_amount($income['sales_profit']['period'], true, $isBn ?? false) }}
                             </td>
-                            <td class="text-right {{ $income['sales_profit']['cumulative'] >= 0 ? 'green' : 'red' }}">
-                                {{ number_format($income['sales_profit']['cumulative'], 2) }}
+                            <td class="text-right">
+                                {{ format_amount($income['sales_profit']['cumulative'], true, $isBn ?? false) }}
                             </td>
                         </tr>
 
                         <!-- Extra Income Categories -->
                         @foreach ($income['extra_income']['categories'] as $category)
                             <tr>
-                                <td>{{ $category['name'] }} <span class="text-muted">(Others Income)</span></td>
-                                <td class="text-right green">{{ number_format($category['period'], 2) }}</td>
-                                <td class="text-right green">{{ number_format($category['cumulative'], 2) }}</td>
+                                <td>{{ $category['name'] }} <span class="text-muted">{{ ($isBn ?? false) ? '(অন্যান্য আয়)' : '(Others Income)' }}</span></td>
+                                <td class="text-right">{{ format_amount($category['period'], true, $isBn ?? false) }}</td>
+                                <td class="text-right">{{ format_amount($category['cumulative'], true, $isBn ?? false) }}</td>
                             </tr>
                         @endforeach
 
                         <!-- Total Income Row -->
                         <tr class="total-row">
-                            <td><strong>Total Income</strong></td>
-                            <td style="font-size: 9px;" class="text-right green">
-                                {{ number_format($income['total']['period'], 2) }}</td>
-                            <td style="font-size: 9px;" class="text-right green">
-                                {{ number_format($income['total']['cumulative'], 2) }}</td>
+                            <td><strong>{{ ($isBn ?? false) ? 'মোট আয়' : 'Total Income' }}</strong></td>
+                            <td style="font-size: 9px;" class="text-right">
+                                {{ format_amount($income['total']['period'], true, $isBn ?? false) }}</td>
+                            <td style="font-size: 9px;" class="text-right">
+                                {{ format_amount($income['total']['cumulative'], true, $isBn ?? false) }}</td>
                         </tr>
 
                         <!-- Surplus Row -->
                         <tr class="total-row">
-                            <td><strong>Surplus</strong></td>
-                            <td class="text-right {{ $income['total']['period'] - $expenditure['total']['period'] >= 0 ? 'green' : 'red' }}"
-                                style="font-size: 9px;">
-                                {{ number_format($income['total']['period'] - $expenditure['total']['period'], 2) }}
+                            <td><strong>{{ ($isBn ?? false) ? 'উদ্বৃত্ত (লাভ/ক্ষতি)' : 'Surplus' }}</strong></td>
+                            <td class="text-right" style="font-size: 9px;">
+                                {{ format_amount($income['total']['period'] - $expenditure['total']['period'], true, $isBn ?? false) }}
                             </td>
-                            <td class="text-right {{ $income['total']['cumulative'] - $expenditure['total']['cumulative'] >= 0 ? 'green' : 'red' }}"
-                                style="font-size: 9px;">
-                                {{ number_format($income['total']['cumulative'] - $expenditure['total']['cumulative'], 2) }}
+                            <td class="text-right" style="font-size: 9px;">
+                                {{ format_amount($income['total']['cumulative'] - $expenditure['total']['cumulative'], true, $isBn ?? false) }}
                             </td>
                         </tr>
 
                         <!-- Grand Total Row -->
                         <tr class="total-row">
-                            <td><strong>Grand Total</strong></td>
-                            <td style="font-size: 9px;" class="text-right red">
-                                {{ number_format($expenditure['total']['period'], 2) }}</td>
-                            <td style="font-size: 9px;" class="text-right red">
-                                {{ number_format($expenditure['total']['cumulative'], 2) }}</td>
+                            <td><strong>{{ ($isBn ?? false) ? 'সর্বমোট' : 'Grand Total' }}</strong></td>
+                            <td style="font-size: 9px;" class="text-right">
+                                {{ format_amount($expenditure['total']['period'], true, $isBn ?? false) }}</td>
+                            <td style="font-size: 9px;" class="text-right">
+                                {{ format_amount($expenditure['total']['cumulative'], true, $isBn ?? false) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -238,13 +239,13 @@
 
             <!-- Expenditure Section -->
             <div class="section">
-                <div class="section-header">Expenditure</div>
+                <div class="section-header">{{ ($isBn ?? false) ? 'ব্যয়' : 'Expenditure' }}</div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Description</th>
-                            <th class="text-right">Month</th>
-                            <th class="text-right">Cumulative</th>
+                            <th>{{ ($isBn ?? false) ? 'বিবরণ' : 'Description' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'চলতি সময়' : 'Month' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'ক্রমপুঞ্জিত' : 'Cumulative' }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -252,16 +253,16 @@
                         @foreach ($expenditure['categories'] as $category)
                             <tr>
                                 <td>{{ $category['name'] }}</td>
-                                <td class="text-right red">{{ number_format($category['period'], 2) }}</td>
-                                <td class="text-right red">{{ number_format($category['cumulative'], 2) }}</td>
+                                <td class="text-right">{{ format_amount($category['period'], true, $isBn ?? false) }}</td>
+                                <td class="text-right">{{ format_amount($category['cumulative'], true, $isBn ?? false) }}</td>
                             </tr>
                         @endforeach
 
                         <!-- Total Expenditure Row -->
                         <tr class="total-row">
-                            <td><strong>Total Expenditure</strong></td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['period'], 2) }}</td>
-                            <td class="text-right red">{{ number_format($expenditure['total']['cumulative'], 2) }}</td>
+                            <td><strong>{{ ($isBn ?? false) ? 'মোট ব্যয়' : 'Total Expenditure' }}</strong></td>
+                            <td class="text-right">{{ format_amount($expenditure['total']['period'], true, $isBn ?? false) }}</td>
+                            <td class="text-right">{{ format_amount($expenditure['total']['cumulative'], true, $isBn ?? false) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -270,9 +271,9 @@
 
         <!-- Footer with Page Number -->
         <div class="footer">
-            Page <span class="page-number"></span>
+            {{ ($isBn ?? false) ? 'পৃষ্ঠা' : 'Page' }} <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            {{ ($isBn ?? false) ? 'তৈরির সময়:' : 'Generated on:' }} {{ ($isBn ?? false) ? to_bangla_date(now(), 'd M Y, h:i A') : now()->format('d M Y H:i:s') }}
         </div>
     </div>
 </body>

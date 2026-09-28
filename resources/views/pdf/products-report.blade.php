@@ -145,12 +145,12 @@
         }
 
         .positive {
-            color: #0b4;
+            color: #000;
             font-weight: bold;
         }
 
         .negative {
-            color: #d42;
+            color: #000;
             font-weight: bold;
         }
 

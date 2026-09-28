@@ -197,7 +197,7 @@
                         <div v-if="existingImages.length" class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                             <div v-for="image in existingImages" :key="image.id"
                                 class="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 group">
-                                <img :src="`/storage/${image.image}`" class="h-full w-full object-cover">
+                                <img :src="getImageUrl(image.url || image.image)" class="h-full w-full object-cover">
                                 <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <button type="button" @click="setExistingImageAsPrimary(image.id)"
                                         class="p-1.5 text-white hover:text-amber-400"
@@ -289,6 +289,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { useLanguage } from '@/composables/useLanguage';
+import { getImageUrl } from '@/utils/image';
 
 const { t } = useLanguage();
 

@@ -22,6 +22,21 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
     \App\Http\Middleware\EnsureTenantActive::class,
 ])->group(function () {
+    // Serve tenant storage files (images, documents, etc.)
+    Route::get('/storage/{path}', function (string $path) {
+        $tenantFile = storage_path("app/public/{$path}");
+        if (is_file($tenantFile)) {
+            return response()->file($tenantFile);
+        }
+
+        $centralFile = base_path("storage/app/public/{$path}");
+        if (is_file($centralFile)) {
+            return response()->file($centralFile);
+        }
+
+        abort(404);
+    })->where('path', '.*')->name('tenant.storage.file');
+
     Route::get('/impersonate/{token}', function ($token) {
         return \Stancl\Tenancy\Features\UserImpersonation::makeResponse($token);
     })->name('tenant.impersonate');

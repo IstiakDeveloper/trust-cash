@@ -14,6 +14,7 @@ class BankTransactionObserver
     {
         // Get the latest transaction for this bank account (exclude soft deleted)
         $latestTransaction = BankTransaction::where('bank_account_id', $transaction->bank_account_id)
+            ->whereNull('deleted_at')
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
             ->first();
@@ -21,13 +22,13 @@ class BankTransactionObserver
         $bank = BankAccount::find($transaction->bank_account_id);
 
         // Start with previous balance or bank opening balance
-        $previousBalance = $latestTransaction ? $latestTransaction->running_balance : $bank->opening_balance;
+        $previousBalance = $latestTransaction ? (float) $latestTransaction->running_balance : ($bank ? (float) $bank->opening_balance : 0);
 
         // Calculate new running balance
         if ($transaction->transaction_type === 'in') {
-            $transaction->running_balance = $previousBalance + $transaction->amount;
+            $transaction->running_balance = $previousBalance + (float) $transaction->amount;
         } else {
-            $transaction->running_balance = $previousBalance - $transaction->amount;
+            $transaction->running_balance = $previousBalance - (float) $transaction->amount;
         }
     }
 
@@ -41,9 +42,9 @@ class BankTransactionObserver
 
         if ($bankAccount) {
             if ($transaction->transaction_type === 'in') {
-                $bankAccount->current_balance += $transaction->amount;
+                $bankAccount->current_balance += (float) $transaction->amount;
             } else {
-                $bankAccount->current_balance -= $transaction->amount;
+                $bankAccount->current_balance -= (float) $transaction->amount;
             }
 
             $bankAccount->saveQuietly(); // Save without triggering observers
@@ -55,31 +56,55 @@ class BankTransactionObserver
      */
     public function updated(BankTransaction $transaction): void
     {
-        // If amount or transaction_type changed, we need to update bank balance
-        if ($transaction->isDirty(['amount', 'transaction_type'])) {
-            $bankAccount = BankAccount::find($transaction->bank_account_id);
+        // If amount, transaction_type, or bank_account_id changed, we update bank balance
+        if ($transaction->isDirty(['amount', 'transaction_type', 'bank_account_id'])) {
+            $oldBankId = $transaction->getOriginal('bank_account_id');
+            $newBankId = $transaction->bank_account_id;
+            $oldAmount = (float) $transaction->getOriginal('amount');
+            $oldType = $transaction->getOriginal('transaction_type');
+            $newAmount = (float) $transaction->amount;
+            $newType = $transaction->transaction_type;
 
-            if ($bankAccount) {
-                $oldAmount = $transaction->getOriginal('amount');
-                $oldType = $transaction->getOriginal('transaction_type');
-                $newAmount = $transaction->amount;
-                $newType = $transaction->transaction_type;
+            if ($oldBankId === $newBankId) {
+                $bankAccount = BankAccount::find($newBankId);
+                if ($bankAccount) {
+                    // Reverse old transaction effect
+                    if ($oldType === 'in') {
+                        $bankAccount->current_balance -= $oldAmount;
+                    } else {
+                        $bankAccount->current_balance += $oldAmount;
+                    }
 
-                // Reverse old transaction effect
-                if ($oldType === 'in') {
-                    $bankAccount->current_balance -= $oldAmount;
-                } else {
-                    $bankAccount->current_balance += $oldAmount;
+                    // Apply new transaction effect
+                    if ($newType === 'in') {
+                        $bankAccount->current_balance += $newAmount;
+                    } else {
+                        $bankAccount->current_balance -= $newAmount;
+                    }
+
+                    $bankAccount->saveQuietly();
+                }
+            } else {
+                // Different bank accounts
+                $oldBank = BankAccount::find($oldBankId);
+                if ($oldBank) {
+                    if ($oldType === 'in') {
+                        $oldBank->current_balance -= $oldAmount;
+                    } else {
+                        $oldBank->current_balance += $oldAmount;
+                    }
+                    $oldBank->saveQuietly();
                 }
 
-                // Apply new transaction effect
-                if ($newType === 'in') {
-                    $bankAccount->current_balance += $newAmount;
-                } else {
-                    $bankAccount->current_balance -= $newAmount;
+                $newBank = BankAccount::find($newBankId);
+                if ($newBank) {
+                    if ($newType === 'in') {
+                        $newBank->current_balance += $newAmount;
+                    } else {
+                        $newBank->current_balance -= $newAmount;
+                    }
+                    $newBank->saveQuietly();
                 }
-
-                $bankAccount->saveQuietly();
             }
         }
     }

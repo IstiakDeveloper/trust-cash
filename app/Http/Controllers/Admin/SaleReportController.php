@@ -154,8 +154,16 @@ class SaleReportController extends Controller
 
     public function downloadPdf(Request $request)
     {
+        $locale = $request->get('locale', app()->getLocale());
+        $isBn = ($locale === 'bn');
+        if ($isBn) {
+            app()->setLocale('bn');
+        }
+
         // Similar data processing as index method
-        $data = $this->processReportData($request);
+        $data = $this->processReportData($request, $isBn);
+        $data['isBn'] = $isBn;
+        $data['locale'] = $locale;
 
         $pdf = PDF::loadView('reports.sales-report-pdf', $data);
         $pdf->setPaper('a4', 'landscape');
@@ -163,7 +171,7 @@ class SaleReportController extends Controller
         return $pdf->download('sales-report-'.now()->format('Y-m-d').'.pdf');
     }
 
-    private function processReportData(Request $request)
+    private function processReportData(Request $request, bool $isBn = false)
     {
         $request->validate([
             'customer_id' => 'nullable|exists:customers,id',
@@ -201,16 +209,24 @@ class SaleReportController extends Controller
         $monthlyReports = collect();
 
         foreach ($salesByMonth as $yearMonth => $sales) {
+            $monthDate = Carbon::createFromFormat('Y-m', $yearMonth);
+            $monthName = $isBn
+                ? to_bangla_month($monthDate->format('n')) . ' ' . to_bangla_number($monthDate->format('Y'))
+                : $monthDate->format('F Y');
+
             $dailySales = $sales->groupBy(function ($sale) {
                 return Carbon::parse($sale->created_at)->format('Y-m-d');
-            })->map(function ($daySales) {
+            })->map(function ($daySales) use ($isBn) {
+                $dayDateStr = Carbon::parse($daySales->first()->created_at)->format('Y-m-d');
                 return [
-                    'date' => Carbon::parse($daySales->first()->created_at)->format('d M, Y'),
-                    'sales' => $daySales->map(function ($sale) {
+                    'date' => $isBn ? to_bangla_date($dayDateStr) : Carbon::parse($daySales->first()->created_at)->format('d M, Y'),
+                    'sales' => $daySales->map(function ($sale) use ($isBn) {
                         return [
-                            'created_at' => $sale->created_at->format('h:i A'),
+                            'created_at' => $isBn
+                                ? to_bangla_number($sale->created_at->format('h:i')) . ($sale->created_at->format('A') === 'AM' ? ' পূর্বাহ্ন' : ' অপরাহ্ন')
+                                : $sale->created_at->format('h:i A'),
                             'invoice_no' => $sale->invoice_no,
-                            'customer' => optional($sale->customer)->name ?? 'Walk-in Customer',
+                            'customer' => optional($sale->customer)->name ?? ($isBn ? 'সাধারণ ক্রেতা' : 'Walk-in Customer'),
                             'total' => $sale->total,
                             'paid' => $sale->paid,
                             'due' => $sale->due,
@@ -262,7 +278,7 @@ class SaleReportController extends Controller
             $monthPayments = $sales->flatMap->salePayments;
 
             $monthlyReports->push([
-                'month' => Carbon::createFromFormat('Y-m', $yearMonth)->format('F Y'),
+                'month' => $monthName,
                 'daily_sales' => $dailySales,
                 'summary' => [
                     'total_sales' => $sales->count(),
@@ -327,8 +343,8 @@ class SaleReportController extends Controller
                     }),
             ],
             'filters' => [
-                'from_date' => $fromDate->format('d M, Y'),
-                'to_date' => $toDate->format('d M, Y'),
+                'from_date' => $isBn ? to_bangla_date($fromDate->format('Y-m-d')) : $fromDate->format('d M, Y'),
+                'to_date' => $isBn ? to_bangla_date($toDate->format('Y-m-d')) : $toDate->format('d M, Y'),
             ],
         ];
     }

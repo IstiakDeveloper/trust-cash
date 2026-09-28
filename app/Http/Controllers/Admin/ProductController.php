@@ -37,13 +37,14 @@ class ProductController extends Controller
         $products = Product::query()
             ->with(['category', 'brand', 'unit', 'images'])
             ->select('products.*')
-            ->selectRaw('(
+            ->selectRaw('COALESCE((
                 SELECT ps.available_quantity
                 FROM product_stocks ps
                 WHERE ps.product_id = products.id
+                AND ps.deleted_at IS NULL
                 ORDER BY ps.id DESC
                 LIMIT 1
-            ) as available_quantity')
+            ), 0) as available_quantity')
             ->selectRaw('(
                 SELECT COALESCE(SUM(
                     CASE WHEN ps.quantity > 0
@@ -54,6 +55,7 @@ class ProductController extends Controller
                 FROM product_stocks ps
                 WHERE ps.product_id = products.id
                 AND ps.type = "purchase"
+                AND ps.deleted_at IS NULL
             ) as total_purchased')
             ->selectRaw('(
                 SELECT COALESCE(SUM(
@@ -65,22 +67,25 @@ class ProductController extends Controller
                 FROM product_stocks ps
                 WHERE ps.product_id = products.id
                 AND ps.type = "purchase"
+                AND ps.deleted_at IS NULL
             ) as total_purchase_value')
             ->selectRaw('CASE
-                WHEN (
+                WHEN COALESCE((
                     SELECT available_quantity
                     FROM product_stocks
                     WHERE product_id = products.id
+                    AND deleted_at IS NULL
                     ORDER BY id DESC
                     LIMIT 1
-                ) <= alert_quantity THEN "low"
-                WHEN (
+                ), 0) <= 0 THEN "out"
+                WHEN COALESCE((
                     SELECT available_quantity
                     FROM product_stocks
                     WHERE product_id = products.id
+                    AND deleted_at IS NULL
                     ORDER BY id DESC
                     LIMIT 1
-                ) <= 0 THEN "out"
+                ), 0) <= alert_quantity THEN "low"
                 ELSE "in"
             END as stock_status')
             ->when($request->search, function ($query, $search) {
@@ -171,7 +176,7 @@ class ProductController extends Controller
             'primary_image_index' => 'required|integer|min:0',
         ]);
 
-        $validated['slug'] = Str::slug($request->name);
+        $validated['slug'] = $this->generateUniqueSlug($request->name);
 
         $product = Product::create($validated);
 
@@ -256,8 +261,8 @@ class ProductController extends Controller
             'primary_image_id' => 'nullable|exists:product_images,id',
         ]);
 
-        // Add slug
-        $validated['slug'] = Str::slug($request->name);
+        // Add unique slug
+        $validated['slug'] = $this->generateUniqueSlug($request->name, $product->id);
 
         // Perform the update with the validated data
         $product->update($validated);
@@ -332,7 +337,7 @@ class ProductController extends Controller
             foreach ($bankRefunds as $bankAccountId => $totalRefund) {
                 $bankAccount = BankAccount::find($bankAccountId);
                 if ($bankAccount) {
-                    // Create single refund transaction
+                    // Create single refund transaction (Observer automatically adds to bank account balance)
                     BankTransaction::create([
                         'bank_account_id' => $bankAccountId,
                         'transaction_type' => 'in',
@@ -341,10 +346,6 @@ class ProductController extends Controller
                         'date' => now(),
                         'created_by' => Auth::id(),
                     ]);
-
-                    // Update bank balance
-                    $newBalance = bcadd($bankAccount->current_balance, $totalRefund, 4);
-                    $bankAccount->update(['current_balance' => $newBalance]);
                 }
             }
 
@@ -417,5 +418,31 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Report', [
             'products' => $products,
         ]);
+    }
+
+    /**
+     * Generate a unique slug for a product, accounting for soft-deleted rows.
+     */
+    private function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name);
+        if (empty($baseSlug)) {
+            $baseSlug = 'product-' . Str::lower(Str::random(6));
+        }
+
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (
+            Product::withTrashed()
+                ->where('slug', $slug)
+                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }

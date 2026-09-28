@@ -213,11 +213,16 @@ watch(() => [filters.value.payment_status, filters.value.from_date, filters.valu
 
 const deletePurchase = (p) => {
     const confirmMsg = t(
-        `আপনি কি নিশ্চিত যে ক্রয় নং #${p.purchase_number} বাতিল করতে চান? এতে স্টক পূর্বের অবস্থায় ফিরে যাবে এবং পেমেন্ট রিফান্ড হবে।`,
-        `Are you sure you want to cancel Purchase #${p.purchase_number}? This will revert added stock and refund any recorded payment.`
+        `আপনি কি নিশ্চিত যে ক্রয় চালান #${p.purchase_number} বাতিল করতে চান? এতে যুক্ত স্টক বাদ যাবে এবং সরবরাহকারীর বকেয়া বা ব্যাংক ব্যালেন্স সমন্বয় হবে (যদি পণ্য বিক্রি না হয়ে থাকে)।`,
+        `Are you sure you want to cancel Purchase #${p.purchase_number}? This will revert stock and adjust supplier due/bank balance if not yet sold.`
     )
     if (confirm(confirmMsg)) {
-        router.delete(route('admin.purchases.destroy', p.id))
+        router.delete(route('admin.purchases.destroy', p.id), {
+            onError: (errors) => {
+                const err = Object.values(errors)[0] || t('ক্রয় বাতিল করা সম্ভব হয়নি', 'Failed to cancel purchase')
+                alert('❌ ' + err)
+            }
+        })
     }
 }
 </script>

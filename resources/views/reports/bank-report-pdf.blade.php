@@ -1,73 +1,49 @@
-# resources/views/reports/bank-report-pdf.blade.php
+@php
+    $isBn = $isBn ?? (app()->getLocale() === 'bn');
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Bank Report</title>
+    <title>{{ $isBn ? 'ব্যাংক রিপোর্ট' : 'Bank Report' }}</title>
     <style>
-  body {
+        body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 9px;
             line-height: 1.3;
-            margin: 15px 15px;
-            color: #333;
-        }
-
-        .transactions-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8px; /* Smaller font for detailed transactions */
-        }
-
-        .month-header {
-            background: #f4f4f4;
-            padding: 6px;
-            margin-top: 10px;
-            font-weight: bold;
-            border: 1px solid #ddd;
-        }
-
-        .monthly-summary {
-            background: #f8f8f8;
-            font-weight: bold;
-        }
-
-        .transaction-row:nth-child(even) {
-            background-color: #f9f9f9;
+            margin: 15px;
+            color: #000;
         }
 
         .header {
             text-align: center;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            border-bottom: 1.5px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .company-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+        }
+
+        .company-details {
+            font-size: 9px;
+            color: #333;
+            margin-bottom: 4px;
         }
 
         .report-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 5px 0;
+            margin: 4px 0 2px 0;
         }
 
         .date-range {
-            font-size: 11px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .meta-info {
-            margin: 10px 0;
-            padding: 8px;
-            background: #f8f8f8;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            font-size: 9px;
+            color: #222;
         }
 
         .summary-table {
@@ -78,58 +54,72 @@
 
         .summary-table th,
         .summary-table td {
-            padding: 6px;
-            border: 1px solid #ddd;
-            text-align: left;
+            padding: 5px 6px;
+            border: 1px solid #444;
+            font-size: 8px;
         }
 
         .summary-table th {
-            background: #f4f4f4;
+            background: #f0f0f0;
             font-weight: bold;
-            font-size: 9px;
             text-transform: uppercase;
+            text-align: center;
         }
 
         .account-section {
             margin-top: 15px;
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
 
         .account-header {
-            background: #f4f4f4;
-            padding: 8px;
-            margin-bottom: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            background: #e8e8e8;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+            border: 1px solid #444;
         }
 
         .account-name {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
         }
 
         .account-details {
+            font-size: 8px;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        .month-header {
+            background: #f4f4f4;
+            padding: 4px 6px;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            border-left: 3px solid #000;
             font-size: 9px;
-            color: #666;
-            margin-top: 3px;
         }
 
         .transactions-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 8px;
+            margin-bottom: 10px;
         }
 
         .transactions-table th,
         .transactions-table td {
-            padding: 5px;
-            border: 1px solid #ddd;
+            padding: 4px 6px;
+            border: 1px solid #444;
         }
 
         .transactions-table th {
-            background: #f8f8f8;
+            background: #f0f0f0;
             font-weight: bold;
-            text-transform: uppercase;
+        }
+
+        .monthly-summary {
+            background: #f0f0f0;
+            font-weight: bold;
         }
 
         .text-right {
@@ -141,65 +131,56 @@
         }
 
         .amount {
-            font-family: 'DejaVu Sans Mono', monospace;
             white-space: nowrap;
         }
 
-        .positive {
-            color: #0b4;
-            font-weight: bold;
-        }
-
-        .negative {
-            color: #d42;
-            font-weight: bold;
-        }
-
         .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             text-align: center;
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-            font-size: 9px;
-            color: #666;
-            page-break-inside: avoid;
+            padding: 6px;
+            font-size: 8px;
+            color: #444;
+            border-top: 1px solid #ccc;
         }
 
         .page-break {
             page-break-after: always;
         }
-
-        /* Table Column Widths */
-        .col-month { width: 20%; }
-        .col-amount { width: 20%; }
     </style>
 </head>
 <body>
-    <div class="company-header">
-        <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Variety Store</div>
-        <div class="sub-company-name"></div>
+    <div class="header">
+        <div class="company-name">{{ config('app.name', 'TrustCash') }}</div>
         <div class="company-details">
-            Ukilpara, Naogaon Sadar, Naogaon.<br>
-            Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+            Ukilpara, Naogaon Sadar, Naogaon. | Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+        </div>
+        <div class="report-title">{{ $isBn ? 'ব্যাংক ব্যালেন্স রিপোর্ট' : 'Bank Balance Report' }}</div>
+        <div class="date-range">
+            {{ $isBn ? 'সময়কাল: ' : 'Period: ' }}{{ $date_range['from'] }} {{ $isBn ? 'হতে' : 'to' }} {{ $date_range['to'] }}
         </div>
     </div>
 
-    <div class="meta-info">
-        <table class="summary-table">
+    <table class="summary-table">
+        <thead>
             <tr>
-                <th>Total Accounts</th>
-                <th>Total Balance</th>
-                <th>Total Inflows</th>
-                <th>Total Outflows</th>
+                <th>{{ $isBn ? 'মোট অ্যাকাউন্ট' : 'Total Accounts' }}</th>
+                <th>{{ $isBn ? 'মোট ব্যালেন্স' : 'Total Balance' }}</th>
+                <th>{{ $isBn ? 'মোট ইনফ্লো (আদায়)' : 'Total Inflows' }}</th>
+                <th>{{ $isBn ? 'মোট আউটফ্লো (খরচ)' : 'Total Outflows' }}</th>
             </tr>
+        </thead>
+        <tbody>
             <tr>
-                <td class="text-center">{{ $summary['total_accounts'] }}</td>
-                <td class="text-right amount">{{ number_format($summary['total_balance'], 2) }} BDT</td>
-                <td class="text-right amount positive">{{ number_format($summary['total_inflows'], 2) }} BDT</td>
-                <td class="text-right amount negative">{{ number_format($summary['total_outflows'], 2) }} BDT</td>
+                <td class="text-center">{{ $isBn ? to_bangla_number($summary['total_accounts']) : $summary['total_accounts'] }}</td>
+                <td class="text-right amount"><strong>{{ format_amount($summary['total_balance'], true, $isBn) }}</strong></td>
+                <td class="text-right amount">{{ format_amount($summary['total_inflows'], true, $isBn) }}</td>
+                <td class="text-right amount">{{ format_amount($summary['total_outflows'], true, $isBn) }}</td>
             </tr>
-        </table>
-    </div>
+        </tbody>
+    </table>
 
     @foreach($reports as $index => $report)
         <div class="account-section">
@@ -210,9 +191,9 @@
             <div class="account-header">
                 <div class="account-name">{{ $report['account']['bank'] }} - {{ $report['account']['name'] }}</div>
                 <div class="account-details">
-                    Account No: {{ $report['account']['number'] }}<br>
-                    Opening Balance: {{ number_format($report['opening_balance'], 2) }} BDT<br>
-                    Previous Balance: {{ number_format($report['previous_balance'], 2) }} BDT
+                    {{ $isBn ? 'অ্যাকাউন্ট নং: ' : 'Account No: ' }}{{ $report['account']['number'] }} |
+                    {{ $isBn ? 'প্রারম্ভিক ব্যালেন্স: ' : 'Opening Balance: ' }}{{ format_amount($report['opening_balance'], true, $isBn) }} |
+                    {{ $isBn ? 'পূর্ববর্তী ব্যালেন্স: ' : 'Previous Balance: ' }}{{ format_amount($report['previous_balance'], true, $isBn) }}
                 </div>
             </div>
 
@@ -224,41 +205,45 @@
                 <table class="transactions-table">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Type</th>
-                            <th class="text-right">Inflow</th>
-                            <th class="text-right">Outflow</th>
-                            <th class="text-right">Balance</th>
+                            <th style="width: 15%;">{{ $isBn ? 'তারিখ' : 'Date' }}</th>
+                            <th style="width: 35%;">{{ $isBn ? 'বিবরণ' : 'Description' }}</th>
+                            <th class="text-center" style="width: 10%;">{{ $isBn ? 'ধরন' : 'Type' }}</th>
+                            <th class="text-right" style="width: 13%;">{{ $isBn ? 'ইনফ্লো' : 'Inflow' }}</th>
+                            <th class="text-right" style="width: 13%;">{{ $isBn ? 'আউটফ্লো' : 'Outflow' }}</th>
+                            <th class="text-right" style="width: 14%;">{{ $isBn ? 'ব্যালেন্স' : 'Balance' }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($monthData['transactions'] as $transaction)
-                            <tr class="transaction-row">
-                                <td>{{ $transaction['date'] }}</td>
+                            <tr>
+                                <td>
+                                    {{ $isBn ? to_bangla_date(\Carbon\Carbon::parse($transaction['date'])->format('Y-m-d')) : $transaction['date'] }}
+                                </td>
                                 <td>{{ $transaction['description'] }}</td>
-                                <td>{{ $transaction['type'] === 'in' ? 'Inflow' : 'Outflow' }}</td>
-                                <td class="text-right amount">
-                                    {{ $transaction['inflow'] > 0 ? number_format($transaction['inflow'], 2) : '-' }}
+                                <td class="text-center">
+                                    {{ $transaction['type'] === 'in' ? ($isBn ? 'ইনফ্লো' : 'Inflow') : ($isBn ? 'আউটফ্লো' : 'Outflow') }}
                                 </td>
                                 <td class="text-right amount">
-                                    {{ $transaction['outflow'] > 0 ? number_format($transaction['outflow'], 2) : '-' }}
+                                    {{ $transaction['inflow'] > 0 ? format_amount($transaction['inflow'], true, $isBn) : '-' }}
                                 </td>
-                                <td class="text-right amount {{ $transaction['balance'] >= 0 ? 'positive' : 'negative' }}">
-                                    {{ number_format($transaction['balance'], 2) }}
+                                <td class="text-right amount">
+                                    {{ $transaction['outflow'] > 0 ? format_amount($transaction['outflow'], true, $isBn) : '-' }}
+                                </td>
+                                <td class="text-right amount">
+                                    {{ format_amount($transaction['balance'], true, $isBn) }}
                                 </td>
                             </tr>
                         @endforeach
                         <tr class="monthly-summary">
-                            <td colspan="3">Monthly Total</td>
-                            <td class="text-right amount positive">
-                                {{ number_format($monthData['summary']['inflows'], 2) }}
+                            <td colspan="3">{{ $isBn ? 'মাসিক মোট' : 'Monthly Total' }}</td>
+                            <td class="text-right amount">
+                                {{ format_amount($monthData['summary']['inflows'], true, $isBn) }}
                             </td>
-                            <td class="text-right amount negative">
-                                {{ number_format($monthData['summary']['outflows'], 2) }}
+                            <td class="text-right amount">
+                                {{ format_amount($monthData['summary']['outflows'], true, $isBn) }}
                             </td>
-                            <td class="text-right amount {{ $monthData['summary']['ending_balance'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ number_format($monthData['summary']['ending_balance'], 2) }}
+                            <td class="text-right amount">
+                                <strong>{{ format_amount($monthData['summary']['ending_balance'], true, $isBn) }}</strong>
                             </td>
                         </tr>
                     </tbody>
@@ -268,8 +253,7 @@
     @endforeach
 
     <div class="footer">
-        <div>Generated on: {{ now()->format('d M, Y h:i A') }}</div>
-        <div>Report Generated by {{ config('app.name', 'Company Name') }}</div>
+        {{ $isBn ? 'প্রস্তুতকরণ সময়: ' . to_bangla_date(now()->format('Y-m-d')) . ' ' . to_bangla_number(now()->format('h:i A')) : 'Generated on: ' . now()->format('d M, Y h:i A') }}
     </div>
 </body>
 </html>

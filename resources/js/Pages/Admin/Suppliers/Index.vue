@@ -205,8 +205,10 @@
                             </div>
                         </div>
 
-                        <div v-if="!isEditing">
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('পূর্বের পাওনা / প্রারম্ভিক দেনা (৳)', 'Opening Payable Balance (BDT)') }}</label>
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('পূর্বের পাওনা / প্রারম্ভিক দেনা (৳)', 'Opening Payable Balance (BDT)') }}
+                            </label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -214,6 +216,9 @@
                                 placeholder="0.00"
                                 class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                             />
+                            <p v-if="isEditing" class="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                {{ t('⚠️ প্রারম্ভিক দেনা পরিবর্তন করলে মোট দেনাতেও সমন্বয় করা হবে।', '⚠️ Updating opening balance will adjust the current payable balance.') }}
+                            </p>
                         </div>
 
                         <div>
@@ -282,17 +287,36 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('যে হিসাব থেকে পরিশোধ হবে *', 'Pay From Account *') }}</label>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('যে ব্যাংক / ক্যাশ হিসাব থেকে পরিশোধ হবে *', 'Pay From Bank / Cash Account *') }}</label>
                             <select
                                 v-model="paymentForm.bank_account_id"
                                 required
                                 class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                :class="isInsufficientBalance ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500' : ''"
                             >
-                                <option value="" disabled>{{ t('হিসাব নির্বাচন করুন', 'Select Account') }}</option>
+                                <option value="" disabled>{{ t('-- ব্যাংক / ক্যাশ হিসাব নির্বাচন করুন * --', '-- Select Bank / Cash Account * --') }}</option>
                                 <option v-for="acc in bankAccounts" :key="acc.id" :value="acc.id">
                                     {{ acc.bank_name }} - {{ acc.account_number || t('ক্যাশ', 'Cash') }} ({{ t('ব্যালেন্স:', 'Bal:') }} ৳{{ formatNumber(acc.current_balance) }})
                                 </option>
                             </select>
+
+                            <!-- Instant Balance Preview -->
+                            <div v-if="selectedBankAccount" class="mt-2 p-2 rounded-lg text-xs flex items-center justify-between"
+                                 :class="isInsufficientBalance ? 'bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300' : 'bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300'">
+                                <span class="font-medium">{{ t('নির্বাচিত হিসাবে উপলব্ধ ব্যালেন্স:', 'Available in Account:') }}</span>
+                                <span class="font-bold font-mono text-sm">৳{{ formatNumber(selectedBankAccount.current_balance) }}</span>
+                            </div>
+
+                            <!-- Instant Insufficient Balance Alert -->
+                            <div v-if="isInsufficientBalance" class="mt-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
+                                <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div>
+                                    <p class="font-bold">{{ t('অপর্যাপ্ত ব্যাংক ব্যালেন্স!', 'Insufficient Balance!') }}</p>
+                                    <p>{{ t('নির্বাচিত ব্যাংক হিসাবে পর্যাপ্ত টাকা নেই। অনুগ্রহ করে অন্য হিসাব নির্বাচন করুন।', 'Selected account does not have sufficient balance for this payment.') }}</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
@@ -339,8 +363,8 @@
                             </button>
                             <button
                                 type="submit"
-                                :disabled="submittingPayment"
-                                class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50"
+                                :disabled="submittingPayment || isInsufficientBalance || !paymentForm.bank_account_id || paymentForm.amount <= 0"
+                                class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {{ t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
                             </button>
@@ -353,7 +377,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import debounce from 'lodash/debounce'
@@ -486,11 +510,22 @@ const submitSupplier = () => {
     }
 }
 
+const selectedBankAccount = computed(() => {
+    return props.bankAccounts?.find(acc => acc.id == paymentForm.value.bank_account_id) || null
+})
+
+const isInsufficientBalance = computed(() => {
+    if (!selectedBankAccount.value) return false
+    const amt = parseFloat(paymentForm.value.amount || 0)
+    const bal = parseFloat(selectedBankAccount.value.current_balance || 0)
+    return amt > bal
+})
+
 const openPaymentModal = (supplier) => {
     activeSupplier.value = supplier
     paymentForm.value = {
         amount: supplier.current_balance,
-        bank_account_id: props.bankAccounts?.[0]?.id || '',
+        bank_account_id: '',
         payment_method: 'cash',
         payment_date: new Date().toISOString().split('T')[0],
         reference_no: '',
@@ -500,8 +535,16 @@ const openPaymentModal = (supplier) => {
 
 const submitPayment = () => {
     if (!activeSupplier.value) return
+    if (!paymentForm.value.bank_account_id) {
+        alert(t('অনুগ্রহ করে পরিশোধের জন্য ব্যাংক বা ক্যাশ হিসাব নির্বাচন করুন', 'Please select a bank or cash account for payment'))
+        return
+    }
+    if (isInsufficientBalance.value) {
+        alert(t('নির্বাচিত ব্যাংক হিসাবে পর্যাপ্ত ব্যালেন্স নেই!', 'Insufficient balance in selected account!'))
+        return
+    }
     submittingPayment.value = true
-    router.post(route('admin.suppliers.pay-due', activeSupplier.value.id), paymentForm.value, {
+    router.post(route('admin.suppliers.add-payment', activeSupplier.value.id), paymentForm.value, {
         onSuccess: () => {
             showPaymentModal.value = false
             submittingPayment.value = false

@@ -35,12 +35,14 @@ const selectedSale = ref(null);
 const loading = ref(false);
 
 const formatCurrency = (value) => {
+    const num = Number(value || 0);
+    const hasDecimal = Math.abs(num % 1) > 0.00001;
     return new Intl.NumberFormat(getNumberLocale(), {
         style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(value || 0);
+        currency: 'BDT',
+        minimumFractionDigits: hasDecimal ? 2 : 0,
+        maximumFractionDigits: hasDecimal ? 2 : 0
+    }).format(num);
 };
 
 const getMonthName = (monthValue) => {
@@ -111,7 +113,7 @@ const calculateTotal = (items) => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <!-- Filters Section -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 no-print">
                     <div class="p-6 bg-white border-b border-gray-200">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <!-- Customer Select -->

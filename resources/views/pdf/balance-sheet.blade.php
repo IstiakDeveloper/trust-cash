@@ -52,14 +52,14 @@
             text-align: center;
             font-size: 14pt;
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             margin-bottom: 15px;
         }
 
         .report-period {
             text-align: center;
             font-size: 10pt;
-            color: #7f8c8d;
+            color: #222;
             margin-bottom: 20px;
         }
 
@@ -77,10 +77,10 @@
         .section-header {
             background-color: #f2f2f2;
             padding: 8px 10px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
             font-weight: bold;
             font-size: 11pt;
-            color: #2c3e50;
+            color: #000;
         }
 
         table {
@@ -92,16 +92,16 @@
         table th,
         table td {
             padding: 6px 10px;
-            border: 1px solid #202020;
+            border: 1px solid #000;
             font-size: 9pt;
+            color: #000;
         }
 
         table th {
             background-color: #f8f9fa;
             font-weight: bold;
-            color: #2c3e50;
+            color: #000;
             text-align: left;
-
         }
 
         .text-right {
@@ -111,14 +111,15 @@
         .total-row {
             font-weight: bold;
             background-color: #f2f2f2;
+            color: #000;
         }
 
         .green {
-            color: #27ae60;
+            color: #000;
         }
 
         .red {
-            color: #c0392b;
+            color: #000;
         }
 
         .footer {
@@ -128,7 +129,7 @@
             right: 0;
             text-align: center;
             font-size: 8pt;
-            color: #7f8c8d;
+            color: #444;
         }
 
         .page-number:before {
@@ -150,46 +151,49 @@
         </div>
 
         <!-- Report Title and Period -->
-        <div class="report-title">Balance Sheet Report</div>
+        <div class="report-title">{{ ($isBn ?? false) ? 'ব্যালেন্স শীট বিবরণী' : 'Balance Sheet Report' }}</div>
         <div class="report-period">
-            Period: {{ \Carbon\Carbon::parse($start_date)->format('d M Y') }} to
-            {{ \Carbon\Carbon::parse($end_date)->format('d M Y') }}
+            {{ ($isBn ?? false) ? 'সময়কাল:' : 'Period:' }} {{ ($isBn ?? false) ? to_bangla_date($start_date, 'd M Y') : \Carbon\Carbon::parse($start_date)->format('d M Y') }}
+            {{ ($isBn ?? false) ? 'হতে' : 'to' }}
+            {{ ($isBn ?? false) ? to_bangla_date($end_date, 'd M Y') : \Carbon\Carbon::parse($end_date)->format('d M Y') }}
         </div>
 
         <!-- Balance Sheet Content -->
         <div class="balance-sheet">
             <!-- Fund & Liabilities Section -->
             <div class="section">
-                <div class="section-header">Fund & Liabilities</div>
+                <div class="section-header">{{ ($isBn ?? false) ? 'তহবিল ও দায়' : 'Fund & Liabilities' }}</div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Description</th>
-                            <th class="text-right">Amount ({{ config('app.currency', 'BDT') }})</th>
+                            <th>{{ ($isBn ?? false) ? 'বিবরণ' : 'Description' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'টাকা' : 'Amount (' . config('app.currency', 'BDT') . ')' }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Fund</td>
-                            <td class="text-right green">{{ number_format($fund_and_liabilities['fund']['period'], 2) }}
+                            <td>{{ ($isBn ?? false) ? 'তহবিল' : 'Fund' }}</td>
+                            <td class="text-right">{{ format_amount($fund_and_liabilities['fund']['period'], true, $isBn ?? false) }}
                             </td>
                         </tr>
                         <tr>
-                            <td>Net Profit</td>
-                            <td
-                                class="text-right {{ $fund_and_liabilities['net_profit']['period'] >= 0 ? 'green' : 'red' }}">
-                                {{ number_format($fund_and_liabilities['net_profit']['period'], 2) }}
+                            <td>{{ ($isBn ?? false) ? 'নিট লাভ' : 'Net Profit' }}</td>
+                            <td class="text-right">
+                                {{ format_amount($fund_and_liabilities['net_profit']['period'], true, $isBn ?? false) }}
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="height: 25px;"></td>
+                            <td>{{ ($isBn ?? false) ? 'সরবরাহকারী বকেয়া (প্রদেয়)' : 'Supplier Due (Payable)' }}</td>
+                            <td class="text-right">
+                                {{ format_amount($fund_and_liabilities['supplier_due']['period'] ?? 0, true, $isBn ?? false) }}
+                            </td>
                         </tr>
                         <tr>
                             <td colspan="2" style="height: 25px;"></td>
                         </tr>
                         <tr class="total-row">
-                            <td>Total Fund & Liabilities</td>
-                            <td class="text-right">{{ number_format($fund_and_liabilities['total'], 2) }}</td>
+                            <td>{{ ($isBn ?? false) ? 'মোট তহবিল ও দায়' : 'Total Fund & Liabilities' }}</td>
+                            <td class="text-right">{{ format_amount($fund_and_liabilities['total'], true, $isBn ?? false) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -197,37 +201,37 @@
 
             <!-- Property & Assets Section -->
             <div class="section">
-                <div class="section-header">Property & Assets</div>
+                <div class="section-header">{{ ($isBn ?? false) ? 'সম্পত্তি ও পরিসম্পদ' : 'Property & Assets' }}</div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Description</th>
-                            <th class="text-right">Amount ({{ config('app.currency', 'BDT') }})</th>
+                            <th>{{ ($isBn ?? false) ? 'বিবরণ' : 'Description' }}</th>
+                            <th class="text-right">{{ ($isBn ?? false) ? 'টাকা' : 'Amount (' . config('app.currency', 'BDT') . ')' }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Bank Balance</td>
+                            <td>{{ ($isBn ?? false) ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance' }}</td>
                             <td class="text-right">
-                                {{ number_format($property_and_assets['bank_balance']['period'], 2) }}</td>
+                                {{ format_amount($property_and_assets['bank_balance']['period'], true, $isBn ?? false) }}</td>
                         </tr>
                         <tr>
-                            <td>Customer Due</td>
+                            <td>{{ ($isBn ?? false) ? 'গ্রাহক বকেয়া (পাওনা)' : 'Customer Due' }}</td>
                             <td class="text-right">
-                                {{ number_format($property_and_assets['customer_due']['period'], 2) }}</td>
+                                {{ format_amount($property_and_assets['customer_due']['period'], true, $isBn ?? false) }}</td>
                         </tr>
                         <tr>
-                            <td>Fixed Assets</td>
-                            <td class="text-right">{{ number_format($property_and_assets['fixed_assets'], 2) }}</td>
+                            <td>{{ ($isBn ?? false) ? 'স্থায়ী সম্পদ' : 'Fixed Assets' }}</td>
+                            <td class="text-right">{{ format_amount($property_and_assets['fixed_assets'], true, $isBn ?? false) }}</td>
                         </tr>
                         <tr>
-                            <td>Stock Value</td>
+                            <td>{{ ($isBn ?? false) ? 'মজুদ পণ্যের মূল্য' : 'Stock Value' }}</td>
                             <td class="text-right">
-                                {{ number_format($property_and_assets['stock_value']['period'], 2) }}</td>
+                                {{ format_amount($property_and_assets['stock_value']['period'], true, $isBn ?? false) }}</td>
                         </tr>
                         <tr class="total-row">
-                            <td>Total Property & Assets</td>
-                            <td class="text-right">{{ number_format($property_and_assets['total'], 2) }}</td>
+                            <td>{{ ($isBn ?? false) ? 'মোট সম্পত্তি ও পরিসম্পদ' : 'Total Property & Assets' }}</td>
+                            <td class="text-right">{{ format_amount($property_and_assets['total'], true, $isBn ?? false) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -236,11 +240,12 @@
 
         <!-- Footer with Page Number -->
         <div class="footer">
-            Page <span class="page-number"></span>
+            {{ ($isBn ?? false) ? 'পৃষ্ঠা' : 'Page' }} <span class="page-number"></span>
             <br>
-            Generated on: {{ now()->format('d M Y H:i:s') }}
+            {{ ($isBn ?? false) ? 'তৈরির সময়:' : 'Generated on:' }} {{ ($isBn ?? false) ? to_bangla_date(now(), 'd M Y, h:i A') : now()->format('d M Y H:i:s') }}
         </div>
     </div>
 </body>
 
 </html>
+

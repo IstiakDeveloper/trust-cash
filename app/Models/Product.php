@@ -34,6 +34,22 @@ class Product extends Model
         'selling_price' => 'decimal:2',
     ];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if ($this->relationLoaded('primaryImage') && $this->primaryImage) {
+            return url('/storage/' . ltrim($this->primaryImage->image, '/'));
+        }
+
+        if ($this->relationLoaded('images') && $this->images->isNotEmpty()) {
+            $primary = $this->images->firstWhere('is_primary', true) ?? $this->images->first();
+            return $primary ? url('/storage/' . ltrim($primary->image, '/')) : null;
+        }
+
+        return null;
+    }
+
     // Existing Relationships
     public function category()
     {

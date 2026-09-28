@@ -30,7 +30,7 @@
                     <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ t('মোট পণ্য', 'Total Products') }}
                     </p>
-                    <h3 class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ summary.total_products }}</h3>
+                    <h3 class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ formatNumber(summary.total_products) }}</h3>
                 </div>
 
                 <!-- Total Stock Value -->
@@ -38,7 +38,7 @@
                     <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ t('বর্তমান স্টক মূল্য', 'Stock Value') }}
                     </p>
-                    <h3 class="mt-1 text-2xl font-black text-indigo-600 dark:text-indigo-400">৳{{ formatNumber(summary.total_value) }}</h3>
+                    <h3 class="mt-1 text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ formatCurrency(summary.total_value) }}</h3>
                 </div>
 
                 <!-- Total Quantity -->
@@ -54,7 +54,7 @@
                     <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ t('সীমিত স্টক সতর্কতা', 'Low Stock Items') }}
                     </p>
-                    <h3 class="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{{ summary.low_stock_items }}</h3>
+                    <h3 class="mt-1 text-2xl font-black text-amber-600 dark:text-amber-400">{{ formatNumber(summary.low_stock_items) }}</h3>
                 </div>
             </div>
 
@@ -377,7 +377,7 @@ import {
     XMarkIcon
 } from '@heroicons/vue/24/outline';
 
-const { t } = useLanguage();
+const { t, formatCurrency, formatNumber } = useLanguage();
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -460,11 +460,15 @@ const deleteStock = async () => {
         );
 
         if (response.data.success) {
+            alert(response.data.message || t('স্টক এন্ট্রি সফলভাবে বাতিল করা হয়েছে', 'Stock entry deleted successfully'));
             await showHistory(selectedProduct.value);
             closeDeleteConfirmation();
+            router.reload({ only: ['stocks', 'stats'] });
         }
     } catch (error) {
-        console.error('Error deleting stock:', error);
+        const msg = error.response?.data?.message || error.message || t('স্টক ডিলিট করতে সমস্যা হয়েছে', 'Failed to delete stock');
+        alert('❌ ' + msg);
+        closeDeleteConfirmation();
     }
 };
 
@@ -473,14 +477,6 @@ const closeHistoryModal = () => {
     selectedProduct.value = null;
     stockHistory.value = [];
     closeDeleteConfirmation();
-};
-
-const formatNumber = (value) => {
-    if (!value) return '0.00';
-    return Number(value).toLocaleString('bn-BD', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
 };
 
 const showHistory = async (product) => {

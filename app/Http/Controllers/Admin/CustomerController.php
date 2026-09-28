@@ -241,7 +241,7 @@ class CustomerController extends Controller
             // Update customer balance
             $customer->decrement('balance', $validatedData['amount']);
 
-            // Create bank transaction and update balance
+            // Create bank transaction (Observer automatically adds to bank account balance)
             $transaction = $bankAccount->transactions()->create([
                 'transaction_type' => 'in',
                 'amount' => $validatedData['amount'],
@@ -249,10 +249,6 @@ class CustomerController extends Controller
                 'date' => now(),
                 'created_by' => Auth::id(),
             ]);
-
-            // Update bank account balance
-            $bankAccount->current_balance += $validatedData['amount'];
-            $bankAccount->save();
 
             DB::commit();
 

@@ -277,7 +277,7 @@ class SaleController extends Controller
                 }
             }
 
-            // Step 3: Reverse bank transaction if there was payment
+            // Step 3: Reverse bank transaction if there was payment (Observer handles bank balance)
             if ($originalPaid > 0 && $originalBankAccountId) {
                 $originalBankAccount = BankAccount::find($originalBankAccountId);
                 if ($originalBankAccount) {
@@ -288,8 +288,6 @@ class SaleController extends Controller
                         'description' => "Reversed payment for updated invoice {$sale->invoice_no}",
                         'created_by' => auth()->id(),
                     ]);
-
-                    $originalBankAccount->decrement('current_balance', $originalPaid);
                 }
             }
 
@@ -363,7 +361,7 @@ class SaleController extends Controller
                 $customer->increment('balance', $due);
             }
 
-            // Step 8: Handle payment difference
+            // Step 8: Handle payment difference (Observer handles bank balance)
             $paymentDifference = $request->paid - $originalPaid;
 
             if ($paymentDifference != 0 && $request->bank_account_id) {
@@ -378,8 +376,6 @@ class SaleController extends Controller
                         'description' => "Additional payment for updated invoice {$sale->invoice_no}",
                         'created_by' => auth()->id(),
                     ]);
-
-                    $bankAccount->increment('current_balance', $paymentDifference);
                 } else {
                     // Payment decreased - deduct from bank
                     $decreaseAmount = abs($paymentDifference);
@@ -391,8 +387,6 @@ class SaleController extends Controller
                         'description' => "Payment reduction for updated invoice {$sale->invoice_no}",
                         'created_by' => auth()->id(),
                     ]);
-
-                    $bankAccount->decrement('current_balance', $decreaseAmount);
                 }
             } elseif ($request->paid > 0 && $request->bank_account_id && $originalPaid == 0) {
                 // First time payment
@@ -404,8 +398,6 @@ class SaleController extends Controller
                     'description' => "Payment received for updated invoice {$sale->invoice_no}",
                     'created_by' => auth()->id(),
                 ]);
-
-                $bankAccount->increment('current_balance', $request->paid);
             }
 
             // Step 9: Update sale record
@@ -465,14 +457,13 @@ class SaleController extends Controller
                 $sale->customer->decrement('balance', $sale->due);
             }
 
-            // Reverse bank transaction if payment was made
+            // Reverse bank transaction if payment was made (Observer handles bank balance)
             if ($sale->paid > 0 && $sale->bank_account_id) {
                 $bankAccount = BankAccount::findOrFail($sale->bank_account_id);
-                $bankAccount->decrement('current_balance', $sale->paid);
 
                 // Create reverse transaction record
                 $bankAccount->transactions()->create([
-                    'transaction_type' => 'withdrawal',
+                    'transaction_type' => 'out',
                     'amount' => $sale->paid,
                     'date' => now(),
                     'description' => "Reversed payment for deleted invoice {$sale->invoice_no}",
