@@ -41,6 +41,14 @@
                     <input type="text" v-model="searchQuery" @input="handleSearch" :placeholder="t('পণ্যের নাম খুঁজুন...', 'Search products...')"
                         class="w-48 px-3 py-1 text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
 
+                    <!-- View Mode Toggle -->
+                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                        type="button"
+                        class="flex items-center px-3 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 shadow-sm">
+                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                    </button>
+
                     <!-- Export Buttons -->
                     <button @click="exportToExcel" :disabled="isExporting"
                         class="flex items-center px-3 py-1 space-x-1 text-xs text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
@@ -83,8 +91,9 @@
             </div>
         </template>
 
-        <div class="py-3">
-            <div class="max-w-full mx-auto">
+        <div v-show="viewMode === 'dashboard'" class="no-print">
+            <div class="py-3">
+                <div class="max-w-full mx-auto">
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                     <!-- Loading State -->
                     <div v-if="isLoading" class="p-6 text-center">
@@ -390,65 +399,101 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
 
-        <!-- PRINT AREA -->
-        <div class="print-area">
-            <div class="print-header">
-                <h1>{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</h1>
-            </div>
+        <!-- ============================================================
+             B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
+             ============================================================ -->
+        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+            <WordReportLayout
+                ref="wordReportRef"
+                :title="t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report')"
+                :date-range="`${filters.start_date || '-'} ${t('হতে', 'to')} ${filters.end_date || '-'}`"
+                orientation="portrait"
+                file-name="product-analysis-report.pdf"
+            >
+                <!-- Quick Summary Table -->
+                <div class="mb-5">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-1">{{ t('পণ্য বিশ্লেষণ সামগ্রিক সারাংশ', 'Overall Product Analysis Summary') }}</div>
+                    <table class="word-table">
+                        <thead>
+                            <tr>
+                                <th class="text-right">{{ t('পূর্বের স্টক মূল্য', 'Opening Stock Val') }}</th>
+                                <th class="text-right">{{ t('মোট ক্রয় মূল্য', 'Purchased Val') }}</th>
+                                <th class="text-right">{{ t('মোট বিক্রয় মূল্য', 'Sold Val') }}</th>
+                                <th class="text-right">{{ t('মোট লাভ', 'Total Profit') }}</th>
+                                <th class="text-right">{{ t('বর্তমান স্টক পরিমাণ', 'Current Stock Qty') }}</th>
+                                <th class="text-right">{{ t('বর্তমান স্টক মূল্য', 'Current Stock Val') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="font-bold">
+                                <td class="text-right">{{ formatCurrency(totalBeforeValue) }}</td>
+                                <td class="text-right">{{ formatCurrency(totalBuyPrice) }}</td>
+                                <td class="text-right text-green-700">{{ formatCurrency(totalSalePrice) }}</td>
+                                <td class="text-right text-blue-800">{{ formatCurrency(totalProfit) }}</td>
+                                <td class="text-right">{{ formatNumber(totalAvailableQuantity) }}</td>
+                                <td class="text-right">{{ formatCurrency(totalAvailableValue) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>{{ t('পণ্য', 'Product') }}</th>
-                        <th class="text-right">{{ t('শুরু স্টক', 'Opening') }}</th>
-                        <th class="text-right">{{ t('ক্রয়', 'Purchased') }}</th>
-                        <th class="text-right">{{ t('বিক্রয় পরিমাণ', 'Sold Qty') }}</th>
-                        <th class="text-right">{{ t('বিক্রয় মোট', 'Sold Total') }}</th>
-                        <th class="text-right">{{ t('লাভ', 'Profit') }}</th>
-                        <th class="text-right">{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
-                        <th class="text-right">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="product in filteredProducts" :key="product.serial">
-                        <td>{{ product.serial }}</td>
-                        <td>{{ product.product_name }}</td>
-                        <td class="text-right">{{ formatNumber(product.before_stock_quantity) }}</td>
-                        <td class="text-right">{{ formatNumber(product.purchased_quantity) }}</td>
-                        <td class="text-right">{{ formatNumber(product.sold_quantity) }}</td>
-                        <td class="text-right">{{ formatCurrency(product.sold_total) }}</td>
-                        <td class="text-right">{{ formatCurrency(product.profit_total) }}</td>
-                        <td class="text-right">{{ formatNumber(product.available_quantity) }}</td>
-                        <td class="text-right">{{ formatCurrency(product.available_value) }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" class="text-right"><strong>{{ t('সর্বমোট', 'Grand Total') }}</strong></td>
-                        <td class="text-right"><strong>{{ formatNumber(totalSoldQuantity) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatCurrency(totalSoldTotal) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatCurrency(totalProfitTotal) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatNumber(totalAvailableQuantity) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatCurrency(totalAvailableValue) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="print-footer">
-                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
-                <span>{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</span>
-            </div>
+                <!-- Products Table in Word Line Art -->
+                <table class="word-table text-[11px]">
+                    <thead>
+                        <tr>
+                            <th style="width: 4%;">#</th>
+                            <th style="width: 20%;">{{ t('পণ্য', 'Product') }}</th>
+                            <th class="text-right" style="width: 10%;">{{ t('শুরু স্টক', 'Opening') }}</th>
+                            <th class="text-right" style="width: 10%;">{{ t('ক্রয়', 'Purchased') }}</th>
+                            <th class="text-right" style="width: 10%;">{{ t('বিক্রয় পরিমাণ', 'Sold Qty') }}</th>
+                            <th class="text-right" style="width: 12%;">{{ t('বিক্রয় মোট', 'Sold Total') }}</th>
+                            <th class="text-right" style="width: 11%;">{{ t('লাভ', 'Profit') }}</th>
+                            <th class="text-right" style="width: 11%;">{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
+                            <th class="text-right" style="width: 12%;">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="product in filteredProducts" :key="'wpa_' + product.serial">
+                            <td class="text-center">{{ product.serial }}</td>
+                            <td>
+                                <div class="font-medium">{{ product.product_name }}</div>
+                                <div class="text-[9px] text-gray-500">{{ product.category }} | {{ product.product_model }}</div>
+                            </td>
+                            <td class="text-right">{{ formatNumber(product.before_stock_quantity) }}</td>
+                            <td class="text-right">{{ formatNumber(product.purchased_quantity) }}</td>
+                            <td class="text-right">{{ formatNumber(product.sold_quantity) }}</td>
+                            <td class="text-right font-medium">{{ formatCurrency(product.sold_total) }}</td>
+                            <td class="text-right font-medium" :class="Number(product.profit_total) >= 0 ? 'text-green-700' : 'text-red-700'">
+                                {{ formatCurrency(product.profit_total) }}
+                            </td>
+                            <td class="text-right font-medium">{{ formatNumber(product.available_quantity) }}</td>
+                            <td class="text-right font-medium">{{ formatCurrency(product.available_value) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row font-bold">
+                            <td colspan="4" class="text-right uppercase">{{ t('সর্বমোট', 'Grand Total') }}</td>
+                            <td class="text-right">{{ formatNumber(totalSoldQuantity) }}</td>
+                            <td class="text-right text-green-700">{{ formatCurrency(totalSoldTotal) }}</td>
+                            <td class="text-right text-blue-800">{{ formatCurrency(totalProfitTotal) }}</td>
+                            <td class="text-right">{{ formatNumber(totalAvailableQuantity) }}</td>
+                            <td class="text-right">{{ formatCurrency(totalAvailableValue) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </WordReportLayout>
         </div>
     </AdminLayout>
 </template>
 
 
 <script>
-import { defineComponent, computed, ref } from 'vue'
+import { defineComponent, computed, ref, nextTick } from 'vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import WordReportLayout from '@/Components/Reports/WordReportLayout.vue'
 import { router } from '@inertiajs/vue3'
 import { format, parseISO } from 'date-fns'
 import axios from 'axios'
@@ -458,6 +503,7 @@ import { getNumberLocale } from '@/utils'
 export default defineComponent({
     components: {
         AdminLayout,
+        WordReportLayout
     },
     props: {
         products: {
@@ -476,6 +522,8 @@ export default defineComponent({
 
     setup(props) {
         const { currentLang, t, isBangla } = useLanguage()
+        const viewMode = ref('dashboard')
+        const wordReportRef = ref(null)
         const searchQuery = ref('')
         const isLoading = ref(false)
         const isDownloading = ref(false)
@@ -615,37 +663,24 @@ export default defineComponent({
         }
 
         const downloadPDF = async () => {
-            isDownloading.value = true
-            error.value = null
-
-            try {
-                const response = await axios.get(route('admin.reports.product-analysis.pdf'), {
-                    params: {
-                        start_date: props.filters.start_date,
-                        end_date: props.filters.end_date,
-                        locale: isBangla.value ? 'bn' : 'en',
-                    },
-                    responseType: 'blob'
-                })
-
-                const url = window.URL.createObjectURL(new Blob([response.data]))
-                const link = document.createElement('a')
-                link.href = url
-                link.setAttribute('download', `product-analysis-${props.filters.start_date}-to-${props.filters.end_date}.pdf`)
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-                window.URL.revokeObjectURL(url)
-            } catch (err) {
-                console.error('Error downloading PDF:', err)
-                error.value = 'Failed to download PDF. Please try again.'
-            } finally {
-                isDownloading.value = false
-            }
+            const prev = viewMode.value
+            viewMode.value = 'document'
+            await nextTick()
+            setTimeout(async () => {
+                if (wordReportRef.value) {
+                    await wordReportRef.value.downloadPdf()
+                }
+                viewMode.value = prev
+            }, 120)
         }
 
         const printReport = () => {
-            window.print()
+            const prev = viewMode.value
+            viewMode.value = 'document'
+            setTimeout(() => {
+                window.print()
+                viewMode.value = prev
+            }, 150)
         }
 
         const exportToExcel = async () => {
@@ -755,9 +790,6 @@ export default defineComponent({
             window.URL.revokeObjectURL(url)
         }
 
-        const printReport = () => {
-            window.print()
-        }
 
         return {
             currentLang,
@@ -797,6 +829,8 @@ export default defineComponent({
             downloadPDF,
             exportToExcel,
             printReport,
+            viewMode,
+            wordReportRef,
         }
     },
 })
@@ -825,5 +859,18 @@ export default defineComponent({
 
 .animate-spin {
     animation: spin 1s linear infinite;
+}
+
+.print-only {
+    display: none;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
 }
 </style>

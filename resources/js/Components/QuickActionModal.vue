@@ -90,7 +90,7 @@
 
                     <!-- Action 5: New Purchase -->
                     <button
-                        @click="navigate('/admin/purchases/create')"
+                        @click="navigate('/admin/product-stocks/create')"
                         class="flex flex-col items-start p-4 rounded-xl border border-sky-200/80 dark:border-sky-900/40 bg-sky-50/60 dark:bg-sky-950/20 hover:bg-sky-100/60 dark:hover:bg-sky-950/40 text-left transition-all group hover:shadow-md"
                     >
                         <div class="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center text-lg mb-3 shadow-sm group-hover:scale-105 transition-transform">

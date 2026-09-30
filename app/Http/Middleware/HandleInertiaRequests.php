@@ -41,18 +41,26 @@ class HandleInertiaRequests extends Middleware
                     : 0,
             ],
             'app_name' => config('app.name', 'TrustCash'),
-            'business_name' => function () {
+            'business_name' => fn () => business_name(),
+            'business_phone' => fn () => business_phone(),
+            'business_email' => fn () => business_email(),
+            'business_address' => fn () => business_address(),
+            'business_details' => fn () => business_details(),
+            'business_logo' => function () {
                 try {
-                    if (function_exists('tenant') && tenant()) {
-                        return tenant('name') ?? config('app.name', 'TrustCash');
+                    if (class_exists(\App\Models\Setting::class)) {
+                        return \App\Models\Setting::get('business_logo', '');
                     }
+                } catch (\Throwable $e) {}
+                return '';
+            },
+            'currency_symbol' => function () {
+                try {
                     if (class_exists(\App\Models\Setting::class) && method_exists(\App\Models\Setting::class, 'get')) {
-                        return \App\Models\Setting::get('business_name', config('app.name', 'TrustCash'));
+                        return \App\Models\Setting::get('currency_symbol', '৳');
                     }
-                } catch (\Throwable $e) {
-                    // Fail safely to config
-                }
-                return config('app.name', 'TrustCash');
+                } catch (\Throwable $e) {}
+                return '৳';
             },
             'appUrl' => config('app.url'),
             'flash' => [

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import WordReportLayout from '@/Components/Reports/WordReportLayout.vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { formatYear, getNumberLocale } from '@/utils';
 
@@ -21,9 +22,20 @@ const props = defineProps({
     filters: Object
 });
 
+const viewMode = ref('dashboard');
+const wordReportRef = ref(null);
+
 const currentMonth = ref(props.selectedMonth);
 const currentYear = ref(props.selectedYear);
 const selectedBankAccount = ref(props.selectedBankAccount ?? (props.selectedAccount?.id ? String(props.selectedAccount.id) : ''));
+
+const selectedAccountLabel = computed(() => {
+    if (!selectedBankAccount.value) {
+        return t('সকল ব্যাংক অ্যাকাউন্ট (একত্রে / Consolidated)', 'All Bank Accounts (Consolidated)');
+    }
+    const acc = props.bankAccounts?.find(a => String(a.id) === String(selectedBankAccount.value));
+    return acc ? `${acc.account_name} - ${acc.bank_name}` : '';
+});
 
 const months = [
     { id: 1, name: 'January' },
@@ -47,19 +59,25 @@ const formatDate = (dateStr) => {
     return date.toLocaleDateString(getNumberLocale());
 };
 
-const downloadPdf = () => {
-    const params = new URLSearchParams({
-        month: currentMonth.value,
-        year: currentYear.value,
-        bank_account_id: selectedBankAccount.value || '',
-        locale: isBangla.value ? 'bn' : 'en'
-    });
-
-    window.location.href = `${route('admin.reports.bank-transactions.pdf')}?${params}`;
+const downloadPdf = async () => {
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    await nextTick();
+    setTimeout(async () => {
+        if (wordReportRef.value) {
+            await wordReportRef.value.downloadPdf();
+        }
+        viewMode.value = prev;
+    }, 120);
 };
 
 const printReport = () => {
-    window.print();
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    setTimeout(() => {
+        window.print();
+        viewMode.value = prev;
+    }, 150);
 };
 
 const formatAmount = (amount) => {
@@ -163,6 +181,12 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                             </div>
 
                             <div class="flex items-center gap-2">
+                                <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                                    type="button"
+                                    class="bg-white border border-gray-300 text-gray-700 px-3.5 py-2 text-sm font-medium rounded-md hover:bg-gray-50 flex items-center gap-1.5 shadow-sm transition">
+                                    <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                                    <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                                </button>
                                 <button @click="downloadPdf"
                                     class="bg-red-600 text-white px-3.5 py-2 text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center gap-1.5 shadow-sm transition">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,8 +238,8 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                         </div>
                     </div>
 
-                    <!-- Transaction Table -->
-                    <div class="max-h-[70vh] overflow-auto p-4">
+                    <!-- DASHBOARD Transaction Table -->
+                    <div v-show="viewMode === 'dashboard'" class="max-h-[70vh] overflow-auto p-4 no-print">
                         <table class="w-full border-collapse border border-gray-400 text-xs">
                             <thead>
                                 <tr>
@@ -415,67 +439,141 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
             </div>
         </div>
 
-        <!-- PRINT AREA -->
-        <div class="print-area">
-            <div class="print-header">
-                <h1>{{ t('ব্যাংক লেনদেন রিপোর্ট', 'Bank Transaction Report') }}</h1>
-                <p>{{ getMonthName(currentMonth) }} {{ currentYear }}</p>
-                <p v-if="props.bankAccount">{{ props.bankAccount.bank_name }} — {{ props.bankAccount.account_name }} ({{ props.bankAccount.account_number }})</p>
-            </div>
+        <!-- ============================================================
+             B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
+             ============================================================ -->
+        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+            <WordReportLayout
+                ref="wordReportRef"
+                :title="t('ব্যাংক লেনদেন রিপোর্ট', 'Bank Transaction Report')"
+                :date-range="`${getMonthName(currentMonth)} ${formatYear(currentYear)} | ${selectedAccountLabel}`"
+                orientation="portrait"
+                file-name="bank-transaction-report.pdf"
+            >
+                <!-- Quick Summary Bar in Word line style -->
+                <table class="word-table mb-4">
+                    <thead>
+                        <tr>
+                            <th class="text-right">{{ t('পূর্বের ব্যালেন্স', 'Previous Balance') }}</th>
+                            <th class="text-right">{{ t('মোট ডিপোজিট (+)', 'Total Deposit (+)') }}</th>
+                            <th class="text-right">{{ t('মোট উত্তোলন (-)', 'Total Withdrawal (-)') }}</th>
+                            <th class="text-right">{{ t('মাসের শেষ ব্যালেন্স', 'Month End Balance') }}</th>
+                            <th class="text-right">{{ t('বর্তমান ব্যাংক ব্যালেন্স', 'Current Bank Balance') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-right font-medium">{{ formatAmount(previousMonthBalance) }}</td>
+                            <td class="text-right font-bold text-green-700">{{ formatAmount(monthTotals?.in?.total) }}</td>
+                            <td class="text-right font-bold text-red-700">{{ formatAmount(monthTotals?.out?.total) }}</td>
+                            <td class="text-right font-bold">{{ formatAmount(endingBalance) }}</td>
+                            <td class="text-right font-bold">{{ formatAmount(currentAccountBalance) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>{{ t('তারিখ', 'Date') }}</th>
-                        <th class="text-right">{{ t('শুরু ব্যালেন্স', 'Opening') }}</th>
-                        <th class="text-right">{{ t('আয় (বিক্রয়)', 'IN: Sales') }}</th>
-                        <th class="text-right">{{ t('আয় (ফান্ড)', 'IN: Fund') }}</th>
-                        <th class="text-right">{{ t('আয় (অন্যান্য)', 'IN: Other') }}</th>
-                        <th class="text-right">{{ t('মোট আয়', 'Total IN') }}</th>
-                        <th class="text-right">{{ t('ব্যয় (ক্রয়)', 'OUT: Purchase') }}</th>
-                        <th class="text-right">{{ t('ব্যয় (খরচ)', 'OUT: Expense') }}</th>
-                        <th class="text-right">{{ t('ব্যয় (অন্যান্য)', 'OUT: Other') }}</th>
-                        <th class="text-right">{{ t('মোট ব্যয়', 'Total OUT') }}</th>
-                        <th class="text-right">{{ t('শেষ ব্যালেন্স', 'Closing') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="day in dailyTransactions" :key="day.date">
-                        <td>{{ day.date }}</td>
-                        <td class="text-right">{{ formatAmount(day.opening_balance) }}</td>
-                        <td class="text-right">{{ formatAmount(day.in?.sales) }}</td>
-                        <td class="text-right">{{ formatAmount(day.in?.fund) }}</td>
-                        <td class="text-right">{{ formatAmount(day.in?.other) }}</td>
-                        <td class="text-right">{{ formatAmount(day.in?.total) }}</td>
-                        <td class="text-right">{{ formatAmount(day.out?.purchase) }}</td>
-                        <td class="text-right">{{ formatAmount(day.out?.expense) }}</td>
-                        <td class="text-right">{{ formatAmount(day.out?.other) }}</td>
-                        <td class="text-right">{{ formatAmount(day.out?.total) }}</td>
-                        <td class="text-right">{{ formatAmount(day.balance) }}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td><strong>{{ t('মোট', 'Total') }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(previousMonthBalance) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.in?.sales) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.in?.fund) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.in?.other) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.in?.total) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.out?.purchase) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.out?.expense) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.out?.other) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(monthTotals?.out?.total) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatAmount(endingBalance) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+                <!-- Main Transaction Grid (Word Line Art) -->
+                <table class="word-table text-[10px]">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="text-center align-middle" style="width: 75px;">{{ t('তারিখ', 'Date') }}</th>
+                            <th colspan="5" class="text-center">{{ t('ডিপোজিট (জমা)', 'Deposit (Inflow)') }}</th>
+                            <th colspan="7" class="text-center">{{ t('উত্তোলন (খরচ / পরিশোধ)', 'Withdrawal (Outflow)') }}</th>
+                            <th rowspan="2" class="text-right align-middle" style="width: 85px;">{{ t('ব্যাংক ব্যালেন্স', 'Balance') }}</th>
+                        </tr>
+                        <tr>
+                            <th class="text-right">{{ t('ফান্ড', 'Fund') }}</th>
+                            <th class="text-right">{{ t('বিক্রয়', 'Sale') }}</th>
+                            <th class="text-right">{{ t('অন্যান্য', 'Other') }}</th>
+                            <th class="text-right">{{ t('রিফান্ড', 'Refund') }}</th>
+                            <th class="text-right font-bold">{{ t('মোট জমা', 'Total In') }}</th>
 
-            <div class="print-footer">
-                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
-                <span>{{ t('ব্যাংক লেনদেন রিপোর্ট', 'Bank Transaction Report') }}</span>
-            </div>
+                            <th class="text-right">{{ t('ফান্ড', 'Fund') }}</th>
+                            <th class="text-right">{{ t('ক্রয়', 'Purchase') }}</th>
+                            <th class="text-right">{{ t('সরবরাহকারী', 'Supplier') }}</th>
+                            <th class="text-right">{{ t('সম্পদ', 'Asset') }}</th>
+                            <th class="text-right">{{ t('খরচ', 'Expense') }}</th>
+                            <th class="text-right">{{ t('অন্যান্য', 'Other') }}</th>
+                            <th class="text-right font-bold">{{ t('মোট উত্তোলন', 'Total Out') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Previous Balance -->
+                        <tr class="bg-gray-50 font-semibold">
+                            <td class="text-center">{{ t('প্রারম্ভিক', 'Opening') }}</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right text-gray-400">-</td>
+                            <td class="text-right font-bold">{{ formatAmount(previousMonthBalance) }}</td>
+                        </tr>
+
+                        <!-- Daily transactions -->
+                        <tr v-for="transaction in dailyTransactions" :key="'wdt_' + transaction.date">
+                            <td class="text-center whitespace-nowrap">{{ formatDate(transaction.date) }}</td>
+                            <td class="text-right">{{ Number(transaction.in.fund) > 0 ? formatAmount(transaction.in.fund) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.in.payment) > 0 ? formatAmount(transaction.in.payment) : '-' }}</td>
+                            <td class="text-right">{{ (Number(transaction.in.extra || 0) + Number(transaction.in.other || 0)) > 0 ? formatAmount(Number(transaction.in.extra || 0) + Number(transaction.in.other || 0)) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.in.refund) > 0 ? formatAmount(transaction.in.refund) : '-' }}</td>
+                            <td class="text-right font-bold">{{ Number(transaction.in.total) > 0 ? formatAmount(transaction.in.total) : '-' }}</td>
+
+                            <td class="text-right">{{ Number(transaction.out.fund) > 0 ? formatAmount(transaction.out.fund) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.out.purchase) > 0 ? formatAmount(transaction.out.purchase) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.out.supplier_payment) > 0 ? formatAmount(transaction.out.supplier_payment) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.out.fixed_asset) > 0 ? formatAmount(transaction.out.fixed_asset) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.out.expense) > 0 ? formatAmount(transaction.out.expense) : '-' }}</td>
+                            <td class="text-right">{{ Number(transaction.out.other) > 0 ? formatAmount(transaction.out.other) : '-' }}</td>
+                            <td class="text-right font-bold">{{ Number(transaction.out.total) > 0 ? formatAmount(transaction.out.total) : '-' }}</td>
+
+                            <td class="text-right font-bold">{{ formatAmount(transaction.balance) }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row font-bold">
+                            <td class="text-center uppercase">{{ t('মোট', 'Total') }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.in?.fund) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.in?.payment) }}</td>
+                            <td class="text-right">{{ formatAmount(Number(monthTotals?.in?.extra || 0) + Number(monthTotals?.in?.other || 0)) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.in?.refund) }}</td>
+                            <td class="text-right font-bold">{{ formatAmount(monthTotals?.in?.total) }}</td>
+
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.fund) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.purchase) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.supplier_payment) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.fixed_asset) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.expense) }}</td>
+                            <td class="text-right">{{ formatAmount(monthTotals?.out?.other) }}</td>
+                            <td class="text-right font-bold">{{ formatAmount(monthTotals?.out?.total) }}</td>
+
+                            <td class="text-right font-bold">{{ formatAmount(endingBalance) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </WordReportLayout>
         </div>
     </AdminLayout>
 </template>
+
+<style scoped>
+.print-only {
+    display: none;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
+}
+</style>
 

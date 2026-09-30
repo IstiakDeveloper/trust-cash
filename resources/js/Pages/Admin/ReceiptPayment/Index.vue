@@ -83,6 +83,14 @@
                         </button>
                     </div>
 
+                    <!-- View Mode Toggle -->
+                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                        type="button"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm transition">
+                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                    </button>
+
                     <!-- PDF Download Button -->
                     <button
                         @click="downloadPDF"
@@ -101,7 +109,7 @@
                     <!-- Print Button -->
                     <button
                         @click="printReport"
-                        class="inline-flex items-center px-3.5 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-sm transition"
+                        class="inline-flex items-center px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-black shadow-sm transition"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -113,7 +121,8 @@
             </div>
         </template>
 
-        <div class="py-6 px-4 max-w-[1600px] mx-auto space-y-4">
+        <!-- DASHBOARD VIEW -->
+        <div v-show="viewMode === 'dashboard'" class="no-print py-6 px-4 max-w-[1600px] mx-auto space-y-4">
             <!-- Statement Header Badge -->
             <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300 flex flex-col sm:flex-row justify-between items-center text-sm gap-2">
                 <div class="flex items-center space-x-2">
@@ -491,13 +500,103 @@
                 </div>
             </div>
         </div>
+
+        <!-- WORD DOCUMENT / PRINT VIEW (Black & White Word Line Art) -->
+        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+            <WordReportLayout
+                ref="wordReportRef"
+                :title="t('রিসিপ্ট ও পেমেন্ট বিবরণী', 'Statement of Receipts & Payments')"
+                :date-range="formattedDateRange"
+                :account-info="selectedAccountName ? `${t('অ্যাকাউন্ট:', 'Account:')} ${selectedAccountName}` : `${t('সকল ব্যাংক অ্যাকাউন্ট (Consolidated)', 'All Bank Accounts (Consolidated)')}`"
+                orientation="portrait"
+                file-name="receipt-payment.pdf"
+            >
+                <table class="word-table" style="margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th colspan="3" style="width: 50%; text-align: center; font-size: 8.5pt;">{{ t('রিসিপ্ট (প্রাপ্তি) / Receipts', 'Receipts') }}</th>
+                            <th colspan="3" style="width: 50%; text-align: center; font-size: 8.5pt;">{{ t('পেমেন্ট (পরিশোধ) / Payments', 'Payments') }}</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 24%;">{{ t('বিবরণ', 'Particulars') }}</th>
+                            <th class="text-right" style="width: 13%;">{{ t('চলতি (৳)', 'Period') }}</th>
+                            <th class="text-right" style="width: 13%;">{{ t('ক্রমপুঞ্জিত (৳)', 'Cumulative') }}</th>
+                            <th style="width: 24%;">{{ t('বিবরণ', 'Particulars') }}</th>
+                            <th class="text-right" style="width: 13%;">{{ t('চলতি (৳)', 'Period') }}</th>
+                            <th class="text-right" style="width: 13%;">{{ t('ক্রমপুঞ্জিত (৳)', 'Cumulative') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(row, idx) in receiptPaymentRows" :key="'rp_row_' + idx">
+                            <!-- Left: Receipts -->
+                            <template v-if="row.left?.isHeader">
+                                <td colspan="3" class="section-header-row font-bold">
+                                    {{ row.left.sl ? `${row.left.sl}. ` : '' }}{{ row.left.name }}
+                                </td>
+                            </template>
+                            <template v-else-if="row.left">
+                                <td :style="row.left.isIndent ? 'padding-left: 14px; font-size: 7.5pt;' : ''">
+                                    {{ row.left.sl ? `${row.left.sl}. ` : '' }}{{ row.left.name }}
+                                </td>
+                                <td class="text-right" :style="row.left.isIndent ? 'font-size: 7.5pt;' : ''">
+                                    {{ formatCurrency(row.left.period) }}
+                                </td>
+                                <td class="text-right" :style="row.left.isIndent ? 'font-size: 7.5pt;' : ''">
+                                    {{ formatCurrency(row.left.cumulative) }}
+                                </td>
+                            </template>
+                            <template v-else>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </template>
+
+                            <!-- Right: Payments -->
+                            <template v-if="row.right?.isHeader">
+                                <td colspan="3" class="section-header-row font-bold">
+                                    {{ row.right.sl ? `${row.right.sl}. ` : '' }}{{ row.right.name }}
+                                </td>
+                            </template>
+                            <template v-else-if="row.right">
+                                <td :style="row.right.isIndent ? 'padding-left: 14px; font-size: 7.5pt;' : ''">
+                                    {{ row.right.sl ? `${row.right.sl}. ` : '' }}{{ row.right.name }}
+                                </td>
+                                <td class="text-right" :style="row.right.isIndent ? 'font-size: 7.5pt;' : ''">
+                                    {{ formatCurrency(row.right.period) }}
+                                </td>
+                                <td class="text-right" :style="row.right.isIndent ? 'font-size: 7.5pt;' : ''">
+                                    {{ formatCurrency(row.right.cumulative) }}
+                                </td>
+                            </template>
+                            <template v-else>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </template>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <!-- Grand Total: Both sides on the EXACT same horizontal row -->
+                        <tr class="total-row grand-total">
+                            <td><strong>{{ t('মোট রিসিপ্ট', 'Total Receipts') }}</strong></td>
+                            <td class="text-right"><strong>{{ formatCurrency(receipt?.total?.period || 0) }}</strong></td>
+                            <td class="text-right"><strong>{{ formatCurrency(receipt?.total?.cumulative || 0) }}</strong></td>
+                            <td><strong>{{ t('মোট পেমেন্ট', 'Total Payment') }}</strong></td>
+                            <td class="text-right"><strong>{{ formatCurrency(payment?.total?.period || 0) }}</strong></td>
+                            <td class="text-right"><strong>{{ formatCurrency(payment?.total?.cumulative || 0) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </WordReportLayout>
+        </div>
     </AdminLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import WordReportLayout from '@/Components/Reports/WordReportLayout.vue';
 import { formatCurrency } from '@/Utils';
 import { useLanguage } from '@/composables/useLanguage';
 
@@ -535,6 +634,8 @@ const endDate = ref(props.filters.end_date || '');
 const selectedBankAccountId = ref(props.selectedBankAccountId ? String(props.selectedBankAccountId) : '');
 const isDownloading = ref(false);
 const activePreset = ref('');
+const viewMode = ref('dashboard'); // 'dashboard' | 'document'
+const wordReportRef = ref(null);
 
 const selectedAccountName = computed(() => {
     if (!selectedBankAccountId.value) return '';
@@ -546,7 +647,7 @@ const formatDisplayDate = (dStr) => {
     if (!dStr) return '';
     try {
         const d = new Date(dStr);
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        return d.toLocaleDateString(isBangla.value ? 'bn-BD' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     } catch {
         return dStr;
     }
@@ -554,7 +655,125 @@ const formatDisplayDate = (dStr) => {
 
 const formattedDateRange = computed(() => {
     if (!startDate.value || !endDate.value) return '';
-    return `${formatDisplayDate(startDate.value)} to ${formatDisplayDate(endDate.value)}`;
+    return `${formatDisplayDate(startDate.value)} ${isBangla.value ? 'হতে' : 'to'} ${formatDisplayDate(endDate.value)}`;
+});
+
+const receiptPaymentRows = computed(() => {
+    const left = [];
+    // 1. Opening cash
+    left.push({
+        sl: '1',
+        name: t('ব্যাংকে শুরুর নগদ', 'Opening Cash in Hand / Bank'),
+        period: props.receipt?.opening_cash_on_bank?.period || 0,
+        cumulative: props.receipt?.opening_cash_on_bank?.cumulative || 0
+    });
+    // 2. Sale collection
+    left.push({
+        sl: '2',
+        name: t('বিক্রয় সংগ্রহ', 'Sale Collection'),
+        period: props.receipt?.sale_collection?.period || 0,
+        cumulative: props.receipt?.sale_collection?.cumulative || 0
+    });
+    // 3. Extra income
+    left.push({
+        sl: '3',
+        name: t('অন্যান্য আয় (Others Income)', 'Others Income'),
+        isHeader: true
+    });
+    for (const cat of (props.receipt?.extra_income?.categories || [])) {
+        left.push({
+            sl: '',
+            name: `- ${cat.category}`,
+            period: cat.period || 0,
+            cumulative: cat.cumulative || 0,
+            isIndent: true
+        });
+    }
+    // 4. Fund deposit
+    left.push({
+        sl: '4',
+        name: t('ফান্ড জমা / ইন (Fund Deposit)', 'Fund Deposit / In'),
+        isHeader: true
+    });
+    for (const cat of (props.receipt?.fund_deposit?.categories || [])) {
+        left.push({
+            sl: '',
+            name: `- ${cat.category}`,
+            period: cat.period || 0,
+            cumulative: cat.cumulative || 0,
+            isIndent: true
+        });
+    }
+
+    const right = [];
+    // 1. Supplier payment
+    right.push({
+        sl: '1',
+        name: t('সরবরাহকারী পরিশোধ', 'Supplier Payment'),
+        period: props.payment?.supplier_payment?.period || 0,
+        cumulative: props.payment?.supplier_payment?.cumulative || 0
+    });
+    // 2. Product purchase
+    right.push({
+        sl: '2',
+        name: t('পণ্য ক্রয় (নগদ / সরাসরি)', 'Product Purchase (Cash / Direct)'),
+        period: props.payment?.purchase_product?.period || 0,
+        cumulative: props.payment?.purchase_product?.cumulative || 0
+    });
+    // 3. Sale return
+    right.push({
+        sl: '3',
+        name: t('বিক্রয় ফেরত (রিফান্ড)', 'Sale Return (Refund)'),
+        period: props.payment?.sale_return?.period || 0,
+        cumulative: props.payment?.sale_return?.cumulative || 0
+    });
+    // 4. Fund refund
+    right.push({
+        sl: '4',
+        name: t('ফান্ড ফেরত / আউট (Fund Refund)', 'Fund Refund / Out'),
+        isHeader: true
+    });
+    for (const cat of (props.payment?.fund_refund?.categories || [])) {
+        right.push({
+            sl: '',
+            name: `- ${cat.category}`,
+            period: cat.period || 0,
+            cumulative: cat.cumulative || 0,
+            isIndent: true
+        });
+    }
+    // 5. Expenses
+    right.push({
+        sl: '5',
+        name: t('খরচসমূহ (Expenses)', 'Expenses'),
+        isHeader: true
+    });
+    for (const cat of (props.payment?.expenses?.categories || [])) {
+        right.push({
+            sl: '',
+            name: `- ${cat.category}`,
+            period: cat.period || 0,
+            cumulative: cat.cumulative || 0,
+            isIndent: true
+        });
+    }
+    // 6. Closing cash
+    right.push({
+        sl: '6',
+        name: t('ব্যাংকে সমাপনী নগদ', 'Closing Cash at Bank'),
+        period: props.payment?.closing_cash_at_bank?.period || 0,
+        cumulative: props.payment?.closing_cash_at_bank?.cumulative || 0
+    });
+
+    const maxLen = Math.max(left.length, right.length);
+    const rows = [];
+    for (let i = 0; i < maxLen; i++) {
+        rows.push({
+            left: left[i] || null,
+            right: right[i] || null
+        });
+    }
+    return rows;
 });
 
 const handleFilterChange = () => {
@@ -602,22 +821,36 @@ const applyPreset = (preset) => {
     applyFilter();
 };
 
-const downloadPDF = () => {
+const downloadPDF = async () => {
     isDownloading.value = true;
-    const params = new URLSearchParams({
-        start_date: startDate.value,
-        end_date: endDate.value,
-        bank_account_id: selectedBankAccountId.value || '',
-        locale: isBangla.value ? 'bn' : 'en',
-    }).toString();
-
-    window.location.href = `${route('admin.reports.receipt-payment.pdf')}?${params}`;
-    setTimeout(() => {
+    const previousMode = viewMode.value;
+    if (viewMode.value !== 'document') {
+        viewMode.value = 'document';
+        await nextTick();
+        await new Promise(r => setTimeout(r, 120));
+    }
+    try {
+        await wordReportRef.value?.downloadPdf();
+    } finally {
+        if (previousMode !== 'document') {
+            viewMode.value = previousMode;
+        }
         isDownloading.value = false;
-    }, 2500);
+    }
 };
 
-const printReport = () => {
+const printReport = async () => {
+    const previousMode = viewMode.value;
+    if (viewMode.value !== 'document') {
+        viewMode.value = 'document';
+        await nextTick();
+        await new Promise(r => setTimeout(r, 120));
+    }
     window.print();
+    if (previousMode !== 'document') {
+        setTimeout(() => {
+            viewMode.value = previousMode;
+        }, 1000);
+    }
 };
 </script>

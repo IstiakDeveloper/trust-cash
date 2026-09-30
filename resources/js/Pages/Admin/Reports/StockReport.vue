@@ -6,6 +6,12 @@
                     {{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}
                 </h2>
                 <div class="flex items-center space-x-2 no-print">
+                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                        type="button"
+                        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                    </button>
                     <button @click="downloadReport"
                         class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                         <DocumentArrowDownIcon class="h-5 w-5 mr-1" />
@@ -90,7 +96,10 @@
                 </div>
             </div>
         </div>
-        <div v-if="reports.length > 0" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+
+        <!-- DASHBOARD VIEW -->
+        <div v-show="viewMode === 'dashboard'" class="no-print space-y-6">
+            <div v-if="reports.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ t('সারাংশ', 'Overall Summary') }} ({{ filters.from_date }} {{ t('থেকে', 'to') }} {{ filters.to_date }})</h3>
             </div>
@@ -299,111 +308,162 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- PRINT AREA -->
-        <div class="print-area">
-            <div class="print-header">
-                <h1>{{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}</h1>
-                <p>{{ t('সময়কাল', 'Period') }}: {{ filters.from_date }} — {{ filters.to_date }}</p>
-            </div>
-
-            <template v-for="report in reports" :key="'sp_' + report.product.id">
-                <div class="section-title">
-                    {{ report.product.name }}
-                    ({{ t('SKU', 'SKU') }}: {{ report.product.sku }})
-                    &nbsp;|&nbsp; {{ t('বর্তমান স্টক', 'Current Stock') }}: {{ formatQty(report.summary.current_stock) }}
-                    &nbsp;|&nbsp; {{ t('স্টক মূল্য', 'Stock Value') }}: {{ formatPrice(report.summary.stock_value) }}
+        <!-- ============================================================
+             B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
+             ============================================================ -->
+        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+            <WordReportLayout
+                ref="wordReportRef"
+                :title="t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report')"
+                :date-range="`${filters.from_date || '-'} ${t('হতে', 'to')} ${filters.to_date || '-'}`"
+                orientation="portrait"
+                file-name="stock-movement-report.pdf"
+            >
+                <!-- Overall Summary Table -->
+                <div class="mb-5">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-1">{{ t('স্টক মুভমেন্ট সামগ্রিক সারাংশ', 'Overall Stock Summary') }}</div>
+                    <table class="word-table">
+                        <thead>
+                            <tr>
+                                <th colspan="2" class="text-center">{{ t('মোট ক্রয়', 'Total Purchases') }}</th>
+                                <th colspan="2" class="text-center">{{ t('মোট বিক্রয়', 'Total Sales') }}</th>
+                                <th colspan="2" class="text-center">{{ t('চলতি স্টক', 'Current Stock') }}</th>
+                            </tr>
+                            <tr>
+                                <th class="text-right">{{ t('পরিমাণ', 'Quantity') }}</th>
+                                <th class="text-right">{{ t('মান (টাকা)', 'Value (BDT)') }}</th>
+                                <th class="text-right">{{ t('পরিমাণ', 'Quantity') }}</th>
+                                <th class="text-right">{{ t('মান (টাকা)', 'Value (BDT)') }}</th>
+                                <th class="text-right">{{ t('পরিমাণ', 'Quantity') }}</th>
+                                <th class="text-right">{{ t('মান (টাকা)', 'Value (BDT)') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="font-bold">
+                                <td class="text-right text-green-700">{{ formatQty(summary.total_purchase_quantity) }}</td>
+                                <td class="text-right">{{ formatPrice(summary.total_purchase_value) }}</td>
+                                <td class="text-right text-red-700">{{ formatQty(summary.total_sales_quantity) }}</td>
+                                <td class="text-right">{{ formatPrice(summary.total_sales_value) }}</td>
+                                <td class="text-right text-blue-800">{{ formatQty(summary.total_current_stock) }}</td>
+                                <td class="text-right">{{ formatPrice(summary.total_stock_value) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
-                <!-- Summary row -->
-                <table style="margin-bottom:6px">
-                    <thead>
-                        <tr>
-                            <th>{{ t('শুরু স্টক', 'Opening Stock') }}</th>
-                            <th>{{ t('মোট ক্রয়', 'Total Purchased') }}</th>
-                            <th>{{ t('মোট বিক্রয়', 'Total Sold') }}</th>
-                            <th>{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
-                            <th>{{ t('গড় খরচ', 'Avg Cost') }}</th>
-                            <th>{{ t('স্টক মূল্য', 'Stock Value') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-right">{{ formatQty(report.summary.opening_stock) }}</td>
-                            <td class="text-right">{{ formatQty(report.summary.total_purchased) }}</td>
-                            <td class="text-right">{{ formatQty(report.summary.total_sold) }}</td>
-                            <td class="text-right">{{ formatQty(report.summary.current_stock) }}</td>
-                            <td class="text-right">{{ formatPrice(report.summary.avg_cost) }}</td>
-                            <td class="text-right">{{ formatPrice(report.summary.stock_value) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <!-- Per Product Movements -->
+                <div v-for="(report, pIdx) in reports" :key="'wsp_' + report.product.id" class="mb-6">
+                    <div v-if="pIdx > 0" class="page-break my-4"></div>
 
-                <!-- Purchases -->
-                <div style="font-size:8.5pt;font-weight:600;margin-bottom:2px">{{ t('ক্রয় ইতিহাস', 'Purchase History') }}</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>{{ t('তারিখ', 'Date') }}</th>
-                            <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
-                            <th class="text-right">{{ t('ইউনিট খরচ', 'Unit Cost') }}</th>
-                            <th class="text-right">{{ t('মোট', 'Total') }}</th>
-                            <th class="text-right">{{ t('উপলব্ধ', 'Available') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="purchase in report.purchases" :key="purchase.date + '_p'">
-                            <td>{{ formatDate(purchase.date) }}</td>
-                            <td class="text-right">{{ formatQty(purchase.quantity) }}</td>
-                            <td class="text-right">{{ formatPrice(purchase.unit_cost) }}</td>
-                            <td class="text-right">{{ formatPrice(purchase.total_cost) }}</td>
-                            <td class="text-right">{{ formatQty(purchase.available_quantity) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <!-- Product Subheader -->
+                    <div class="border border-black bg-gray-100 px-3 py-1.5 font-bold text-sm flex justify-between items-center mb-1">
+                        <span>{{ report.product.name }} (SKU: {{ report.product.sku }}) | {{ report.product.category }}</span>
+                        <span class="text-xs font-normal">
+                            {{ t('শুরুর স্টক:', 'Opening:') }} <strong>{{ formatQty(report.summary.opening_stock) }}</strong> |
+                            {{ t('চলতি স্টক:', 'Current:') }} <strong>{{ formatQty(report.summary.current_stock) }}</strong> |
+                            {{ t('স্টক মূল্য:', 'Value:') }} <strong>{{ formatPrice(report.summary.stock_value) }}</strong>
+                        </span>
+                    </div>
 
-                <!-- Sales -->
-                <div style="font-size:8.5pt;font-weight:600;margin-bottom:2px;margin-top:6px">{{ t('বিক্রয় ইতিহাস', 'Sales History') }}</div>
-                <table style="margin-bottom:14px">
-                    <thead>
-                        <tr>
-                            <th>{{ t('তারিখ', 'Date') }}</th>
-                            <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
-                            <th class="text-right">{{ t('ইনভয়েস', 'Invoice') }}</th>
-                            <th class="text-right">{{ t('ইউনিট মূল্য', 'Unit Price') }}</th>
-                            <th class="text-right">{{ t('মোট', 'Total') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="sale in report.sales" :key="sale.date + '_s'">
-                            <td>{{ formatDate(sale.date) }}</td>
-                            <td class="text-right">{{ formatQty(sale.quantity) }}</td>
-                            <td>{{ sale.invoice_no ?? '—' }}</td>
-                            <td class="text-right">{{ formatPrice(sale.unit_price ?? 0) }}</td>
-                            <td class="text-right">{{ formatPrice(sale.total ?? 0) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </template>
+                    <!-- Product Summary Line -->
+                    <table class="word-table mb-2">
+                        <thead>
+                            <tr>
+                                <th class="text-right">{{ t('প্রারম্ভিক স্টক', 'Opening Stock') }}</th>
+                                <th class="text-right">{{ t('মোট ক্রয়', 'Total Purchased') }}</th>
+                                <th class="text-right">{{ t('মোট বিক্রয়', 'Total Sold') }}</th>
+                                <th class="text-right">{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
+                                <th class="text-right">{{ t('গড় খরচ', 'Avg Cost') }}</th>
+                                <th class="text-right">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="font-bold">
+                                <td class="text-right">{{ formatQty(report.summary.opening_stock) }}</td>
+                                <td class="text-right text-green-700">{{ formatQty(report.summary.total_purchased) }}</td>
+                                <td class="text-right text-red-700">{{ formatQty(report.summary.total_sold) }}</td>
+                                <td class="text-right text-blue-800">{{ formatQty(report.summary.current_stock) }}</td>
+                                <td class="text-right">{{ formatPrice(report.summary.avg_cost) }}</td>
+                                <td class="text-right">{{ formatPrice(report.summary.stock_value) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-            <div class="print-footer">
-                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
-                <span>{{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}</span>
-            </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Purchase History -->
+                        <div>
+                            <div class="text-[11px] font-bold uppercase mb-1">{{ t('ক্রয় ইতিহাস', 'Purchase History') }}</div>
+                            <table class="word-table text-[10px]">
+                                <thead>
+                                    <tr>
+                                        <th>{{ t('তারিখ', 'Date') }}</th>
+                                        <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                                        <th class="text-right">{{ t('দর', 'Rate') }}</th>
+                                        <th class="text-right">{{ t('মোট', 'Total') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="purchase in report.purchases" :key="'wpp_' + purchase.date">
+                                        <td class="text-center">{{ formatDate(purchase.date) }}</td>
+                                        <td class="text-right">{{ formatQty(purchase.quantity) }}</td>
+                                        <td class="text-right">{{ formatPrice(purchase.unit_cost) }}</td>
+                                        <td class="text-right font-medium">{{ formatPrice(purchase.total_cost) }}</td>
+                                    </tr>
+                                    <tr v-if="!report.purchases || report.purchases.length === 0">
+                                        <td colspan="4" class="text-center text-gray-400 italic py-2">- {{ t('কোনো ক্রয় নেই', 'No purchases') }} -</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sales History -->
+                        <div>
+                            <div class="text-[11px] font-bold uppercase mb-1">{{ t('বিক্রয় ইতিহাস', 'Sales History') }}</div>
+                            <table class="word-table text-[10px]">
+                                <thead>
+                                    <tr>
+                                        <th>{{ t('তারিখ', 'Date') }}</th>
+                                        <th class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                                        <th>{{ t('ইনভয়েস', 'Invoice') }}</th>
+                                        <th class="text-right">{{ t('মোট', 'Total') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="sale in report.sales" :key="'wsp_' + sale.date">
+                                        <td class="text-center">{{ formatDate(sale.date) }}</td>
+                                        <td class="text-right">{{ formatQty(sale.quantity) }}</td>
+                                        <td class="text-center">{{ sale.invoice_no || '-' }}</td>
+                                        <td class="text-right font-medium">{{ formatPrice(sale.total || (sale.quantity * (sale.unit_price || 0))) }}</td>
+                                    </tr>
+                                    <tr v-if="!report.sales || report.sales.length === 0">
+                                        <td colspan="4" class="text-center text-gray-400 italic py-2">- {{ t('কোনো বিক্রয় নেই', 'No sales') }} -</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </WordReportLayout>
         </div>
     </AdminLayout>
 </template>
 
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import WordReportLayout from '@/Components/Reports/WordReportLayout.vue'
 import { DocumentArrowDownIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 import { getNumberLocale } from '@/utils'
 
 const { currentLang, t } = useLanguage()
+
+const viewMode = ref('dashboard')
+const wordReportRef = ref(null)
 
 const props = defineProps({
     products: {
@@ -547,20 +607,25 @@ const applyFilters = () => {
     });
 };
 
-const downloadReport = () => {
-    const params = new URLSearchParams({
-        product_id: filters.value.product_id || '',
-        category_id: filters.value.category_id || '',
-        from_date: filters.value.from_date || '',
-        to_date: filters.value.to_date || '',
-        locale: currentLang.value === 'bn' ? 'bn' : 'en',
-    }).toString()
-
-    window.location.href = `${route('admin.reports.stock.download')}?${params}`
+const downloadReport = async () => {
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    await nextTick();
+    setTimeout(async () => {
+        if (wordReportRef.value) {
+            await wordReportRef.value.downloadPdf();
+        }
+        viewMode.value = prev;
+    }, 120);
 }
 
 const printReport = () => {
-    window.print();
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    setTimeout(() => {
+        window.print();
+        viewMode.value = prev;
+    }, 150);
 }
 
 
@@ -589,9 +654,16 @@ onMounted(() => {
     @apply bg-gray-50 dark:bg-gray-700;
 }
 
+.print-only {
+    display: none;
+}
+
 @media print {
     .no-print {
         display: none !important;
+    }
+    .print-only {
+        display: block !important;
     }
 }
 </style>

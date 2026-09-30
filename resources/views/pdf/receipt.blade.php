@@ -283,11 +283,12 @@
     <div class="main-container">
         <!-- কোম্পানি হেডার -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }} / Variety Store</div>
+            <div class="company-name">{{ business_name() }}</div>
+            @if(business_details())
             <div class="company-details">
-                Ukilpara, Naogaon Sadar, Naogaon.<br>
-                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+                {{ business_details(' | ') }}
             </div>
+            @endif
         </div>
 
         <!-- ইনভয়েস ডিটেইলস সেকশন -->
@@ -402,7 +403,7 @@
         <div class="footer">
             <p class="thank-you">Thank You For Your Business!</p>
             <p>Returns accepted within 7 days with original receipt</p>
-            <p>For any queries, contact us at mou.prokashon@gmail.com</p>
+            @if(business_email())<p>For any queries, contact us at {{ business_email() }}</p>@endif
             <p>&copy; {{ date('Y') }} {{ $company['name'] ?? 'Your Company Name' }} - All Rights Reserved</p>
         </div>
     </div>

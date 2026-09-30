@@ -108,12 +108,13 @@
     <div class="container">
         <!-- Header Section -->
         <div class="company-header">
-            <div class="company-name">{{ config('app.name', 'Your Company Name') }}/ Variety Store</div>
+            <div class="company-name">{{ business_name() }}</div>
             <div class="sub-company-name"></div>
+            @if(business_details())
             <div class="company-details">
-                Ukilpara, Naogaon Sadar, Naogaon.<br>
-                Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+                {{ business_details(' | ') }}
             </div>
+            @endif
         </div>
 
             <div class="report-period">{{ $filters['monthName'] }} {{ $filters['year'] }}</div>

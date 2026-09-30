@@ -20,17 +20,7 @@
     @vite(['resources/js/app.js'])
     @inertiaHead
 
-    <style>
-        @media print {
-            @page {
-                margin: 0;
-            }
 
-            body {
-                margin: 0;
-            }
-        }
-    </style>
 </head>
 
 <body class="font-sans antialiased">

@@ -60,7 +60,7 @@
                 </div>
 
                 <Link
-                    :href="route('admin.purchases.create')"
+                    :href="route('admin.product-stocks.create')"
                     class="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2 text-sm font-semibold shadow-sm transition"
                 >
                     <PlusIcon class="w-4 h-4" />

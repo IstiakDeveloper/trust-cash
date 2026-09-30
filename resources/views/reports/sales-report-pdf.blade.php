@@ -142,10 +142,12 @@
 </head>
 <body>
     <div class="header">
-        <div class="company-name">{{ config('app.name', 'TrustCash') }}</div>
+        <div class="company-name">{{ business_name() }}</div>
+        @if(business_details())
         <div class="company-details">
-            Ukilpara, Naogaon Sadar, Naogaon. | Phone: (+88) 01334766435 | Email: mou.prokashon@gmail.com
+            {{ business_details(' | ') }}
         </div>
+        @endif
         <div class="report-title">{{ $isBn ? 'বিক্রয় রিপোর্ট' : 'Sales Report' }}</div>
         <div class="date-range">
             {{ $isBn ? 'সময়কাল: ' : 'Period: ' }}{{ $filters['from_date'] }} {{ $isBn ? 'হতে' : 'to' }} {{ $filters['to_date'] }}

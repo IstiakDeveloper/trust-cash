@@ -121,3 +121,84 @@ if (!function_exists('to_bangla_month')) {
         return $map[$month] ?? (string) $month;
     }
 }
+
+if (!function_exists('business_name')) {
+    function business_name(): string
+    {
+        try {
+            if (class_exists(\App\Models\Setting::class)) {
+                $name = \App\Models\Setting::get('business_name');
+                if (!empty($name) && $name !== 'My Store') {
+                    return $name;
+                }
+            }
+            if (function_exists('tenant') && tenant() && tenant('name')) {
+                return tenant('name');
+            }
+            if (class_exists(\App\Models\Setting::class)) {
+                $name = \App\Models\Setting::get('business_name');
+                if (!empty($name)) return $name;
+            }
+        } catch (\Throwable $e) {}
+        return config('app.name', 'TrustCash');
+    }
+}
+
+if (!function_exists('business_phone')) {
+    function business_phone(): string
+    {
+        try {
+            if (class_exists(\App\Models\Setting::class)) {
+                $phone = \App\Models\Setting::get('business_phone');
+                if (!empty($phone)) return $phone;
+            }
+        } catch (\Throwable $e) {}
+        return '';
+    }
+}
+
+if (!function_exists('business_email')) {
+    function business_email(): string
+    {
+        try {
+            if (class_exists(\App\Models\Setting::class)) {
+                $email = \App\Models\Setting::get('business_email');
+                if (!empty($email)) return $email;
+            }
+            if (function_exists('tenant') && tenant() && tenant('email')) {
+                return tenant('email');
+            }
+        } catch (\Throwable $e) {}
+        return '';
+    }
+}
+
+if (!function_exists('business_address')) {
+    function business_address(): string
+    {
+        try {
+            if (class_exists(\App\Models\Setting::class)) {
+                $address = \App\Models\Setting::get('business_address');
+                if (!empty($address)) return $address;
+            }
+        } catch (\Throwable $e) {}
+        return '';
+    }
+}
+
+if (!function_exists('business_details')) {
+    function business_details(string $separator = ' | '): string
+    {
+        $parts = [];
+        $addr = business_address();
+        $phone = business_phone();
+        $email = business_email();
+
+        if (!empty($addr)) $parts[] = $addr;
+        if (!empty($phone)) $parts[] = 'Phone: ' . $phone;
+        if (!empty($email)) $parts[] = 'Email: ' . $email;
+
+        return implode($separator, $parts);
+    }
+}
+

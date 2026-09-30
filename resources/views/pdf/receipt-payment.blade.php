@@ -188,10 +188,12 @@
         <table class="header-table">
             <tr>
                 <td style="width: 65%;">
-                    <div class="company-name">{{ config('app.name', 'TrustCash') }}</div>
+                    <div class="company-name">{{ business_name() }}</div>
+                    @if(business_details())
                     <div class="company-details">
-                        Phone: (+88) 01334766435 | Email: info@trustcash.com.bd
+                        {{ business_details(' | ') }}
                     </div>
+                    @endif
                 </td>
                 <td style="width: 35%; text-align: right; vertical-align: bottom;">
                     <div style="font-size: 8pt; color: #333;">

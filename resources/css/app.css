@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+    img {
+        display: inline-block;
+    }
+
     html {
         font-family: 'Inter', 'Noto Sans Bengali', 'Hind Siliguri', system-ui, -apple-system, sans-serif;
         -webkit-font-smoothing: antialiased;
@@ -17,94 +21,251 @@
     }
 }
 
-/* .print-area is hidden on screen — always */
-.print-area {
+/* ============================================================
+   SCREEN STYLES FOR PRINT ELEMENTS
+   Always hide print-only containers during normal browser viewing
+   ============================================================ */
+.print-area,
+.print-only {
     display: none !important;
 }
 
 /* ============================================================
    @media print
-   Technique: visibility:hidden on everything, then
-   visibility:visible on .print-area and its children.
-   This works regardless of DOM nesting depth.
+   Clean, reliable A4 printing architecture:
+   - Removes browser chrome, sidebar, navbars, buttons, and .no-print elements
+   - Resets layout hierarchy to static in-flow containers
+   - Renders .print-area in standard document flow for natural multi-page pagination
+   - Accurately mirrors PDF styling
    ============================================================ */
 @media print {
-
     @page {
         size: A4 portrait;
-        margin: 12mm 14mm 12mm 14mm;
+        margin: 10mm 12mm 10mm 12mm;
     }
 
-    /* Step 1 — make EVERYTHING invisible */
-    * {
-        visibility: hidden !important;
+    /* 1. HIDE NON-PRINTABLE ELEMENTS */
+    aside,
+    header,
+    footer,
+    nav,
+    .no-print,
+    .no-print *,
+    button,
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    .fixed:not(.print-fixed) {
+        display: none !important;
     }
 
-    /* Step 2 — make body/html transparent, no bg */
-    html, body {
-        background: transparent !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Step 3 — bring .print-area and ALL its children back */
-    .print-area,
-    .print-area * {
-        visibility: visible !important;
-    }
-
-    /* Step 4 — position .print-area at top-left of the page */
-    .print-area {
-        display: block !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
+    /* 2. RESET ROOT & LAYOUT CONTAINERS */
+    html,
+    body {
         background: #ffffff !important;
         color: #000000 !important;
-        font-family: 'Inter', 'Noto Sans Bengali', Arial, sans-serif !important;
-        font-size: 10pt !important;
-        padding: 0 !important;
         margin: 0 !important;
-        z-index: 99999 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+        height: auto !important;
+        font-family: 'Inter', 'Noto Sans Bengali', Arial, sans-serif !important;
+        font-size: 9pt !important;
+        line-height: 1.3 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    /* === Print Header === */
+    #app,
+    .min-h-screen,
+    main,
+    div[class*="lg:pl-64"],
+    .space-y-4,
+    .space-y-6 {
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: 100% !important;
+        display: block !important;
+        position: static !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: none !important;
+        transform: none !important;
+        overflow: visible !important;
+    }
+
+    /* 3. DISPLAY PRINT CONTAINER IN NORMAL DOCUMENT FLOW */
+    .print-area,
+    .print-only {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
+    }
+
+    /* 4. PRINT REPORT HEADER (ACCURATE PDF STYLING) */
     .print-area .print-header {
         text-align: center;
-        border-bottom: 2px solid #000;
+        border-bottom: 1.5px solid #000;
         padding-bottom: 8px;
         margin-bottom: 12px;
     }
 
-    .print-area .print-header h1 {
-        font-size: 15pt;
+    .print-area .print-company-name {
+        font-size: 16pt;
         font-weight: 700;
-        margin: 0 0 3px 0;
+        margin-bottom: 3px;
         color: #000;
     }
 
-    .print-area .print-header p {
-        font-size: 9pt;
-        margin: 2px 0;
+    .print-area .print-company-details {
+        font-size: 8.5pt;
         color: #333;
+        margin-bottom: 4px;
     }
 
-    /* === Summary Cards === */
+    .print-area .print-report-title {
+        font-size: 13pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin: 4px 0 2px 0;
+        color: #000;
+    }
+
+    .print-area .print-date-range {
+        font-size: 8.5pt;
+        color: #222;
+    }
+
+    /* 5. SUMMARY TABLE (MATCHES PDF EXACTLY) */
+    .print-area .summary-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 14px;
+        background: #ffffff !important;
+    }
+
+    .print-area .summary-table th,
+    .print-area .summary-table td {
+        padding: 5px 6px !important;
+        border: 1px solid #444 !important;
+        font-size: 8.5pt !important;
+        color: #000 !important;
+        background: #ffffff !important;
+    }
+
+    .print-area .summary-table th {
+        background: #f0f0f0 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    /* 6. ACCOUNT SECTIONS & TABLES */
+    .print-area .account-section {
+        margin-top: 14px;
+        page-break-inside: auto;
+        break-inside: auto;
+    }
+
+    .print-area .account-header {
+        background: #e8e8e8 !important;
+        padding: 6px 8px !important;
+        margin-bottom: 6px;
+        border: 1px solid #444 !important;
+    }
+
+    .print-area .account-name {
+        font-size: 11pt;
+        font-weight: 700;
+        color: #000;
+    }
+
+    .print-area .account-details {
+        font-size: 8.5pt;
+        color: #333;
+        margin-top: 2px;
+    }
+
+    .print-area .month-header {
+        background: #f4f4f4 !important;
+        padding: 4px 6px !important;
+        margin-top: 8px;
+        margin-bottom: 4px;
+        font-weight: 700;
+        border-left: 3px solid #000 !important;
+        font-size: 9pt;
+        color: #000;
+    }
+
+    .print-area .transactions-table,
+    .print-area table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 8.5pt !important;
+        margin-bottom: 10px;
+        background: #ffffff !important;
+    }
+
+    .print-area .transactions-table th,
+    .print-area .transactions-table td,
+    .print-area table th,
+    .print-area table td {
+        padding: 4px 6px !important;
+        border: 1px solid #444 !important;
+        color: #000 !important;
+        background: #ffffff !important;
+    }
+
+    .print-area .transactions-table th,
+    .print-area table th {
+        background: #f0f0f0 !important;
+        font-weight: 700 !important;
+        text-align: left;
+    }
+
+    .print-area tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .print-area thead {
+        display: table-header-group !important;
+    }
+
+    .print-area tfoot tr td,
+    .print-area tfoot tr th,
+    .print-area .monthly-summary td {
+        background: #f0f0f0 !important;
+        font-weight: 700 !important;
+        border: 1px solid #444 !important;
+    }
+
+    /* Print utility classes */
+    .print-area .text-right { text-align: right !important; }
+    .print-area .text-center { text-align: center !important; }
+    .print-area .text-left { text-align: left !important; }
+    .print-area .font-bold { font-weight: 700 !important; }
+    .print-area .font-semibold { font-weight: 600 !important; }
+
+    /* Summary cards fallback if used */
     .print-area .print-summary {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        grid-template-columns: repeat(4, 1fr) !important;
         gap: 6px;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
     }
 
     .print-area .print-summary-card {
-        border: 1px solid #bbb;
+        border: 1px solid #444;
         padding: 6px 8px;
         text-align: center;
+        background: #fafafa !important;
     }
 
     .print-area .print-summary-card .label {
@@ -115,84 +276,42 @@
     }
 
     .print-area .print-summary-card .value {
-        font-size: 11pt;
+        font-size: 10.5pt;
         font-weight: 700;
         display: block;
         color: #000;
     }
 
-    /* === Section Title === */
     .print-area .section-title {
-        font-size: 10pt;
+        font-size: 9.5pt;
         font-weight: 700;
         border-bottom: 1px solid #000;
         padding-bottom: 3px;
-        margin: 12px 0 5px 0;
+        margin: 10px 0 5px 0;
         color: #000;
     }
 
-    /* === Tables === */
-    .print-area table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        font-size: 8.5pt !important;
-        margin-bottom: 10px;
-        page-break-inside: auto;
-        background: #ffffff !important;
-    }
-
-    .print-area table thead {
-        display: table-header-group;
-    }
-
-    .print-area table tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-    }
-
-    .print-area table th {
-        background: #e8e8e8 !important;
-        border: 1px solid #555 !important;
-        padding: 4px 6px !important;
-        font-weight: 700 !important;
-        font-size: 8pt !important;
-        color: #000 !important;
-        text-align: left;
-    }
-
-    .print-area table td {
-        border: 1px solid #aaa !important;
-        padding: 3px 6px !important;
-        color: #000 !important;
-        background: #ffffff !important;
-        vertical-align: top;
-    }
-
-    .print-area table tfoot tr td,
-    .print-area table tfoot tr th {
-        background: #dedede !important;
-        border: 1px solid #555 !important;
-        font-weight: 700 !important;
-    }
-
-    /* Alignment */
-    .print-area .text-right { text-align: right !important; }
-    .print-area .text-center { text-align: center !important; }
-    .print-area .text-left { text-align: left !important; }
-
-    /* === Footer === */
+    /* 7. PRINT FOOTER */
     .print-area .print-footer {
-        margin-top: 18px;
+        margin-top: 16px;
         border-top: 1px solid #ccc;
         padding-top: 5px;
         font-size: 8pt;
-        color: #555;
+        color: #444;
         display: flex !important;
         justify-content: space-between;
     }
 
-    /* Page break */
-    .print-page-break {
+    .print-area .no-tx-note {
+        padding: 8px;
+        font-size: 8.5pt;
+        font-style: italic;
+        color: #666;
+    }
+
+    .print-page-break,
+    .page-break {
         page-break-after: always !important;
+        break-after: page !important;
     }
 }

@@ -95,6 +95,12 @@
 
                 <!-- Actions -->
                 <div class="flex items-end space-x-2">
+                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                        type="button"
+                        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                    </button>
                     <button @click="downloadReport"
                         class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                         <DocumentArrowDownIcon class="h-5 w-5 mr-1" />
@@ -109,8 +115,10 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- DASHBOARD VIEW -->
+        <div v-show="viewMode === 'dashboard'" class="no-print space-y-6">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট বিক্রয়', 'Total Sales') }}</div>
                 <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
@@ -295,110 +303,130 @@
                 </div>
             </div>
         </div>
+    </div>
 
         <!-- ============================================================
-             PRINT AREA — hidden on screen, shown on print/window.print()
+             B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
              ============================================================ -->
-        <div class="print-area">
-            <!-- Header -->
-            <div class="print-header">
-                <h1>{{ t('বিক্রয় রিপোর্ট', 'Sales Report') }}</h1>
-                <p>{{ t('সময়কাল', 'Period') }}: {{ filters.from_date }} — {{ filters.to_date }}</p>
-            </div>
-
-            <!-- Summary -->
-            <div class="print-summary">
-                <div class="print-summary-card">
-                    <span class="label">{{ t('মোট বিক্রয়', 'Total Sales') }}</span>
-                    <span class="value">{{ summary.total_sales }}</span>
-                </div>
-                <div class="print-summary-card">
-                    <span class="label">{{ t('মোট পরিমাণ', 'Total Amount') }}</span>
-                    <span class="value">{{ formatPrice(summary.total_amount) }}</span>
-                </div>
-                <div class="print-summary-card">
-                    <span class="label">{{ t('মোট প্রাপ্ত', 'Received') }}</span>
-                    <span class="value">{{ formatPrice(summary.received) }}</span>
-                </div>
-                <div class="print-summary-card">
-                    <span class="label">{{ t('মোট বকেয়া', 'Due') }}</span>
-                    <span class="value">{{ formatPrice(summary.due) }}</span>
-                </div>
-            </div>
-
-            <!-- Per-month tables -->
-            <template v-for="report in reports" :key="report.month + '_print'">
-                <div class="section-title">{{ report.month }}</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>{{ t('তারিখ', 'Date') }}</th>
-                            <th>{{ t('সময়', 'Time') }}</th>
-                            <th>{{ t('ইনভয়েস', 'Invoice') }}</th>
-                            <th>{{ t('গ্রাহক', 'Customer') }}</th>
-                            <th class="text-right">{{ t('মোট', 'Total') }}</th>
-                            <th class="text-right">{{ t('পরিশোধ', 'Paid') }}</th>
-                            <th class="text-right">{{ t('বকেয়া', 'Due') }}</th>
-                            <th>{{ t('স্ট্যাটাস', 'Status') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-for="day in report.daily_data" :key="day.date + '_d'">
-                            <tr v-for="sale in day.sales" :key="sale.id">
-                                <td>{{ day.date }}</td>
-                                <td>{{ sale.created_at }}</td>
-                                <td>{{ sale.invoice_no }}</td>
-                                <td>{{ sale.customer }}</td>
-                                <td class="text-right">{{ formatPrice(sale.total) }}</td>
-                                <td class="text-right">{{ formatPrice(sale.paid) }}</td>
-                                <td class="text-right">{{ formatPrice(sale.due) }}</td>
-                                <td class="text-center">{{ getStatusLabel(sale.payment_status) }}</td>
+        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+            <WordReportLayout
+                ref="wordReportRef"
+                :title="t('বিক্রয় রিপোর্ট', 'Sales Report')"
+                :date-range="`${filters.from_date || '-'} ${t('হতে', 'to')} ${filters.to_date || '-'}`"
+                orientation="portrait"
+                file-name="sales-report.pdf"
+            >
+                <!-- Summary Table -->
+                <div class="mb-5">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-1">{{ t('বিক্রয় সারাংশ', 'Sales Summary') }}</div>
+                    <table class="word-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center">{{ t('মোট বিক্রয় ইনভয়েস', 'Total Sales Invoices') }}</th>
+                                <th class="text-right">{{ t('মোট বিক্রয় পরিমাণ', 'Total Sales Amount') }}</th>
+                                <th class="text-right">{{ t('মোট প্রাপ্ত (আদায়)', 'Total Received') }}</th>
+                                <th class="text-right">{{ t('মোট বকেয়া', 'Total Due') }}</th>
+                                <th class="text-right">{{ t('আদায় শতকরা', 'Collection %') }}</th>
                             </tr>
-                        </template>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4" class="text-right"><strong>{{ t('মাসিক মোট', 'Monthly Total') }}</strong></td>
-                            <td class="text-right"><strong>{{ formatPrice(report.summary.total_amount) }}</strong></td>
-                            <td class="text-right"><strong>{{ formatPrice(report.summary.received) }}</strong></td>
-                            <td class="text-right"><strong>{{ formatPrice(report.summary.due) }}</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </template>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center font-bold">{{ summary.total_sales }}</td>
+                                <td class="text-right font-bold">{{ formatPrice(summary.total_amount) }}</td>
+                                <td class="text-right font-bold text-green-700">{{ formatPrice(summary.received) }}</td>
+                                <td class="text-right font-bold text-red-700">{{ formatPrice(summary.due) }}</td>
+                                <td class="text-right font-medium">{{ getPercentage(summary.received, summary.total_amount) }}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- Grand total -->
-            <table>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" class="text-right"><strong>{{ t('সর্বমোট', 'Grand Total') }}</strong></td>
-                        <td class="text-right"><strong>{{ formatPrice(summary.total_amount) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatPrice(summary.received) }}</strong></td>
-                        <td class="text-right"><strong>{{ formatPrice(summary.due) }}</strong></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                <!-- Monthly Sales Breakdowns -->
+                <div v-for="(report, rIdx) in reports" :key="'ws_' + report.month" class="mb-6">
+                    <div v-if="rIdx > 0" class="page-break my-4"></div>
 
-            <div class="print-footer">
-                <span>{{ t('মুদ্রণের তারিখ', 'Printed on') }}: {{ new Date().toLocaleDateString() }}</span>
-                <span>{{ t('বিক্রয় রিপোর্ট', 'Sales Report') }}</span>
-            </div>
+                    <!-- Month Subheader -->
+                    <div class="border border-black bg-gray-100 px-3 py-1.5 font-bold text-sm flex justify-between items-center mb-1">
+                        <span>{{ report.month }}</span>
+                        <span class="text-xs font-normal">
+                            {{ t('বিক্রয়:', 'Sales:') }} <strong>{{ report.summary.total_sales }}</strong> |
+                            {{ t('মোট:', 'Total:') }} <strong>{{ formatPrice(report.summary.total_amount) }}</strong> |
+                            {{ t('আদায়:', 'Received:') }} <strong class="text-green-700">{{ formatPrice(report.summary.received) }}</strong> |
+                            {{ t('বকেয়া:', 'Due:') }} <strong class="text-red-700">{{ formatPrice(report.summary.due) }}</strong>
+                        </span>
+                    </div>
+
+                    <!-- Invoices Table -->
+                    <table class="word-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 14%;">{{ t('তারিখ', 'Date') }}</th>
+                                <th style="width: 16%;">{{ t('ইনভয়েস', 'Invoice') }}</th>
+                                <th style="width: 24%;">{{ t('গ্রাহক', 'Customer') }}</th>
+                                <th class="text-right" style="width: 13%;">{{ t('মোট পরিমাণ', 'Total Amount') }}</th>
+                                <th class="text-right" style="width: 13%;">{{ t('পরিশোধ', 'Paid') }}</th>
+                                <th class="text-right" style="width: 10%;">{{ t('বকেয়া', 'Due') }}</th>
+                                <th class="text-center" style="width: 10%;">{{ t('স্ট্যাটাস', 'Status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="day in report.daily_data" :key="'wd_' + day.date">
+                                <tr v-for="sale in day.sales" :key="'ws_' + sale.id">
+                                    <td class="text-center">{{ day.date }}</td>
+                                    <td class="font-medium">{{ sale.invoice_no }}</td>
+                                    <td>{{ sale.customer }}</td>
+                                    <td class="text-right font-medium">{{ formatPrice(sale.total) }}</td>
+                                    <td class="text-right text-green-700">{{ formatPrice(sale.paid) }}</td>
+                                    <td class="text-right text-red-700">{{ formatPrice(sale.due) }}</td>
+                                    <td class="text-center">{{ getStatusLabel(sale.payment_status) }}</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                        <tfoot>
+                            <tr class="font-bold bg-gray-50 border-t border-black">
+                                <td colspan="3" class="text-right">{{ report.month }} {{ t('মোট', 'Total') }}</td>
+                                <td class="text-right">{{ formatPrice(report.summary.total_amount) }}</td>
+                                <td class="text-right text-green-700">{{ formatPrice(report.summary.received) }}</td>
+                                <td class="text-right text-red-700">{{ formatPrice(report.summary.due) }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Grand Total Table -->
+                <div class="mt-4">
+                    <table class="word-table">
+                        <tfoot>
+                            <tr class="total-row font-bold text-sm">
+                                <td style="width: 54%;" class="text-right uppercase">{{ t('সর্বমোট বিক্রয় হিসাব (Grand Total)', 'Grand Total') }}</td>
+                                <td style="width: 13%;" class="text-right">{{ formatPrice(summary.total_amount) }}</td>
+                                <td style="width: 13%;" class="text-right text-green-700">{{ formatPrice(summary.received) }}</td>
+                                <td style="width: 10%;" class="text-right text-red-700">{{ formatPrice(summary.due) }}</td>
+                                <td style="width: 10%;"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </WordReportLayout>
         </div>
     </AdminLayout>
 </template>
 
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import WordReportLayout from '@/Components/Reports/WordReportLayout.vue'
 import { DocumentArrowDownIcon, PrinterIcon } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 import { getNumberLocale } from '@/utils'
 
 const { currentLang, t } = useLanguage()
+
+const viewMode = ref('dashboard')
+const wordReportRef = ref(null)
 
 const props = defineProps({
     customers: {
@@ -555,21 +583,25 @@ const applyFilters = () => {
     });
 }
 
-const downloadReport = () => {
-    const params = new URLSearchParams({
-        customer_id: filters.value.customer_id || '',
-        bank_account_id: filters.value.bank_account_id || '',
-        payment_status: filters.value.payment_status || '',
-        from_date: filters.value.from_date || '',
-        to_date: filters.value.to_date || '',
-        locale: currentLang.value === 'bn' ? 'bn' : 'en',
-    }).toString();
-
-    window.location.href = `${route('admin.reports.sales.download')}?${params}`;
+const downloadReport = async () => {
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    await nextTick();
+    setTimeout(async () => {
+        if (wordReportRef.value) {
+            await wordReportRef.value.downloadPdf();
+        }
+        viewMode.value = prev;
+    }, 120);
 }
 
 const printReport = () => {
-    window.print();
+    const prev = viewMode.value;
+    viewMode.value = 'document';
+    setTimeout(() => {
+        window.print();
+        viewMode.value = prev;
+    }, 150);
 }
 
 const getPaymentMethodIcon = (method) => {
@@ -641,9 +673,16 @@ watch(() => filters.value.bank_account_id, (newVal) => {
     @apply text-xs text-gray-500 ml-6 mt-1;
 }
 
+.print-only {
+    display: none;
+}
+
 @media print {
     .no-print {
         display: none !important;
+    }
+    .print-only {
+        display: block !important;
     }
 }
 </style>
