@@ -196,14 +196,12 @@ class SuperAdminController extends Controller
             'trial_ends_at'  => $trialEndsAt,
         ]);
 
-        // Attach domain: normalize to localhost for local testing
-        $host = request()->getHost();
-        $isLocal = app()->environment('local') || in_array($host, ['127.0.0.1', 'localhost', '::1']);
-        $baseDomain = $isLocal ? 'localhost' : $host;
+        // Attach domain dynamically
+        $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
         $fullDomain = "{$subdomain}.{$baseDomain}";
 
         $tenant->domains()->create(['domain' => $fullDomain]);
-        if ($isLocal) {
+        if ($baseDomain === 'localhost') {
             $tenant->domains()->create(['domain' => "{$subdomain}.127.0.0.1"]);
         }
 

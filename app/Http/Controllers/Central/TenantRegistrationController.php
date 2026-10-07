@@ -15,6 +15,26 @@ use Inertia\Inertia;
 
 class TenantRegistrationController extends Controller
 {
+    public static function resolveBaseDomain(?Request $request = null): string
+    {
+        $request = $request ?: request();
+        if ($envDomain = env('CENTRAL_DOMAIN')) {
+            return $envDomain;
+        }
+
+        $host = $request->getHost();
+        if (!in_array($host, ['127.0.0.1', 'localhost', '::1']) && filter_var($host, FILTER_VALIDATE_IP) === false) {
+            return $host;
+        }
+
+        $appUrlHost = parse_url(config('app.url', ''), PHP_URL_HOST);
+        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1']) && filter_var($appUrlHost, FILTER_VALIDATE_IP) === false) {
+            return $appUrlHost;
+        }
+
+        return 'localhost';
+    }
+
     public function showRegistrationForm(Request $request)
     {
         $selectedPlan = null;
@@ -27,6 +47,7 @@ class TenantRegistrationController extends Controller
         return Inertia::render('Central/RegisterBusiness', [
             'plans' => $plans,
             'selectedPlan' => $selectedPlan ?? $plans->first(),
+            'baseDomain' => self::resolveBaseDomain($request),
         ]);
     }
 
@@ -79,17 +100,15 @@ class TenantRegistrationController extends Controller
                 'trial_ends_at' => null,      // Starts upon approval
             ]);
 
-            // 2. Attach domain: normalize to localhost for local testing
-            $host = request()->getHost();
-            $isLocal = app()->environment('local') || in_array($host, ['127.0.0.1', 'localhost', '::1']);
-            $baseDomain = $isLocal ? 'localhost' : $host;
+            // 2. Attach domain dynamically
+            $baseDomain = self::resolveBaseDomain($request);
             $fullDomain = $subdomain . '.' . $baseDomain;
 
             $tenant->domains()->create([
                 'domain' => $fullDomain,
             ]);
 
-            if ($isLocal) {
+            if ($baseDomain === 'localhost') {
                 $tenant->domains()->create([
                     'domain' => $subdomain . '.127.0.0.1',
                 ]);
