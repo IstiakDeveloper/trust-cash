@@ -1,92 +1,94 @@
 <template>
     <AdminLayout :title="t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report')">
         <template #header>
-            <div class="flex items-center justify-between no-print">
-                <h2 class="text-base font-semibold text-gray-800">{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</h2>
-                <div class="flex items-center space-x-2">
+            <div class="flex flex-col gap-3 no-print">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-800 dark:text-white">{{ t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report') }}</h2>
+                    <!-- Search Box -->
+                    <div class="w-full sm:w-64">
+                        <input type="text" v-model="searchQuery" @input="handleSearch" :placeholder="t('পণ্যের নাম খুঁজুন...', 'Search products...')"
+                            class="w-full px-3 py-1.5 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <!-- Date Range Selector -->
-                    <div class="flex items-center space-x-1">
-                        <label class="text-xs text-gray-600">{{ t('শুরুর তারিখ', 'From Date') }}</label>
-                        <div class="relative">
-                            <input v-model="startDateText" type="text" inputmode="numeric"
-                                :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                                class="w-32 px-2 py-1 pr-7 text-xs border-gray-300 rounded-md shadow-sm"
-                                @change="handleTypedDate('start', startDateText)" />
-                            <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
-                                :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('start')">
-                                <i class="fas fa-calendar-alt text-xs"></i>
-                            </button>
-                            <input ref="startDatePicker" type="date" :value="filters.start_date"
-                                :max="filters.end_date" :lang="currentLang === 'bn' ? 'bn-BD' : 'en-BD'"
-                                class="sr-only" @change="handleNativeDate('start', $event)" />
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ t('শুরুর তারিখ', 'From') }}</label>
+                            <div class="relative">
+                                <input v-model="startDateText" type="text" inputmode="numeric"
+                                    :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
+                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm"
+                                    @change="handleTypedDate('start', startDateText)" />
+                                <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
+                                    :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('start')">
+                                    <i class="fas fa-calendar-alt text-xs"></i>
+                                </button>
+                                <input ref="startDatePicker" type="date" :value="filters.start_date"
+                                    :max="filters.end_date" :lang="currentLang === 'bn' ? 'bn-BD' : 'en-BD'"
+                                    class="sr-only" @change="handleNativeDate('start', $event)" />
+                            </div>
                         </div>
-                        <span class="text-xs text-gray-500">{{ t('থেকে', 'to') }}</span>
-                        <label class="text-xs text-gray-600">{{ t('শেষের তারিখ', 'To Date') }}</label>
-                        <div class="relative">
-                            <input v-model="endDateText" type="text" inputmode="numeric"
-                                :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                                class="w-32 px-2 py-1 pr-7 text-xs border-gray-300 rounded-md shadow-sm"
-                                @change="handleTypedDate('end', endDateText)" />
-                            <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
-                                :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('end')">
-                                <i class="fas fa-calendar-alt text-xs"></i>
-                            </button>
-                            <input ref="endDatePicker" type="date" :value="filters.end_date"
-                                :min="filters.start_date" :max="today" :lang="currentLang === 'bn' ? 'bn-BD' : 'en-BD'"
-                                class="sr-only" @change="handleNativeDate('end', $event)" />
+                        <span class="text-xs text-gray-500">-</span>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ t('শেষের তারিখ', 'To') }}</label>
+                            <div class="relative">
+                                <input v-model="endDateText" type="text" inputmode="numeric"
+                                    :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
+                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm"
+                                    @change="handleTypedDate('end', endDateText)" />
+                                <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
+                                    :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('end')">
+                                    <i class="fas fa-calendar-alt text-xs"></i>
+                                </button>
+                                <input ref="endDatePicker" type="date" :value="filters.end_date"
+                                    :min="filters.start_date" :max="today" :lang="currentLang === 'bn' ? 'bn-BD' : 'en-BD'"
+                                    class="sr-only" @change="handleNativeDate('end', $event)" />
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Search Box -->
-                    <input type="text" v-model="searchQuery" @input="handleSearch" :placeholder="t('পণ্যের নাম খুঁজুন...', 'Search products...')"
-                        class="w-48 px-3 py-1 text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                    <!-- Actions Row Grid -->
+                    <div class="grid grid-cols-5 sm:flex sm:items-center gap-1.5">
+                        <!-- View Mode Toggle -->
+                        <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                            type="button"
+                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 shadow-sm min-h-[34px]">
+                            <span v-if="viewMode === 'dashboard'">📄</span>
+                            <span v-else>📊</span>
+                        </button>
 
-                    <!-- View Mode Toggle -->
-                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                        type="button"
-                        class="flex items-center px-3 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 shadow-sm">
-                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                    </button>
+                        <!-- Export Buttons -->
+                        <button @click="exportToExcel" :disabled="isExporting"
+                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 min-h-[34px]"
+                            :title="t('এক্সেল', 'Excel')">
+                            <span class="truncate">{{ t('এক্সেল', 'XLS') }}</span>
+                        </button>
 
-                    <!-- Export Buttons -->
-                    <button @click="exportToExcel" :disabled="isExporting"
-                        class="flex items-center px-3 py-1 space-x-1 text-xs text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>{{ isExporting ? t('এক্সপোর্ট হচ্ছে...', 'Exporting...') : t('এক্সেল', 'Excel') }}</span>
-                    </button>
+                        <button @click="downloadPDF" :disabled="isDownloading"
+                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 min-h-[34px]"
+                            :title="t('পিডিএফ', 'PDF')">
+                            <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
+                        </button>
 
-                    <button @click="downloadPDF" :disabled="isDownloading"
-                        class="flex items-center px-3 py-1 space-x-1 text-xs text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span>{{ isDownloading ? t('জেনারেট হচ্ছে...', 'Generating...') : t('পিডিএফ', 'PDF') }}</span>
-                    </button>
+                        <!-- Print Button -->
+                        <button @click="printReport"
+                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 min-h-[34px]"
+                            :title="t('প্রিন্ট', 'Print')">
+                            <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
+                        </button>
 
-                    <!-- Print Button -->
-                    <button @click="printReport"
-                        class="flex items-center px-3 py-1 space-x-1 text-xs text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        <span>{{ t('প্রিন্ট', 'Print') }}</span>
-                    </button>
-
-
-                    <!-- Refresh Button -->
-                    <button @click="refreshData" :disabled="isRefreshing"
-                        class="flex items-center px-3 py-1 text-xs text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50">
-                        <svg :class="['w-4 h-4', { 'animate-spin': isRefreshing }]" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
+                        <!-- Refresh Button -->
+                        <button @click="refreshData" :disabled="isRefreshing"
+                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 min-h-[34px]">
+                            <svg :class="['w-4 h-4', { 'animate-spin': isRefreshing }]" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -128,32 +130,33 @@
                     </div>
 
                     <!-- Data Table -->
-                    <div v-else class="p-2">
-                        <!-- Summary Cards -->
-                        <div class="grid grid-cols-5 gap-4 mb-4">
-                            <div class="p-3 rounded-lg bg-blue-50">
-                                <h3 class="text-xs font-medium text-blue-700">{{ t('মোট ক্রয়', 'Total Buy') }}</h3>
-                                <p class="text-lg font-bold text-blue-900">{{ formatCurrency(totalBuyPrice) }}</p>
+                    <div v-else class="p-2 sm:p-4">
+                        <!-- Summary Cards (2 to 5 cols) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 mb-4">
+                            <div class="p-2.5 sm:p-3 rounded-xl bg-blue-50 border border-blue-200/60">
+                                <h3 class="text-xs font-semibold text-blue-700">{{ t('মোট ক্রয়', 'Total Buy') }}</h3>
+                                <p class="text-sm sm:text-lg font-bold font-mono text-blue-900 truncate">{{ formatCurrency(totalBuyPrice) }}</p>
                             </div>
-                            <div class="p-3 rounded-lg bg-green-50">
-                                <h3 class="text-xs font-medium text-green-700">{{ t('মোট বিক্রয়', 'Total Sale') }}</h3>
-                                <p class="text-lg font-bold text-green-900">{{ formatCurrency(totalSaleAfterDiscount) }}
+                            <div class="p-2.5 sm:p-3 rounded-xl bg-green-50 border border-green-200/60">
+                                <h3 class="text-xs font-semibold text-green-700">{{ t('মোট বিক্রয়', 'Total Sale') }}</h3>
+                                <p class="text-sm sm:text-lg font-bold font-mono text-green-900 truncate">{{ formatCurrency(totalSaleAfterDiscount) }}
                                 </p>
                             </div>
-                            <div class="p-3 rounded-lg bg-orange-50">
-                                <h3 class="text-xs font-medium text-orange-700">{{ t('মোট লাভ', 'Total Profit') }}</h3>
-                                <p class="text-lg font-bold text-orange-900">{{ formatCurrency(totalProfit) }}</p>
+                            <div class="p-2.5 sm:p-3 rounded-xl bg-orange-50 border border-orange-200/60">
+                                <h3 class="text-xs font-semibold text-orange-700">{{ t('মোট লাভ', 'Total Profit') }}</h3>
+                                <p class="text-sm sm:text-lg font-bold font-mono text-orange-900 truncate">{{ formatCurrency(totalProfit) }}</p>
                             </div>
-                            <div class="p-3 rounded-lg bg-purple-50">
-                                <h3 class="text-xs font-medium text-purple-700">{{ t('লাভ মার্জিন', 'Profit Margin') }}</h3>
-                                <p class="text-lg font-bold text-purple-900">{{ profitMargin }}%</p>
+                            <div class="p-2.5 sm:p-3 rounded-xl bg-purple-50 border border-purple-200/60">
+                                <h3 class="text-xs font-semibold text-purple-700">{{ t('লাভ মার্জিন', 'Profit Margin') }}</h3>
+                                <p class="text-sm sm:text-lg font-bold font-mono text-purple-900 truncate">{{ profitMargin }}%</p>
                             </div>
-                            <div class="p-3 rounded-lg bg-yellow-50">
-                                <h3 class="text-xs font-medium text-yellow-700">{{ t('স্টক মূল্য', 'Stock Value') }}</h3>
-                                <p class="text-lg font-bold text-yellow-900">{{ formatCurrency(totalAvailableValue) }}
+                            <div class="p-2.5 sm:p-3 rounded-xl bg-yellow-50 border border-yellow-200/60 col-span-2 sm:col-span-1">
+                                <h3 class="text-xs font-semibold text-yellow-700">{{ t('স্টক মূল্য', 'Stock Value') }}</h3>
+                                <p class="text-sm sm:text-lg font-bold font-mono text-yellow-900 truncate">{{ formatCurrency(totalAvailableValue) }}
                                 </p>
                             </div>
                         </div>
+
 
                         <!-- Table Container -->
                         <div class="max-h-[70vh] overflow-auto">
@@ -405,80 +408,181 @@
         <!-- ============================================================
              B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
              ============================================================ -->
-        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+        <div :class="[viewMode === 'document' ? 'block py-4 overflow-x-auto' : 'print-only']">
             <WordReportLayout
                 ref="wordReportRef"
                 :title="t('পণ্য বিশ্লেষণ রিপোর্ট', 'Product Analysis Report')"
-                :date-range="`${filters.start_date || '-'} ${t('হতে', 'to')} ${filters.end_date || '-'}`"
-                orientation="portrait"
+                :date-range="`${startDateText || filters.start_date || '-'} ${t('হতে', 'to')} ${endDateText || filters.end_date || '-'}`"
+                orientation="landscape"
                 file-name="product-analysis-report.pdf"
             >
-                <!-- Quick Summary Table -->
-                <div class="mb-5">
-                    <div class="text-xs font-bold uppercase tracking-wider mb-1">{{ t('পণ্য বিশ্লেষণ সামগ্রিক সারাংশ', 'Overall Product Analysis Summary') }}</div>
-                    <table class="word-table">
+                <!-- Quick Summary Bar / Table -->
+                <div class="mb-3 avoid-break">
+                    <table class="word-table" style="margin-top: 0; margin-bottom: 6px;">
                         <thead>
-                            <tr>
-                                <th class="text-right">{{ t('পূর্বের স্টক মূল্য', 'Opening Stock Val') }}</th>
-                                <th class="text-right">{{ t('মোট ক্রয় মূল্য', 'Purchased Val') }}</th>
-                                <th class="text-right">{{ t('মোট বিক্রয় মূল্য', 'Sold Val') }}</th>
-                                <th class="text-right">{{ t('মোট লাভ', 'Total Profit') }}</th>
-                                <th class="text-right">{{ t('বর্তমান স্টক পরিমাণ', 'Current Stock Qty') }}</th>
-                                <th class="text-right">{{ t('বর্তমান স্টক মূল্য', 'Current Stock Val') }}</th>
+                            <tr style="background-color: #f2f2f2 !important;">
+                                <th class="text-right" style="width: 20%;">{{ t('মোট ক্রয়', 'Total Buy') }}</th>
+                                <th class="text-right" style="width: 20%;">{{ t('মোট বিক্রয়', 'Total Sale') }}</th>
+                                <th class="text-right" style="width: 20%;">{{ t('মোট লাভ', 'Total Profit') }}</th>
+                                <th class="text-right" style="width: 20%;">{{ t('লাভ মার্জিন', 'Profit Margin') }}</th>
+                                <th class="text-right" style="width: 20%;">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr class="font-bold">
-                                <td class="text-right">{{ formatCurrency(totalBeforeValue) }}</td>
                                 <td class="text-right">{{ formatCurrency(totalBuyPrice) }}</td>
-                                <td class="text-right text-green-700">{{ formatCurrency(totalSalePrice) }}</td>
-                                <td class="text-right text-blue-800">{{ formatCurrency(totalProfit) }}</td>
-                                <td class="text-right">{{ formatNumber(totalAvailableQuantity) }}</td>
+                                <td class="text-right">{{ formatCurrency(totalSaleAfterDiscount) }}</td>
+                                <td class="text-right" :style="totalProfit >= 0 ? 'color: #166534;' : 'color: #dc2626;'">{{ formatCurrency(totalProfit) }}</td>
+                                <td class="text-right" :style="profitMargin >= 0 ? 'color: #166534;' : 'color: #dc2626;'">{{ profitMargin }}%</td>
                                 <td class="text-right">{{ formatCurrency(totalAvailableValue) }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Products Table in Word Line Art -->
-                <table class="word-table text-[11px]">
+                <!-- Exact 18-Column Landscape Products Analysis Table matching Show Page -->
+                <table class="word-table pa-landscape-table">
                     <thead>
                         <tr>
-                            <th style="width: 4%;">#</th>
-                            <th style="width: 20%;">{{ t('পণ্য', 'Product') }}</th>
-                            <th class="text-right" style="width: 10%;">{{ t('শুরু স্টক', 'Opening') }}</th>
-                            <th class="text-right" style="width: 10%;">{{ t('ক্রয়', 'Purchased') }}</th>
-                            <th class="text-right" style="width: 10%;">{{ t('বিক্রয় পরিমাণ', 'Sold Qty') }}</th>
-                            <th class="text-right" style="width: 12%;">{{ t('বিক্রয় মোট', 'Sold Total') }}</th>
-                            <th class="text-right" style="width: 11%;">{{ t('লাভ', 'Profit') }}</th>
-                            <th class="text-right" style="width: 11%;">{{ t('বর্তমান স্টক', 'Current Stock') }}</th>
-                            <th class="text-right" style="width: 12%;">{{ t('স্টক মূল্য', 'Stock Value') }}</th>
+                            <!-- Product Info Section -->
+                            <th colspan="2" class="text-left font-bold" style="background-color: #f2f2f2 !important;">
+                                {{ t('পণ্যের তথ্য', 'Product Information') }}
+                            </th>
+
+                            <!-- Before Stock Section -->
+                            <th colspan="3" class="text-center font-bold" style="background-color: #fef9c3 !important;">
+                                {{ t('স্টক পূর্বের তথ্য', 'Before Stock Information') }}
+                            </th>
+
+                            <!-- Buy Info Section -->
+                            <th colspan="3" class="text-center font-bold" style="background-color: #dbeafe !important;">
+                                {{ t('ক্রয় তথ্য', 'Buy Information') }}
+                            </th>
+
+                            <!-- Sale Info Section -->
+                            <th colspan="5" class="text-center font-bold" style="background-color: #dcfce7 !important;">
+                                {{ t('বিক্রয় তথ্য', 'Sale Information') }}
+                            </th>
+
+                            <!-- Profit Info Section -->
+                            <th colspan="3" class="text-center font-bold" style="background-color: #ffedd5 !important;">
+                                {{ t('লাভ তথ্য', 'Profit Information') }}
+                            </th>
+
+                            <!-- Available Info Section -->
+                            <th colspan="2" class="text-center font-bold" style="background-color: #f3e8ff !important;">
+                                {{ t('উপলব্ধ তথ্য', 'Available Information') }}
+                            </th>
+                        </tr>
+                        <tr>
+                            <!-- Product Info Headers -->
+                            <th style="width: 2.5%;" class="text-center">{{ t('ক্রমিক', 'SL') }}</th>
+                            <th style="width: 12%;" class="text-left">{{ t('নাম', 'Name') }}</th>
+
+                            <!-- Before Stock Headers -->
+                            <th style="width: 4.5%;" class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                            <th style="width: 5%;" class="text-right">{{ t('দর', 'Price') }}</th>
+                            <th style="width: 5.5%;" class="text-right">{{ t('মান', 'Value') }}</th>
+
+                            <!-- Buy Info Headers -->
+                            <th style="width: 4.5%;" class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                            <th style="width: 5%;" class="text-right">{{ t('দর', 'Price') }}</th>
+                            <th style="width: 6%;" class="text-right">{{ t('মোট', 'Total') }}</th>
+
+                            <!-- Sale Info Headers -->
+                            <th style="width: 4.5%;" class="text-right">{{ t('পরিমাণ', 'Qty') }}</th>
+                            <th style="width: 5%;" class="text-right">{{ t('দর', 'Price') }}</th>
+                            <th style="width: 6%;" class="text-right">{{ t('সাবটোটাল', 'Subtotal') }}</th>
+                            <th style="width: 5%;" class="text-right">{{ t('ছাড়', 'Discount') }}</th>
+                            <th style="width: 6%;" class="text-right">{{ t('মোট', 'Total') }}</th>
+
+                            <!-- Profit Info Headers -->
+                            <th style="width: 5%;" class="text-right">{{ t('প্রতি ইউনিট', 'Per Unit') }}</th>
+                            <th style="width: 6%;" class="text-right">{{ t('মোট', 'Total') }}</th>
+                            <th style="width: 4%;" class="text-center">%</th>
+
+                            <!-- Available Info Headers -->
+                            <th style="width: 5%;" class="text-right">{{ t('স্টক', 'Stock') }}</th>
+                            <th style="width: 6.5%;" class="text-right">{{ t('মান', 'Value') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="product in filteredProducts" :key="'wpa_' + product.serial">
+                            <!-- Product Info -->
                             <td class="text-center">{{ product.serial }}</td>
-                            <td>
-                                <div class="font-medium">{{ product.product_name }}</div>
-                                <div class="text-[9px] text-gray-500">{{ product.category }} | {{ product.product_model }}</div>
+                            <td class="text-left font-medium">
+                                <div>{{ product.product_name }}</div>
+                                <div v-if="product.product_model || product.category" class="text-[8px] text-gray-500">
+                                    {{ [product.category, product.product_model].filter(Boolean).join(' | ') }}
+                                </div>
                             </td>
-                            <td class="text-right">{{ formatNumber(product.before_stock_quantity) }}</td>
-                            <td class="text-right">{{ formatNumber(product.purchased_quantity) }}</td>
-                            <td class="text-right">{{ formatNumber(product.sold_quantity) }}</td>
-                            <td class="text-right font-medium">{{ formatCurrency(product.sold_total) }}</td>
-                            <td class="text-right font-medium" :class="Number(product.profit_total) >= 0 ? 'text-green-700' : 'text-red-700'">
-                                {{ formatCurrency(product.profit_total) }}
+
+                            <!-- Before Stock Info -->
+                            <td class="text-right">{{ formatNumber(product.before_quantity) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.before_price) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.before_value) }}</td>
+
+                            <!-- Buy Info -->
+                            <td class="text-right">{{ formatNumber(product.buy_quantity) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.buy_price) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.total_buy_price) }}</td>
+
+                            <!-- Sale Info -->
+                            <td class="text-right">{{ formatNumber(product.sale_quantity) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.sale_price) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.total_sale_price) }}</td>
+                            <td class="text-right" :style="Number(product.sale_discount) > 0 ? 'color: #dc2626;' : ''">
+                                {{ formatCurrency(product.sale_discount) }}
                             </td>
-                            <td class="text-right font-medium">{{ formatNumber(product.available_quantity) }}</td>
-                            <td class="text-right font-medium">{{ formatCurrency(product.available_value) }}</td>
+                            <td class="text-right font-semibold">{{ formatCurrency(product.sale_after_discount) }}</td>
+
+                            <!-- Profit Info -->
+                            <td class="text-right" :style="Number(product.profit_per_unit) >= 0 ? 'color: #166534;' : 'color: #dc2626;'">
+                                {{ formatCurrency(product.profit_per_unit) }}
+                            </td>
+                            <td class="text-right font-semibold" :style="Number(product.total_profit) >= 0 ? 'color: #166534;' : 'color: #dc2626;'">
+                                {{ formatCurrency(product.total_profit) }}
+                            </td>
+                            <td class="text-center" :style="Number(product.profit_percentage) >= 0 ? 'color: #166534;' : 'color: #dc2626;'">
+                                {{ formatNumber(product.profit_percentage) }}%
+                            </td>
+
+                            <!-- Available Info -->
+                            <td class="text-right">{{ formatNumber(product.available_quantity) }}</td>
+                            <td class="text-right">{{ formatCurrency(product.available_stock_value) }}</td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr class="total-row font-bold">
-                            <td colspan="4" class="text-right uppercase">{{ t('সর্বমোট', 'Grand Total') }}</td>
-                            <td class="text-right">{{ formatNumber(totalSoldQuantity) }}</td>
-                            <td class="text-right text-green-700">{{ formatCurrency(totalSoldTotal) }}</td>
-                            <td class="text-right text-blue-800">{{ formatCurrency(totalProfitTotal) }}</td>
+                            <td colspan="2" class="text-right uppercase">{{ t('মোট', 'Totals') }}</td>
+
+                            <!-- Before Stock Totals -->
+                            <td class="text-right">{{ formatNumber(totalBeforeQuantity) }}</td>
+                            <td class="text-center">-</td>
+                            <td class="text-right">{{ formatCurrency(totalBeforeValue) }}</td>
+
+                            <!-- Buy Info Totals -->
+                            <td class="text-right">{{ formatNumber(totalBuyQuantity) }}</td>
+                            <td class="text-center">-</td>
+                            <td class="text-right">{{ formatCurrency(totalBuyPrice) }}</td>
+
+                            <!-- Sale Info Totals -->
+                            <td class="text-right">{{ formatNumber(totalSaleQuantity) }}</td>
+                            <td class="text-center">-</td>
+                            <td class="text-right">{{ formatCurrency(totalSalePrice) }}</td>
+                            <td class="text-right" :style="Number(totalSaleDiscount) > 0 ? 'color: #dc2626;' : ''">{{ formatCurrency(totalSaleDiscount) }}</td>
+                            <td class="text-right font-bold">{{ formatCurrency(totalSaleAfterDiscount) }}</td>
+
+                            <!-- Profit Info Totals -->
+                            <td class="text-center">-</td>
+                            <td class="text-right font-bold" :style="Number(totalProfit) >= 0 ? 'color: #166534;' : 'color: #dc2626;'">
+                                {{ formatCurrency(totalProfit) }}
+                            </td>
+                            <td class="text-center font-bold" :style="Number(profitMargin) >= 0 ? 'color: #166534;' : 'color: #dc2626;'">
+                                {{ profitMargin }}%
+                            </td>
+
+                            <!-- Available Info Totals -->
                             <td class="text-right">{{ formatNumber(totalAvailableQuantity) }}</td>
                             <td class="text-right">{{ formatCurrency(totalAvailableValue) }}</td>
                         </tr>
@@ -861,11 +965,23 @@ export default defineComponent({
     animation: spin 1s linear infinite;
 }
 
+:deep(.pa-landscape-table th),
+:deep(.pa-landscape-table td) {
+    padding: 3px 2px !important;
+    font-size: 6.8pt !important;
+    line-height: 1.25 !important;
+    word-break: break-word;
+}
+
 .print-only {
     display: none;
 }
 
 @media print {
+    @page {
+        size: landscape;
+        margin: 6mm;
+    }
     .no-print {
         display: none !important;
     }

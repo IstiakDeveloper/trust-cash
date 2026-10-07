@@ -3,26 +3,26 @@
         <Head :title="t('ড্যাশবোর্ড', 'Dashboard')" />
 
         <div class="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950 transition-colors">
-            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-8">
+            <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-6 sm:space-y-8">
                 <!-- Page Header & Date Filter Bar -->
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3 sm:pb-4 border-b border-slate-200/80 dark:border-slate-800">
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                             {{ t('ব্যবসায়িক ড্যাশবোর্ড', 'Business Dashboard') }}
                         </h1>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <p class="mt-0.5 sm:mt-1 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                             <i class="far fa-calendar-alt text-indigo-500"></i>
                             <span>{{ filters.periodLabel }}</span>
                         </p>
                     </div>
 
-                    <!-- Quick Period Presets -->
-                    <div class="flex flex-wrap items-center gap-2">
+                    <!-- Quick Period Presets (Touch-scrollable chips on mobile) -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
                         <button
                             type="button"
-                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all"
+                            class="shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition-all"
                             :class="preset === 'today'
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-indigo-600 text-white shadow-xs'
                                 : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'"
                             @click="applyPreset('today')"
                         >
@@ -30,9 +30,9 @@
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all"
+                            class="shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition-all"
                             :class="preset === 'month'
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-indigo-600 text-white shadow-xs'
                                 : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'"
                             @click="applyPreset('month')"
                         >
@@ -40,9 +40,9 @@
                         </button>
                         <button
                             type="button"
-                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all"
+                            class="shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition-all"
                             :class="preset === '30d'
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-indigo-600 text-white shadow-xs'
                                 : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'"
                             @click="applyPreset('30d')"
                         >
@@ -50,40 +50,40 @@
                         </button>
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
+                            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
                             @click="router.reload()"
                             :title="t('রিফ্রেশ করুন', 'Refresh')"
                         >
                             <ArrowPathIcon class="h-3.5 w-3.5" />
-                            <span>{{ t('রিফ্রেশ', 'Refresh') }}</span>
+                            <span class="hidden sm:inline">{{ t('রিফ্রেশ', 'Refresh') }}</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- KPI Metric Cards Grid -->
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <!-- KPI Metric Cards Grid (2 columns on mobile, 4 on desktop) -->
+                <div class="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <article
                         v-for="(card, idx) in metricCards"
                         :key="card.key"
-                        class="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                        class="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
                     >
                         <div class="flex items-center justify-between">
                             <div
-                                class="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-xs"
+                                class="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-white shadow-xs"
                                 :class="card.iconBg"
                             >
-                                <component :is="card.icon" class="h-5 w-5" aria-hidden="true" />
+                                <component :is="card.icon" class="h-4.5 w-4.5 sm:h-5 sm:w-5" aria-hidden="true" />
                             </div>
-                            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <span class="text-[10px] sm:text-xs font-mono font-bold px-1.5 py-0.5 sm:px-2 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 #{{ idx + 1 }}
                             </span>
                         </div>
 
-                        <div class="mt-4">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <div class="mt-3 sm:mt-4">
+                            <p class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 line-clamp-1">
                                 {{ t(card.labelBn, card.labelEn) }}
                             </p>
-                            <p class="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-white">
+                            <p class="mt-1 text-base sm:text-2xl font-extrabold tabular-nums tracking-tight text-slate-900 dark:text-white truncate">
                                 <template v-if="card.format === 'currency'">
                                     {{ formatCurrency(stats[card.key]) }}
                                 </template>
@@ -91,7 +91,7 @@
                                     {{ Number(stats[card.key] ?? 0).toLocaleString() }}
                                 </template>
                             </p>
-                            <p v-if="card.hintBn" class="mt-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                            <p v-if="card.hintBn" class="mt-1 text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium line-clamp-1">
                                 {{ t(card.hintBn, card.hintEn) }}
                             </p>
                         </div>
@@ -106,30 +106,30 @@
                 <!-- Quick Action Hub -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                        <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                             {{ t('কুইক এক্সেস ও শর্টকাট', 'Quick Access & Shortcuts') }}
                         </h2>
-                        <span class="text-xs text-slate-400">{{ t('জরুরি কাজগুলো সহজে করুন', 'Frequent actions') }}</span>
+                        <span class="text-[11px] sm:text-xs text-slate-400">{{ t('জরুরি কাজগুলো সহজে করুন', 'Frequent actions') }}</span>
                     </div>
 
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
                         <Link
                             v-for="link in quickLinks"
                             :key="link.href"
                             :href="link.href"
-                            class="flex items-center gap-3.5 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs transition-all hover:border-indigo-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 group"
+                            class="flex items-center gap-3 sm:gap-3.5 rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-xs transition-all hover:border-indigo-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 group"
                         >
                             <div
-                                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors"
+                                class="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl transition-colors"
                                 :class="link.iconBg || 'bg-slate-100 text-slate-600 group-hover:bg-indigo-600 group-hover:text-white dark:bg-slate-800 dark:text-slate-300'"
                             >
                                 <component :is="link.icon" class="h-5 w-5" />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="font-bold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <p class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                     {{ t(link.titleBn, link.titleEn) }}
                                 </p>
-                                <p class="truncate text-xs text-slate-400 mt-0.5">
+                                <p class="truncate text-[11px] sm:text-xs text-slate-400 mt-0.5">
                                     {{ t(link.subBn, link.subEn) }}
                                 </p>
                             </div>

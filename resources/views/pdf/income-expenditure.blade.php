@@ -173,6 +173,13 @@
         </div>
 
         <!-- Statement Content in side by side layout -->
+        @php
+            $incomeCount = 1 + count($income['extra_income']['categories'] ?? []);
+            $expenditureCount = count($expenditure['categories'] ?? []);
+            $maxTargetRows = max($incomeCount + 3, $expenditureCount + 1);
+            $incomeSpacers = max(0, $maxTargetRows - ($incomeCount + 3));
+            $expenditureSpacers = max(0, $maxTargetRows - ($expenditureCount + 1));
+        @endphp
         <div class="statement-content">
             <!-- Income Section -->
             <div class="section">
@@ -205,6 +212,15 @@
                                 <td class="text-right">{{ format_amount($category['cumulative'], true, $isBn ?? false) }}</td>
                             </tr>
                         @endforeach
+
+                        <!-- Spacer rows to align Grand Total with Total Expenditure on the same line -->
+                        @for ($i = 0; $i < $incomeSpacers; $i++)
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                        @endfor
 
                         <!-- Total Income Row -->
                         <tr class="total-row">
@@ -258,6 +274,15 @@
                                 <td class="text-right">{{ format_amount($category['cumulative'], true, $isBn ?? false) }}</td>
                             </tr>
                         @endforeach
+
+                        <!-- Spacer rows to align Total Expenditure with Grand Total on the same line -->
+                        @for ($i = 0; $i < $expenditureSpacers; $i++)
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                        @endfor
 
                         <!-- Total Expenditure Row -->
                         <tr class="total-row">

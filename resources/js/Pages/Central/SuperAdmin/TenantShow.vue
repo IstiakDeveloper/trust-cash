@@ -21,10 +21,16 @@ const props = defineProps({
     allPlans: Array,
 });
 
+const sub = props.tenant.subscriptions?.[0];
+
 const subForm = useForm({
     plan_id: props.tenant.plan_id || props.allPlans?.[0]?.id,
-    billing_cycle: props.tenant.subscriptions?.[0]?.billing_cycle || 'monthly',
+    billing_cycle: sub?.billing_cycle || 'monthly',
     status: props.tenant.status,
+    discount_type: sub?.discount_type || props.tenant.discount_type || 'none',
+    discount_value: sub?.discount_value || props.tenant.discount_value || 0,
+    discount_note: sub?.discount_note || props.tenant.discount_note || '',
+    custom_price: sub?.custom_price || null,
     ends_at: props.tenant.trial_ends_at ? props.tenant.trial_ends_at.slice(0, 10) : '',
 });
 
@@ -211,6 +217,40 @@ const formatCurrency = (val) => {
                                     <option value="suspended">Suspended</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Discount Type</label>
+                                <select
+                                    v-model="subForm.discount_type"
+                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:border-emerald-500"
+                                >
+                                    <option value="none">No Discount</option>
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="fixed">Fixed Amount (BDT)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Discount Value</label>
+                                <input
+                                    v-model.number="subForm.discount_value"
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold focus:border-emerald-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div v-if="subForm.discount_type !== 'none'">
+                            <label class="block text-slate-400 mb-1">Discount Reason / Note</label>
+                            <input
+                                v-model="subForm.discount_note"
+                                type="text"
+                                placeholder="e.g. Partner Special Promo"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:border-emerald-500"
+                            />
                         </div>
 
                         <div>

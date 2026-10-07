@@ -4,65 +4,135 @@
 
         <div class="space-y-6">
             <!-- Stats Header -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
+            <div class="grid grid-cols-2 gap-2.5 sm:gap-4">
+                <div class="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
                     <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            {{ t('মোট সাপ্লায়ার সংখ্যা', 'Total Suppliers') }}
+                        <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+                            {{ t('মোট সাপ্লায়ার', 'Total Suppliers') }}
                         </p>
-                        <h3 class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_suppliers }}</h3>
+                        <h3 class="mt-1 text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_suppliers }}</h3>
                     </div>
-                    <div class="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                        <UsersIcon class="w-5 h-5" />
+                    <div class="w-9 h-9 sm:w-11 sm:h-11 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <UsersIcon class="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
+                <div class="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 flex items-center justify-between">
                     <div>
-                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            {{ t('সাপ্লায়ারদের মোট দেনা / পাওনা', 'Total Payable to Suppliers') }}
+                        <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">
+                            {{ t('মোট দেনা / পাওনা', 'Total Payable') }}
                         </p>
-                        <h3 class="mt-1 text-2xl font-black text-rose-600 dark:text-rose-400">৳{{ formatNumber(stats.total_payable) }}</h3>
+                        <h3 class="mt-1 text-base sm:text-2xl font-black text-rose-600 dark:text-rose-400 truncate">৳{{ formatNumber(stats.total_payable) }}</h3>
                     </div>
-                    <div class="w-11 h-11 bg-rose-50 dark:bg-rose-950/50 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400">
-                        <DollarSignIcon class="w-5 h-5" />
+                    <div class="w-9 h-9 sm:w-11 sm:h-11 bg-rose-50 dark:bg-rose-950/50 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                        <DollarSignIcon class="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                 </div>
             </div>
 
             <!-- Header Actions -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <div class="relative w-full sm:w-80">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                    <div class="relative flex-1 sm:w-80">
                         <input
                             type="text"
                             v-model="search"
-                            :placeholder="t('নাম, কোম্পানি বা মোবাইল খুঁজুন...', 'Search by name, company, phone...')"
+                            :placeholder="t('নাম, কোম্পানি বা মোবাইল...', 'Search by name, company, phone...')"
                             class="w-full rounded-xl border-slate-200 bg-white pl-9 pr-4 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                         />
                         <SearchIcon class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     </div>
                     <select
                         v-model="filters.status"
-                        class="rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        class="rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 shrink-0"
                     >
-                        <option value="">{{ t('সকল অবস্থা', 'All Status') }}</option>
+                        <option value="">{{ t('সকল অবস্থা', 'All') }}</option>
                         <option value="active">{{ t('সক্রিয়', 'Active') }}</option>
                         <option value="inactive">{{ t('নিষ্ক্রিয়', 'Inactive') }}</option>
                     </select>
                 </div>
                 <button
                     @click="openCreateModal"
-                    class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all shrink-0 w-full sm:w-auto"
                 >
                     <PlusIcon class="w-4 h-4" />
                     <span>{{ t('নতুন সাপ্লায়ার যোগ', 'Add Supplier') }}</span>
                 </button>
             </div>
 
-            <!-- Suppliers Table -->
+            <!-- Suppliers List & Table -->
             <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <div class="overflow-x-auto">
+                <!-- Mobile Cards (< md) -->
+                <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                    <div
+                        v-for="supplier in suppliers.data"
+                        :key="supplier.id"
+                        class="p-4 space-y-3"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                    {{ supplier.name }}
+                                </div>
+                                <div v-if="supplier.company_name" class="text-xs text-slate-400">
+                                    {{ supplier.company_name }}
+                                </div>
+                            </div>
+                            <span
+                                class="inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold shrink-0"
+                                :class="supplier.status === 'active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
+                            >
+                                {{ supplier.status === 'active' ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-500">
+                            <span>{{ t('ফোন:', 'Phone:') }} <strong class="font-mono text-slate-700 dark:text-slate-300">{{ supplier.phone || '—' }}</strong></span>
+                            <span>{{ t('মোট ক্রয়:', 'Purchases:') }} <strong class="text-slate-900 dark:text-white">৳{{ formatNumber(supplier.total_purchases || 0) }}</strong></span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <div>
+                                <span class="text-[11px] text-slate-400 block">{{ t('বর্তমান পাওনা (দেনা)', 'Payable Due') }}</span>
+                                <span v-if="supplier.current_balance > 0" class="font-black text-rose-600 dark:text-rose-400 text-sm">
+                                    ৳{{ formatNumber(supplier.current_balance) }}
+                                </span>
+                                <span v-else class="text-emerald-600 dark:text-emerald-400 font-bold text-xs">৳0.00</span>
+                            </div>
+
+                            <div class="flex items-center gap-1.5">
+                                <button
+                                    v-if="supplier.current_balance > 0"
+                                    @click="openPaymentModal(supplier)"
+                                    class="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 transition"
+                                >
+                                    {{ t('পরিশোধ', 'Pay') }}
+                                </button>
+                                <Link
+                                    :href="route('admin.suppliers.show', supplier.id)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400"
+                                    :title="t('লেজার দেখুন', 'View Ledger')"
+                                >
+                                    <EyeIcon class="w-4 h-4" />
+                                </Link>
+                                <button
+                                    @click="openEditModal(supplier)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                    :title="t('সম্পাদন', 'Edit')"
+                                >
+                                    <PencilIcon class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="suppliers.data.length === 0" class="p-8 text-center text-slate-400 text-xs font-medium">
+                        {{ t('কোনো সাপ্লায়ার পাওয়া যায়নি।', 'No suppliers found.') }}
+                    </div>
+                </div>
+
+                <!-- Desktop Table (>= md) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                         <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
                             <tr>
@@ -136,25 +206,13 @@
 
                 <!-- Pagination -->
                 <div v-if="suppliers.links && suppliers.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
-                    <div class="flex justify-between items-center text-xs text-slate-500">
-                        <div>{{ t('মোট সাপ্লায়ার:', 'Total:') }} {{ suppliers.total }}</div>
-                        <nav class="inline-flex rounded-xl bg-white shadow-xs border border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
-                            <Link
-                                v-for="(link, i) in suppliers.links"
-                                :key="i"
-                                :href="link.url || '#'"
-                                v-html="link.label"
-                                class="px-3 py-1.5 text-xs font-semibold"
-                                :class="link.active ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'"
-                            />
-                        </nav>
-                    </div>
+                    <Pagination :links="suppliers.links" />
                 </div>
             </div>
 
             <!-- Create / Edit Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800">
+            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">
                             {{ isEditing ? t('সাপ্লায়ার তথ্য সম্পাদন', 'Edit Supplier') : t('নতুন সাপ্লায়ার যোগ করুন', 'Add New Supplier') }}
@@ -263,8 +321,8 @@
             </div>
 
             <!-- Pay Supplier Due Modal -->
-            <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800">
+            <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                         <div>
                             <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('সাপ্লায়ার দেনা পরিশোধ', 'Pay Supplier Due') }}</h3>
@@ -380,6 +438,7 @@
 import { ref, watch, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import Pagination from '@/Components/Pagination.vue'
 import debounce from 'lodash/debounce'
 import {
     Users as UsersIcon,

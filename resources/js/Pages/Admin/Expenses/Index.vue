@@ -1,55 +1,55 @@
 <template>
     <Head :title="t('খরচ তালিকা', 'Expenses')" />
     <AdminLayout :title="t('খরচ ব্যবস্থাপনা', 'Expense Management')">
-        <div class="container mx-auto px-4 py-6">
+        <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
             <!-- Summary Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
+            <div class="grid grid-cols-2 gap-2.5 sm:gap-5 mb-4 sm:mb-6">
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট খরচ', 'Total Operational Expenses') }}</p>
-                        <h3 class="text-2xl font-black text-rose-600 mt-1">
+                        <p class="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('মোট খরচ', 'Total Expenses') }}</p>
+                        <h3 class="text-lg sm:text-2xl font-black text-rose-600 mt-1 truncate">
                             {{ formatAmount(summary.totalExpenses) }}
                         </h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
-                        <TrendingDownIcon class="w-6 h-6" />
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 shrink-0">
+                        <TrendingDownIcon class="w-4 h-4 sm:w-6 sm:h-6" />
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('স্থায়ী সম্পদ মডিউল', 'Fixed Assets Module') }}</p>
-                        <div class="mt-2">
-                            <a :href="route('admin.fixed-assets.index')" class="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                                {{ t('স্থায়ী সম্পদ তালিকা দেখুন →', 'Go to Fixed Assets →') }}
+                        <p class="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('স্থায়ী সম্পদ', 'Fixed Assets') }}</p>
+                        <div class="mt-1 sm:mt-2">
+                            <a :href="route('admin.fixed-assets.index')" class="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                {{ t('তালিকা দেখুন →', 'View List →') }}
                             </a>
                         </div>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                        <BuildingIcon class="w-6 h-6" />
+                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shrink-0">
+                        <BuildingIcon class="w-4 h-4 sm:w-6 sm:h-6" />
                     </div>
                 </div>
             </div>
 
             <!-- Actions & Filters -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-4 mb-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                    <div class="text-base font-bold text-gray-900 dark:text-white">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-3.5 sm:p-4 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-3 sm:mb-4">
+                    <div class="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                         {{ t('খরচের হিসাব ও ফিল্টার', 'Expenses & Filter') }}
                     </div>
                     <button
                         @click="openCreateModal"
-                        class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
+                        class="px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition w-full sm:w-auto shrink-0"
                     >
                         <PlusIcon class="w-4 h-4" />
                         {{ t('নতুন খরচ যোগ করুন', 'Add Expense') }}
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">{{ t('খরচের খাত / ক্যাটাগরি', 'Category') }}</label>
-                        <select v-model="filters.expense_category_id" @change="getExpenses" class="w-full text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('ক্যাটাগরি', 'Category') }}</label>
+                        <select v-model="filters.expense_category_id" @change="getExpenses" class="w-full text-xs sm:text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-2.5 py-2">
                             <option value="">{{ t('সকল ক্যাটাগরি', 'All Categories') }}</option>
                             <option v-for="category in categories" :key="category.id" :value="category.id">
                                 {{ category.name }}
@@ -57,8 +57,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">{{ t('ব্যাংক / ক্যাশ অ্যাকাউন্ট', 'Bank / Cash Account') }}</label>
-                        <select v-model="filters.bank_id" @change="getExpenses" class="w-full text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('অ্যাকাউন্ট', 'Account') }}</label>
+                        <select v-model="filters.bank_id" @change="getExpenses" class="w-full text-xs sm:text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-2.5 py-2">
                             <option value="">{{ t('সকল অ্যাকাউন্ট', 'All Accounts') }}</option>
                             <option v-for="bank in bankAccounts" :key="bank.id" :value="bank.id">
                                 {{ bank.bank_name }} - {{ bank.account_number || t('ক্যাশ', 'Cash') }}
@@ -66,19 +66,78 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">{{ t('শুরুর তারিখ', 'From Date') }}</label>
-                        <input type="date" v-model="filters.from_date" @change="getExpenses" class="w-full text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('শুরুর তারিখ', 'From Date') }}</label>
+                        <input type="date" v-model="filters.from_date" @change="getExpenses" class="w-full text-xs sm:text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-2 py-2" />
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">{{ t('শেষ তারিখ', 'To Date') }}</label>
-                        <input type="date" v-model="filters.to_date" @change="getExpenses" class="w-full text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('শেষ তারিখ', 'To Date') }}</label>
+                        <input type="date" v-model="filters.to_date" @change="getExpenses" class="w-full text-xs sm:text-sm rounded-xl border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-2 py-2" />
                     </div>
                 </div>
             </div>
 
-            <!-- Expenses Table -->
+            <!-- Expenses List & Table -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Expense Cards (< md) -->
+                <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                    <div
+                        v-for="expense in expenses.data"
+                        :key="expense.id"
+                        class="p-3.5 space-y-2.5"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 text-[11px] font-bold rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                {{ expense.category?.name || 'N/A' }}
+                            </span>
+                            <span class="text-xs text-gray-400 font-medium">
+                                {{ formatDate(expense.date) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {{ expense.description || t('সাধারণ খরচ', 'General Expense') }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {{ expense.bank_account?.bank_name }} - {{ expense.bank_account?.account_number || t('ক্যাশ', 'Cash') }}
+                                </div>
+                                <div v-if="expense.reference_no" class="text-[11px] text-gray-400">
+                                    Ref: {{ expense.reference_no }}
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-base font-black text-rose-600">
+                                    {{ formatAmount(expense.amount) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-1 pt-1 border-t border-gray-100 dark:border-gray-700/50">
+                            <button
+                                @click="editExpense(expense)"
+                                class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                                :title="t('সম্পাদনা', 'Edit')"
+                            >
+                                <EditIcon class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="deleteExpense(expense)"
+                                class="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition"
+                                :title="t('মুছুন', 'Delete')"
+                            >
+                                <TrashIcon class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="expenses.data.length === 0" class="p-8 text-center text-gray-400 text-xs font-medium">
+                        {{ t('কোনো খরচের রেকর্ড পাওয়া যায়নি।', 'No expense records found.') }}
+                    </div>
+                </div>
+
+                <!-- Desktop Table (>= md) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
@@ -125,28 +184,16 @@
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="expenses.links && expenses.links.length > 3" class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm">
-                    <div class="text-gray-500 font-medium">
-                        {{ t(`মোট ${expenses.total} টির মধ্যে ${expenses.from || 0} থেকে ${expenses.to || 0} দেখাচ্ছে`, `Showing ${expenses.from || 0} to ${expenses.to || 0} of ${expenses.total} entries`) }}
-                    </div>
-                    <div class="flex gap-1">
-                        <Link
-                            v-for="(link, i) in expenses.links"
-                            :key="i"
-                            :href="link.url || '#'"
-                            v-html="link.label"
-                            class="px-3 py-1.5 rounded-lg border text-sm font-medium transition"
-                            :class="link.active ? 'bg-blue-600 text-white border-blue-600 font-bold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'"
-                        />
-                    </div>
+                <div v-if="expenses.links && expenses.links.length > 3" class="px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-gray-700">
+                    <Pagination :links="expenses.links" />
                 </div>
             </div>
         </div>
 
         <!-- Create/Edit Modal -->
         <Modal :show="showModal" @close="closeModal">
-            <div class="p-6">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <div class="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">
                     {{ isEditing ? t('খরচ সম্পাদনা করুন', 'Edit Expense') : t('নতুন খরচ যোগ করুন', 'Create Expense') }}
                 </h3>
                 <form @submit.prevent="submitForm">
@@ -205,6 +252,7 @@ import { ref, reactive } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import Pagination from '@/Components/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
     Plus as PlusIcon,

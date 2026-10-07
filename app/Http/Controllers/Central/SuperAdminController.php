@@ -10,6 +10,7 @@ use App\Models\TenantPayment;
 use App\Models\TenantSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Stancl\Tenancy\Features\UserImpersonation;
@@ -154,37 +155,61 @@ class SuperAdminController extends Controller
     public function createTenant(Request $request)
     {
         $validated = $request->validate([
-            'business_name' => 'required|string|max:255',
-            'subdomain'     => 'required|alpha_dash|unique:domains,domain',
-            'owner_name'    => 'required|string|max:255',
-            'email'         => 'required|email|max:255',
-            'phone'         => 'nullable|string|max:20',
-            'password'      => 'required|string|min:4',
-            'plan_id'       => 'required|exists:plans,id',
-            'trial_days'    => 'required|integer|min:0|max:365',
+            'business_name'  => 'required|string|max:255',
+            'subdomain'      => 'required|string|min:3|max:50|alpha_dash|unique:tenants,id',
+            'owner_name'     => 'required|string|max:255',
+            'email'          => 'required|email|max:255',
+            'phone'          => 'nullable|string|max:50',
+            'password'       => 'required|string|min:4',
+            'plan_id'        => 'required|exists:plans,id',
+            'status'         => 'nullable|in:active,trial,pending',
+            'trial_days'     => 'nullable|integer|min:0|max:365',
+            'billing_cycle'  => 'nullable|in:monthly,yearly',
+            'discount_type'  => 'nullable|in:none,percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'discount_note'  => 'nullable|string|max:255',
+            'custom_price'   => 'nullable|numeric|min:0',
         ]);
 
+        $subdomain = Str::lower($validated['subdomain']);
         $plan = Plan::findOrFail($validated['plan_id']);
-        $tenantId = Str::slug($validated['subdomain']);
+        $initialStatus = $validated['status'] ?? ($validated['trial_days'] > 0 ? 'trial' : 'active');
+        $trialDays = (int) ($validated['trial_days'] ?? 14);
+        $billingCycle = $validated['billing_cycle'] ?? 'monthly';
+        $discountType = $validated['discount_type'] ?? 'none';
+        $discountValue = (float) ($validated['discount_value'] ?? 0);
+        $discountNote = $validated['discount_note'] ?? null;
+        $customPrice = isset($validated['custom_price']) && $validated['custom_price'] !== '' ? (float) $validated['custom_price'] : null;
+
+        $trialEndsAt = $initialStatus === 'trial' ? now()->addDays($trialDays) : null;
 
         $tenant = Tenant::create([
-            'id'            => $tenantId,
-            'name'          => $validated['business_name'],
-            'email'         => $validated['email'],
-            'phone'         => $validated['phone'],
-            'plan_id'       => $plan->id,
-            'status'        => $validated['trial_days'] > 0 ? 'trial' : 'active',
-            'trial_ends_at' => $validated['trial_days'] > 0 ? now()->addDays((int) $validated['trial_days']) : null,
+            'id'             => $subdomain,
+            'name'           => $validated['business_name'],
+            'email'          => $validated['email'],
+            'phone'          => $validated['phone'] ?? null,
+            'plan_id'        => $plan->id,
+            'status'         => $initialStatus,
+            'discount_type'  => $discountType,
+            'discount_value' => $discountValue,
+            'discount_note'  => $discountNote,
+            'trial_ends_at'  => $trialEndsAt,
         ]);
 
-        // Attach domain
-        $centralHost = parse_url(config('app.url', 'http://localhost:8000'), PHP_URL_HOST) ?? 'localhost';
-        $fullDomain = "{$validated['subdomain']}.{$centralHost}";
-        $tenant->domains()->create(['domain' => $fullDomain]);
+        // Attach domain: normalize to localhost for local testing
+        $host = request()->getHost();
+        $isLocal = app()->environment('local') || in_array($host, ['127.0.0.1', 'localhost', '::1']);
+        $baseDomain = $isLocal ? 'localhost' : $host;
+        $fullDomain = "{$subdomain}.{$baseDomain}";
 
-        // Seed initial tenant admin user
+        $tenant->domains()->create(['domain' => $fullDomain]);
+        if ($isLocal) {
+            $tenant->domains()->create(['domain' => "{$subdomain}.127.0.0.1"]);
+        }
+
+        // Seed initial tenant admin user & default database
         try {
-            $tenant->run(function () use ($validated) {
+            $tenant->run(function () use ($validated, $subdomain) {
                 $adminRole = \App\Models\Role::firstOrCreate(
                     ['slug' => 'admin'],
                     [
@@ -208,12 +233,13 @@ class SuperAdminController extends Controller
                 );
 
                 \App\Models\User::create([
-                    'name'       => $validated['owner_name'],
-                    'email'      => $validated['email'],
-                    'phone'      => $validated['phone'] ?? null,
-                    'password'   => Hash::make($validated['password']),
-                    'role_id'    => $adminRole->id,
-                    'status'     => 1,
+                    'name'     => $validated['owner_name'],
+                    'username' => $subdomain,
+                    'email'    => $validated['email'],
+                    'phone'    => $validated['phone'] ?? null,
+                    'password' => Hash::make($validated['password']),
+                    'role_id'  => $adminRole->id,
+                    'status'   => 1,
                 ]);
 
                 // Ensure default units and roles are seeded for this new shop owner
@@ -224,43 +250,109 @@ class SuperAdminController extends Controller
         }
 
         // Create subscription record
+        $subStatus = $initialStatus === 'trial' ? 'trialing' : ($initialStatus === 'pending' ? 'pending' : 'active');
+        $endsAt = $initialStatus === 'trial'
+            ? now()->addDays($trialDays)
+            : ($billingCycle === 'yearly' ? now()->addYear() : now()->addMonth());
+
         TenantSubscription::create([
-            'tenant_id'     => $tenant->id,
-            'plan_id'       => $plan->id,
-            'status'        => $validated['trial_days'] > 0 ? 'trialing' : 'active',
-            'billing_cycle' => 'monthly',
-            'starts_at'     => now(),
-            'ends_at'       => $validated['trial_days'] > 0 ? now()->addDays((int) $validated['trial_days']) : now()->addMonth(),
+            'tenant_id'      => $tenant->id,
+            'plan_id'        => $plan->id,
+            'status'         => $subStatus,
+            'billing_cycle'  => $billingCycle,
+            'discount_type'  => $discountType,
+            'discount_value' => $discountValue,
+            'discount_note'  => $discountNote,
+            'custom_price'   => $customPrice,
+            'starts_at'      => now(),
+            'ends_at'        => $endsAt,
+            'auto_renew'     => true,
         ]);
 
-        return redirect()->route('super-admin.tenants.index')->with('success', "Store {$validated['business_name']} created successfully!");
+        return redirect()->route('super-admin.tenants.index')->with('success', "Store \"{$validated['business_name']}\" ({$fullDomain}) created successfully!");
     }
 
     /**
-     * Toggle Store Active/Suspended Status
-     */
-    /**
-     * Approve a Pending Store Registration
+     * Approve a Pending Store Registration with Optional Discount
      */
     public function approveTenant(Request $request, Tenant $tenant)
     {
-        $days = (int) $request->input('days', 14);
+        $validated = $request->validate([
+            'approval_type'  => 'required|in:trial,active',
+            'days'           => 'nullable|integer|min:1|max:365',
+            'plan_id'        => 'nullable|exists:plans,id',
+            'billing_cycle'  => 'nullable|in:monthly,yearly',
+            'discount_type'  => 'nullable|in:none,percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'discount_note'  => 'nullable|string|max:255',
+            'custom_price'   => 'nullable|numeric|min:0',
+        ]);
+
+        $days = (int) ($validated['days'] ?? 14);
+        $planId = $validated['plan_id'] ?? $tenant->plan_id;
+        $billingCycle = $validated['billing_cycle'] ?? 'monthly';
+        $discountType = $validated['discount_type'] ?? 'none';
+        $discountValue = (float) ($validated['discount_value'] ?? 0);
+        $discountNote = $validated['discount_note'] ?? null;
+        $customPrice = isset($validated['custom_price']) && $validated['custom_price'] !== '' ? (float) $validated['custom_price'] : null;
+
+        $newStatus = $validated['approval_type'] === 'trial' ? 'trial' : 'active';
+        $trialEndsAt = $validated['approval_type'] === 'trial' ? now()->addDays($days) : null;
 
         $tenant->update([
-            'status'        => 'trial',
-            'trial_ends_at' => now()->addDays($days),
+            'plan_id'        => $planId,
+            'status'         => $newStatus,
+            'discount_type'  => $discountType,
+            'discount_value' => $discountValue,
+            'discount_note'  => $discountNote,
+            'trial_ends_at'  => $trialEndsAt,
         ]);
 
         $sub = $tenant->subscriptions()->latest()->first();
+        $subStatus = $validated['approval_type'] === 'trial' ? 'trialing' : 'active';
+        $startsAt = now();
+        $endsAt = $validated['approval_type'] === 'trial'
+            ? now()->addDays($days)
+            : ($billingCycle === 'yearly' ? now()->addYear() : now()->addMonth());
+
         if ($sub) {
             $sub->update([
-                'status'    => 'active',
-                'starts_at' => now(),
-                'ends_at'   => now()->addDays($days),
+                'plan_id'        => $planId,
+                'status'         => $subStatus,
+                'billing_cycle'  => $billingCycle,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountValue,
+                'discount_note'  => $discountNote,
+                'custom_price'   => $customPrice,
+                'starts_at'      => $startsAt,
+                'ends_at'        => $endsAt,
+            ]);
+        } else {
+            TenantSubscription::create([
+                'tenant_id'      => $tenant->id,
+                'plan_id'        => $planId,
+                'status'         => $subStatus,
+                'billing_cycle'  => $billingCycle,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountValue,
+                'discount_note'  => $discountNote,
+                'custom_price'   => $customPrice,
+                'starts_at'      => $startsAt,
+                'ends_at'        => $endsAt,
+                'auto_renew'     => true,
             ]);
         }
 
-        return redirect()->back()->with('success', "Store \"{$tenant->name}\" has been APPROVED and activated for {$days} days!");
+        $discountMsg = '';
+        if ($discountType === 'percentage' && $discountValue > 0) {
+            $discountMsg = " with {$discountValue}% discount";
+        } elseif ($discountType === 'fixed' && $discountValue > 0) {
+            $discountMsg = " with ৳{$discountValue} discount";
+        } elseif ($customPrice !== null && $customPrice > 0) {
+            $discountMsg = " with custom price ৳{$customPrice}";
+        }
+
+        return redirect()->back()->with('success', "Store \"{$tenant->name}\" has been APPROVED and activated{$discountMsg}!");
     }
 
     public function toggleTenantStatus(Request $request, Tenant $tenant)
@@ -291,29 +383,45 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Manually Update Plan or Subscription
+     * Manually Update Plan or Subscription (including Discounts)
      */
     public function updateSubscription(Request $request, Tenant $tenant)
     {
         $validated = $request->validate([
-            'plan_id'       => 'required|exists:plans,id',
-            'billing_cycle' => 'required|in:monthly,yearly',
-            'status'        => 'required|in:active,trial,suspended',
-            'ends_at'       => 'nullable|date',
+            'plan_id'        => 'required|exists:plans,id',
+            'billing_cycle'  => 'required|in:monthly,yearly',
+            'status'         => 'required|in:active,trial,suspended',
+            'discount_type'  => 'nullable|in:none,percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'discount_note'  => 'nullable|string|max:255',
+            'custom_price'   => 'nullable|numeric|min:0',
+            'ends_at'        => 'nullable|date',
         ]);
 
+        $discountType = $validated['discount_type'] ?? 'none';
+        $discountValue = (float) ($validated['discount_value'] ?? 0);
+        $discountNote = $validated['discount_note'] ?? null;
+        $customPrice = isset($validated['custom_price']) && $validated['custom_price'] !== '' ? (float) $validated['custom_price'] : null;
+
         $tenant->update([
-            'plan_id' => $validated['plan_id'],
-            'status'  => $validated['status'],
+            'plan_id'        => $validated['plan_id'],
+            'status'         => $validated['status'],
+            'discount_type'  => $discountType,
+            'discount_value' => $discountValue,
+            'discount_note'  => $discountNote,
         ]);
 
         $sub = $tenant->subscriptions()->latest()->first();
         if ($sub) {
             $sub->update([
-                'plan_id'       => $validated['plan_id'],
-                'billing_cycle' => $validated['billing_cycle'],
-                'status'        => $validated['status'] === 'suspended' ? 'cancelled' : 'active',
-                'ends_at'       => $validated['ends_at'] ? \Carbon\Carbon::parse($validated['ends_at']) : $sub->ends_at,
+                'plan_id'        => $validated['plan_id'],
+                'billing_cycle'  => $validated['billing_cycle'],
+                'status'         => $validated['status'] === 'suspended' ? 'cancelled' : 'active',
+                'discount_type'  => $discountType,
+                'discount_value' => $discountValue,
+                'discount_note'  => $discountNote,
+                'custom_price'   => $customPrice,
+                'ends_at'        => $validated['ends_at'] ? \Carbon\Carbon::parse($validated['ends_at']) : $sub->ends_at,
             ]);
         }
 
@@ -516,7 +624,39 @@ class SuperAdminController extends Controller
      */
     public function settings()
     {
-        $settings = Setting::getAll();
+        $defaults = [
+            'app_name'                => 'TrustCash',
+            'app_tagline'             => 'Cloud POS & Accounting SaaS',
+            'site_logo'               => '',
+            'site_favicon'            => '',
+            'currency_symbol'         => '৳',
+            'currency_code'           => 'BDT',
+            'default_trial_days'      => '14',
+            'auto_approve_tenants'    => 'false',
+            'nav_show_features'       => 'true',
+            'nav_show_use_cases'      => 'true',
+            'nav_show_pricing'        => 'true',
+            'nav_show_faq'            => 'true',
+            'nav_cta_text'            => '১৪ দিন ফ্রি ট্রায়াল শুরু করুন',
+            'nav_cta_url'             => '/register-business',
+            'whatsapp_number'         => '',
+            'support_phone'           => '+880 1700-000000',
+            'support_email'           => 'support@trustcash.com',
+            'company_address'         => 'Dhaka, Bangladesh',
+            'social_facebook'         => '',
+            'social_youtube'          => '',
+            'social_linkedin'         => '',
+            'sslcommerz_store_id'     => '',
+            'sslcommerz_store_passwd' => '',
+            'sslcommerz_sandbox'      => 'false',
+            'bkash_app_key'           => '',
+            'bkash_app_secret'        => '',
+            'bkash_username'          => '',
+            'bkash_password'          => '',
+            'bkash_sandbox'           => 'false',
+        ];
+
+        $settings = array_merge($defaults, Setting::getAll());
 
         return Inertia::render('Central/SuperAdmin/Settings', [
             'settings' => $settings,
@@ -528,12 +668,52 @@ class SuperAdminController extends Controller
      */
     public function updateSettings(Request $request)
     {
-        $inputs = $request->except(['_token']);
+        try {
+            // Handle site_logo file upload
+            if ($request->hasFile('site_logo')) {
+                $request->validate([
+                    'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:4096',
+                ]);
+                $path = $request->file('site_logo')->store('branding', 'public');
+                Setting::set('site_logo', '/storage/' . $path);
+            } elseif ($request->boolean('remove_site_logo')) {
+                Setting::set('site_logo', '');
+            }
 
-        foreach ($inputs as $key => $value) {
-            Setting::set($key, (string) $value);
+            // Handle site_favicon file upload
+            if ($request->hasFile('site_favicon')) {
+                $request->validate([
+                    'site_favicon' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,ico|max:2048',
+                ]);
+                $path = $request->file('site_favicon')->store('branding', 'public');
+                Setting::set('site_favicon', '/storage/' . $path);
+            } elseif ($request->boolean('remove_site_favicon')) {
+                Setting::set('site_favicon', '');
+            }
+
+            $inputs = $request->except([
+                '_token',
+                'site_logo',
+                'site_favicon',
+                'remove_site_logo',
+                'remove_site_favicon',
+            ]);
+
+            foreach ($inputs as $key => $value) {
+                if ($value === true || $value === 'true' || $value === '1' || $value === 1) {
+                    $value = 'true';
+                } elseif ($value === false || $value === 'false' || $value === '0' || $value === 0) {
+                    $value = 'false';
+                } elseif ($value === null) {
+                    $value = '';
+                }
+                Setting::set($key, (string) $value);
+            }
+
+            return redirect()->back()->with('success', "Platform settings updated successfully.");
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to update settings: " . $e->getMessage());
+            return redirect()->back()->with('error', "Failed to update settings: " . $e->getMessage());
         }
-
-        return redirect()->back()->with('success', "Platform settings updated successfully.");
     }
 }

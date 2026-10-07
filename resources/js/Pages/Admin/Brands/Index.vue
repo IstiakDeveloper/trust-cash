@@ -46,61 +46,107 @@
                 </div>
             </div>
 
-            <!-- Brands Table -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                    <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
-                        <tr>
-                            <th class="px-5 py-3 text-left">{{ t('ব্র্যান্ড', 'Brand') }}</th>
-                            <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
-                            <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-if="brands.data.length === 0">
-                            <td colspan="3" class="px-6 py-10 text-center text-slate-400">
-                                {{ t('কোনো ব্র্যান্ড পাওয়া যায়নি।', 'No brands found.') }}
-                            </td>
-                        </tr>
-                        <tr v-for="brand in brands.data" :key="brand.id"
-                            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                            <td class="px-5 py-3.5">
-                                <div class="flex items-center gap-3">
-                                    <div class="h-9 w-9 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                                        <img v-if="brand.logo" :src="getImageUrl(brand.logo)"
-                                            class="h-9 w-9 object-cover" :alt="brand.name">
-                                        <Squares2X2Icon v-else class="h-5 w-5 text-slate-400" />
-                                    </div>
-                                    <div class="font-bold text-slate-900 dark:text-white">
+            <!-- Brands Table & Mobile Cards -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <!-- Mobile Brand Cards (< sm) -->
+                <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-3">
+                    <div v-if="brands.data.length === 0" class="py-8 text-center text-xs text-slate-400">
+                        {{ t('কোনো ব্র্যান্ড পাওয়া যায়নি।', 'No brands found.') }}
+                    </div>
+
+                    <div v-for="brand in brands.data" :key="brand.id" class="pt-3 first:pt-0 space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div class="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                                    <img v-if="brand.logo" :src="getImageUrl(brand.logo)"
+                                        class="h-10 w-10 object-cover" :alt="brand.name">
+                                    <Squares2X2Icon v-else class="h-5 w-5 text-slate-400" />
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-bold text-xs text-slate-900 dark:text-white truncate">
                                         {{ brand.name }}
+                                    </h4>
+                                    <span :class="[
+                                        'inline-flex rounded-md px-1.5 py-0.2 text-[10px] font-bold mt-0.5',
+                                        brand.status
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                    ]">
+                                        {{ brand.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button @click="editBrand(brand)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 active:scale-90 transition-all">
+                                    <PencilIcon class="h-4 w-4" />
+                                </button>
+                                <button @click="deleteBrand(brand)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400 active:scale-90 transition-all">
+                                    <TrashIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table (sm+) -->
+                <div class="hidden sm:block overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="px-5 py-3 text-left">{{ t('ব্র্যান্ড', 'Brand') }}</th>
+                                <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
+                                <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-if="brands.data.length === 0">
+                                <td colspan="3" class="px-6 py-10 text-center text-slate-400">
+                                    {{ t('কোনো ব্র্যান্ড পাওয়া যায়নি।', 'No brands found.') }}
+                                </td>
+                            </tr>
+                            <tr v-for="brand in brands.data" :key="brand.id"
+                                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-9 w-9 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                                            <img v-if="brand.logo" :src="getImageUrl(brand.logo)"
+                                                class="h-9 w-9 object-cover" :alt="brand.name">
+                                            <Squares2X2Icon v-else class="h-5 w-5 text-slate-400" />
+                                        </div>
+                                        <div class="font-bold text-slate-900 dark:text-white">
+                                            {{ brand.name }}
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3.5 text-center">
-                                <span :class="[
-                                    'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
-                                    brand.status
-                                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                        : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                                ]">
-                                    {{ brand.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
-                                </span>
-                            </td>
-                            <td class="px-5 py-3.5 text-right font-medium">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button @click="editBrand(brand)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
-                                        <PencilIcon class="h-4 w-4" />
-                                    </button>
-                                    <button @click="deleteBrand(brand)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
-                                        <TrashIcon class="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span :class="[
+                                        'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
+                                        brand.status
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                    ]">
+                                        {{ brand.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right font-medium">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button @click="editBrand(brand)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
+                                            <PencilIcon class="h-4 w-4" />
+                                        </button>
+                                        <button @click="deleteBrand(brand)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Pagination -->
                 <div v-if="brands.links && brands.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
@@ -110,7 +156,7 @@
 
             <!-- Brand Modal -->
             <Modal :show="showModal" @close="closeModal" maxWidth="md">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">
                             {{ editing ? t('ব্র্যান্ড সম্পাদন করুন', 'Edit Brand') : t('নতুন ব্র্যান্ড যোগ করুন', 'Add Brand') }}
@@ -158,9 +204,9 @@
                             </button>
                         </div>
 
-                        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <SecondaryButton @click="closeModal" class="rounded-xl text-xs">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
-                            <PrimaryButton :disabled="form.processing" class="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500">
+                        <div class="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <SecondaryButton @click="closeModal" class="w-full sm:w-auto justify-center rounded-xl text-xs">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
+                            <PrimaryButton :disabled="form.processing" class="w-full sm:w-auto justify-center rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500">
                                 {{ editing ? t('সংরক্ষণ করুন', 'Update') : t('তৈরি করুন', 'Create') }}
                             </PrimaryButton>
                         </div>

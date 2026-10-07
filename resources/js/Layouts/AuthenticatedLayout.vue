@@ -1,4 +1,8 @@
 <template>
+    <Head>
+        <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
+        <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
+    </Head>
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
         <!-- Sidebar -->
 
@@ -13,8 +17,9 @@
                 <div
                     class="h-16 flex items-center justify-between px-6 bg-indigo-800/50 dark:bg-gray-800/50 backdrop-blur-sm">
                     <Link href="/admin/dashboard" class="flex items-center space-x-3">
-                    <div class="p-2 bg-white/10 dark:bg-gray-700 rounded-lg backdrop-blur-sm">
-                        <img src="/logo.svg" alt="Logo" class="h-8 w-8" />
+                    <div class="w-10 h-10 bg-white/10 dark:bg-gray-700 rounded-xl backdrop-blur-sm p-1.5 flex items-center justify-center shrink-0">
+                        <img v-if="effectiveLogo" :src="effectiveLogo" alt="Logo" class="w-full h-full object-contain" />
+                        <span v-else class="text-white font-bold text-base">{{ ($page.props.business_name || $page.props.app_name || 'T')[0] }}</span>
                     </div>
                     <span
                         class="text-xl font-bold bg-gradient-to-r from-white to-indigo-200 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
@@ -345,13 +350,14 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { usePage, Link, router } from '@inertiajs/vue3'
+import { usePage, Link, router, Head } from '@inertiajs/vue3'
 import { Menu, MenuButton, MenuItems, MenuItem, TransitionRoot } from '@headlessui/vue'
 import { switchTheme } from '@/theme';
 
 
 const page = usePage();
 const user = page.props.auth.user;
+const effectiveLogo = computed(() => page.props.business_logo || page.props.platform?.logo || '/logo.svg');
 
 
 

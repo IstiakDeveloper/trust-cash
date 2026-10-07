@@ -16,78 +16,84 @@
                 </div>
 
                 <!-- Filter Controls -->
-                <div class="flex items-center space-x-3 flex-wrap gap-y-2 no-print">
-                    <!-- Year Selection -->
-                    <div class="flex items-center space-x-2">
-                        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">{{ t('বছর', 'Year') }}</label>
-                        <select v-model="selectedYear" @change="handleDateChange"
-                            class="text-xs font-medium border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
-                            <option v-for="year in years" :key="year" :value="year">
-                                {{ formatNumber(year) }}
-                            </option>
-                        </select>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto no-print">
+                    <!-- Year & Month Selection Grid on Mobile -->
+                    <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2">
+                        <!-- Year Selection -->
+                        <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1 sm:p-0 rounded-lg border sm:border-0 border-slate-200 dark:border-slate-700">
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">{{ t('বছর', 'Year') }}</label>
+                            <select v-model="selectedYear" @change="handleDateChange"
+                                class="w-full text-xs font-medium border-slate-300 dark:border-slate-600 bg-transparent text-slate-800 dark:text-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 py-1.5 px-2 transition-colors">
+                                <option v-for="year in years" :key="year" :value="year">
+                                    {{ formatNumber(year) }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Month Selection -->
+                        <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1 sm:p-0 rounded-lg border sm:border-0 border-slate-200 dark:border-slate-700">
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">{{ t('মাস', 'Month') }}</label>
+                            <select v-model="selectedMonth" @change="handleDateChange"
+                                class="w-full text-xs font-medium border-slate-300 dark:border-slate-600 bg-transparent text-slate-800 dark:text-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 py-1.5 px-2 transition-colors">
+                                <option v-for="month in months" :key="month.value" :value="month.value">
+                                    {{ getMonthName(month.value) }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
-                    <!-- Month Selection -->
-                    <div class="flex items-center space-x-2">
-                        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">{{ t('মাস', 'Month') }}</label>
-                        <select v-model="selectedMonth" @change="handleDateChange"
-                            class="text-xs font-medium border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
-                            <option v-for="month in months" :key="month.value" :value="month.value">
-                                {{ getMonthName(month.value) }}
-                            </option>
-                        </select>
+                    <!-- Action Buttons 3-Column Grid on Mobile -->
+                    <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-2">
+                        <!-- View Mode Toggle -->
+                        <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                            type="button"
+                            class="inline-flex justify-center items-center px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-all min-h-[38px]">
+                            <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড ভিউ', 'Word') }}</span>
+                            <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                        </button>
+
+                        <!-- Download PDF Button -->
+                        <button @click="downloadPDF" :disabled="isDownloading"
+                            class="inline-flex justify-center items-center px-2.5 sm:px-3.5 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 transition-all min-h-[38px]">
+                            <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5 animate-spin" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span class="truncate ml-1">{{ isDownloading ? t('...', '...') : t('পিডিএফ', 'PDF') }}</span>
+                        </button>
+
+                        <!-- Print Button -->
+                        <button @click="printReport"
+                            class="inline-flex justify-center items-center px-2.5 sm:px-3.5 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all min-h-[38px]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span class="truncate ml-1">{{ t('প্রিন্ট', 'Print') }}</span>
+                        </button>
                     </div>
-
-                    <!-- View Mode Toggle -->
-                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                        type="button"
-                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-all">
-                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                    </button>
-
-                    <!-- Download PDF Button -->
-                    <button @click="downloadPDF" :disabled="isDownloading"
-                        class="inline-flex items-center px-3.5 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 transition-all">
-                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 animate-spin" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        {{ isDownloading ? t('ডাউনলোড হচ্ছে...', 'Downloading...') : t('পিডিএফ ডাউনলোড', 'Download PDF') }}
-                    </button>
-
-                    <!-- Print Button -->
-                    <button @click="printReport"
-                        class="inline-flex items-center px-3.5 py-1.5 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        {{ t('প্রিন্ট', 'Print') }}
-                    </button>
                 </div>
             </div>
         </template>
 
         <!-- DASHBOARD VIEW -->
-        <div v-show="viewMode === 'dashboard'" class="no-print py-6">
-            <div id="balance-sheet-content" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <div v-show="viewMode === 'dashboard'" class="no-print py-4 sm:py-6">
+            <div id="balance-sheet-content" class="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
 
                 <!-- Balance Status Banner -->
-                <div class="flex items-center justify-between px-5 py-3 rounded-xl border transition-colors shadow-sm"
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 rounded-xl border transition-colors shadow-sm"
                      :class="[
                          isBalanced
                              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
                              : 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
                      ]">
                     <div class="flex items-center gap-2.5">
-                        <span class="flex h-2.5 w-2.5 rounded-full"
+                        <span class="flex h-2.5 w-2.5 rounded-full shrink-0"
                               :class="isBalanced ? 'bg-emerald-500' : 'bg-amber-500'"></span>
                         <span class="text-xs sm:text-sm font-semibold">
                             {{ isBalanced
@@ -95,175 +101,179 @@
                                 : t('ব্যালেন্স শিটে অমিল রয়েছে (Unbalanced)', 'Balance Sheet has a difference') }}
                         </span>
                     </div>
-                    <div v-if="!isBalanced" class="text-xs font-mono font-bold">
+                    <div v-if="!isBalanced" class="text-xs font-mono font-bold pl-5 sm:pl-0">
                         {{ t('পার্থক্য:', 'Difference:') }} {{ formatCurrency(Math.abs(fund_and_liabilities.total - property_and_assets.total)) }}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
                     <!-- Fund & Liabilities -->
-                    <div class="overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm transition-colors">
-                        <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/90 flex items-center justify-between">
+                    <div class="overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl shadow-sm transition-colors">
+                        <div class="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/90 flex items-center justify-between">
                             <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
                                 {{ t('ফান্ড ও দেনা', 'Fund & Liabilities') }}
                             </h3>
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
                                 {{ t('দায় ও মূলধন', 'Capital & Debts') }}
                             </span>
                         </div>
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                    <th class="px-5 py-2.5 text-left border-r border-slate-200 dark:border-slate-700">{{ t('বিবরণ', 'Description') }}</th>
-                                    <th class="px-5 py-2.5 text-right">{{ t('পরিমাণ', 'Amount') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
-                                <!-- Fund Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ t('ফান্ড (মূলধন)', 'Fund (Capital)') }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                        {{ formatCurrency(fund_and_liabilities.fund?.period ?? fund_and_liabilities.fund ?? 0) }}
-                                    </td>
-                                </tr>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                        <th class="px-3 sm:px-5 py-2 sm:py-2.5 text-left border-r border-slate-200 dark:border-slate-700">{{ t('বিবরণ', 'Description') }}</th>
+                                        <th class="px-3 sm:px-5 py-2 sm:py-2.5 text-right">{{ t('পরিমাণ', 'Amount') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                                    <!-- Fund Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ t('ফান্ড (মূলধন)', 'Fund (Capital)') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                            {{ formatCurrency(fund_and_liabilities.fund?.period ?? fund_and_liabilities.fund ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <!-- Net Profit Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ t('নিট লাভ', 'Net Profit') }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono"
-                                        :class="(fund_and_liabilities.net_profit?.period ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
-                                        {{ formatCurrency(fund_and_liabilities.net_profit?.period ?? 0) }}
-                                    </td>
-                                </tr>
+                                    <!-- Net Profit Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ t('নিট লাভ', 'Net Profit') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono"
+                                            :class="(fund_and_liabilities.net_profit?.period ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                                            {{ formatCurrency(fund_and_liabilities.net_profit?.period ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <!-- Supplier Due Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        <div class="flex items-center gap-1.5">
-                                            <span>{{ t('সরবরাহকারী বকেয়া (পাওনাদার)', 'Supplier Due (Payable)') }}</span>
-                                            <span v-if="(fund_and_liabilities.supplier_due?.period ?? 0) > 0"
-                                                  class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                                                {{ t('দেনা', 'Due') }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-rose-600 dark:text-rose-400">
-                                        {{ formatCurrency(fund_and_liabilities.supplier_due?.period ?? 0) }}
-                                    </td>
-                                </tr>
+                                    <!-- Supplier Due Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            <div class="flex items-center gap-1.5">
+                                                <span>{{ t('সরবরাহকারী বকেয়া (পাওনাদার)', 'Supplier Due (Payable)') }}</span>
+                                                <span v-if="(fund_and_liabilities.supplier_due?.period ?? 0) > 0"
+                                                      class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                                    {{ t('দেনা', 'Due') }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-rose-600 dark:text-rose-400">
+                                            {{ formatCurrency(fund_and_liabilities.supplier_due?.period ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <tr v-for="item in (fund_and_liabilities.liabilities || [])" :key="item.name" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ item.name }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
-                                        {{ formatCurrency(item.amount) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <!-- Total Row -->
-                                <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 font-bold">
-                                    <td class="px-5 py-3.5 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                                        {{ t('মোট ফান্ড ও দেনা', 'Total Fund & Liabilities') }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
-                                        {{ formatCurrency(fund_and_liabilities.total) }}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                                    <tr v-for="item in (fund_and_liabilities.liabilities || [])" :key="item.name" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ item.name }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
+                                            {{ formatCurrency(item.amount) }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <!-- Total Row -->
+                                    <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 font-bold">
+                                        <td class="px-3 sm:px-5 py-3 sm:py-3.5 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                                            {{ t('মোট ফান্ড ও দেনা', 'Total Fund & Liabilities') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-3 sm:py-3.5 text-right text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
+                                            {{ formatCurrency(fund_and_liabilities.total) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Property & Assets -->
-                    <div class="overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm transition-colors">
-                        <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/90 flex items-center justify-between">
+                    <div class="overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl shadow-sm transition-colors">
+                        <div class="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/90 flex items-center justify-between">
                             <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
                                 {{ t('সম্পদ ও সম্পত্তি', 'Property & Assets') }}
                             </h3>
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
                                 {{ t('সম্পত্তির বর্তমান মূল্য', 'Assets & Resources') }}
                             </span>
                         </div>
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                    <th class="px-5 py-2.5 text-left border-r border-slate-200 dark:border-slate-700">{{ t('বিবরণ', 'Description') }}</th>
-                                    <th class="px-5 py-2.5 text-right">{{ t('পরিমাণ', 'Amount') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
-                                <!-- Bank Balance Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ t('ব্যাংক ব্যালেন্স', 'Bank Balance') }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
-                                        {{ formatCurrency(property_and_assets.bank_balance?.period ?? 0) }}
-                                    </td>
-                                </tr>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                        <th class="px-3 sm:px-5 py-2 sm:py-2.5 text-left border-r border-slate-200 dark:border-slate-700">{{ t('বিবরণ', 'Description') }}</th>
+                                        <th class="px-3 sm:px-5 py-2 sm:py-2.5 text-right">{{ t('পরিমাণ', 'Amount') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                                    <!-- Bank Balance Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ t('ব্যাংক ব্যালেন্স', 'Bank Balance') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
+                                            {{ formatCurrency(property_and_assets.bank_balance?.period ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <!-- Customer Due Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ t('গ্রাহক বকেয়া (পাওনা)', 'Customer Due (Receivable)') }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
-                                        {{ formatCurrency(property_and_assets.customer_due?.period ?? property_and_assets.receivable?.period ?? 0) }}
-                                    </td>
-                                </tr>
+                                    <!-- Customer Due Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ t('গ্রাহক বকেয়া (পাওনা)', 'Customer Due (Receivable)') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
+                                            {{ formatCurrency(property_and_assets.customer_due?.period ?? property_and_assets.receivable?.period ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <!-- Fixed Assets Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        <div class="flex items-center justify-between">
-                                            <span>{{ t('স্থায়ী সম্পদ', 'Fixed Assets') }}</span>
-                                            <span v-if="property_and_assets.fixed_assets_breakdown && property_and_assets.fixed_assets_breakdown.length > 0"
-                                                  class="text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
-                                                ({{ formatNumber(property_and_assets.fixed_assets_breakdown.length) }} {{ t('টি সম্পদ', 'assets') }})
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
-                                        {{ formatCurrency(property_and_assets.fixed_assets ?? 0) }}
-                                    </td>
-                                </tr>
+                                    <!-- Fixed Assets Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            <div class="flex items-center justify-between">
+                                                <span>{{ t('স্থায়ী সম্পদ', 'Fixed Assets') }}</span>
+                                                <span v-if="property_and_assets.fixed_assets_breakdown && property_and_assets.fixed_assets_breakdown.length > 0"
+                                                      class="text-[11px] font-normal text-indigo-600 dark:text-indigo-400">
+                                                    ({{ formatNumber(property_and_assets.fixed_assets_breakdown.length) }} {{ t('টি সম্পদ', 'assets') }})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-100">
+                                            {{ formatCurrency(property_and_assets.fixed_assets ?? 0) }}
+                                        </td>
+                                    </tr>
 
-                                <!-- Stock Value Row -->
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                    <td class="px-5 py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        {{ t('স্টক মূল্য', 'Stock Value') }}
-                                    </td>
-                                    <td class="px-5 py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                        {{ formatCurrency(property_and_assets.stock_value?.period ?? 0) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <!-- Total Row -->
-                                <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 font-bold">
-                                    <td class="px-5 py-3.5 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                                        {{ t('মোট সম্পত্তি ও সম্পদ', 'Total Property & Assets') }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
-                                        {{ formatCurrency(property_and_assets.total) }}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                                    <!-- Stock Value Row -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {{ t('স্টক মূল্য', 'Stock Value') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                            {{ formatCurrency(property_and_assets.stock_value?.period ?? 0) }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <!-- Total Row -->
+                                    <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 font-bold">
+                                        <td class="px-3 sm:px-5 py-3 sm:py-3.5 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                                            {{ t('মোট সম্পত্তি ও সম্পদ', 'Total Property & Assets') }}
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-3 sm:py-3.5 text-right text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
+                                            {{ formatCurrency(property_and_assets.total) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- WORD DOCUMENT / PRINT VIEW (Black & White Word Line Art) -->
-        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+        <div :class="[viewMode === 'document' ? 'block py-4 overflow-x-auto' : 'print-only']">
             <WordReportLayout
                 ref="wordReportRef"
                 :title="t('ব্যালেন্স শিট বিবরণী', 'Balance Sheet Statement')"

@@ -22,6 +22,23 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
     \App\Http\Middleware\EnsureTenantActive::class,
 ])->group(function () {
+    // Serve dynamic favicon for tenant domains
+    Route::get('/favicon.ico', function () {
+        try {
+            $favicon = \App\Models\Setting::getCentral('site_favicon', '');
+            if (!empty($favicon)) {
+                $path = base_path('storage/app/public/' . ltrim(str_replace('/storage/', '', $favicon), '/'));
+                if (file_exists($path)) {
+                    return response()->file($path);
+                }
+            }
+        } catch (\Throwable $e) {}
+        if (file_exists(public_path('favicon.png'))) {
+            return response()->file(public_path('favicon.png'));
+        }
+        abort(404);
+    });
+
     // Serve tenant storage files (images, documents, etc.)
     Route::get('/storage/{path}', function (string $path) {
         $tenantFile = storage_path("app/public/{$path}");

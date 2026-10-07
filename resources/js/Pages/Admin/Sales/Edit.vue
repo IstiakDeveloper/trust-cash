@@ -351,11 +351,65 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <!-- Items Table -->
+                    <!-- Items Section -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-gray-900">Sale Items</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-900">Sale Items</h3>
+                            <span class="text-xs text-gray-500">{{ form.items.length }} items</span>
+                        </div>
 
-                        <div class="overflow-hidden border border-gray-200 rounded-lg">
+                        <!-- Mobile Items Cards (< md) -->
+                        <div class="md:hidden space-y-3">
+                            <div v-for="(item, index) in form.items" :key="index"
+                                class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-gray-900 truncate">{{ item.product.name }}</div>
+                                        <div class="text-xs text-gray-500 mt-0.5">
+                                            SKU: {{ item.product.sku }} |
+                                            <span :class="item.max_allowed > 10 ? 'text-green-600 font-medium' : 'text-orange-600 font-medium'">
+                                                Avail: {{ item.max_allowed }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button type="button"
+                                        class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg active:scale-90 transition-all shrink-0"
+                                        @click="removeItem(index)">
+                                        <XMarkIcon class="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Qty</label>
+                                        <TextInput type="number" :model-value="item.quantity"
+                                            @input="updateQuantity(index, $event.target.value)"
+                                            class="w-full text-center border-gray-300 rounded-lg text-xs py-1.5"
+                                            min="1" :max="item.max_allowed" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Unit Price</label>
+                                        <TextInput type="number" :model-value="item.unit_price"
+                                            @input="updateUnitPrice(index, $event.target.value)"
+                                            class="w-full text-right border-gray-300 rounded-lg text-xs py-1.5"
+                                            min="0" step="0.01" />
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-2 border-t border-gray-200 text-xs font-semibold">
+                                    <span class="text-gray-500">Subtotal:</span>
+                                    <span class="text-gray-900">৳{{ Number(item.subtotal).toFixed(2) }}</span>
+                                </div>
+                            </div>
+
+                            <div v-if="form.items.length === 0" class="p-6 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl">
+                                <PlusIcon class="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                <p class="text-xs">No items added yet. Search products above to add them.</p>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Table (md+) -->
+                        <div class="hidden md:block overflow-hidden border border-gray-200 rounded-lg">
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
@@ -495,14 +549,14 @@ onMounted(() => {
                     </div>
 
                     <!-- Submit Buttons -->
-                    <div class="flex justify-end pt-6 space-x-3 border-t border-gray-200">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end pt-6 gap-3 sm:space-x-3 border-t border-gray-200">
                         <Link :href="route('admin.sales.show', sale.id)"
-                            class="inline-flex items-center px-6 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                            class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 sm:py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 active:scale-95">
                         Cancel
                         </Link>
                         <PrimaryButton type="submit" :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                             :disabled="form.processing || form.items.length === 0"
-                            class="inline-flex items-center px-6 py-2 font-medium text-white transition-colors bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700">
+                            class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 sm:py-2 font-medium text-white transition-colors bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 active:scale-95">
                             <span v-if="form.processing" class="mr-2">
                                 <div class="w-4 h-4 border-b-2 border-white rounded-full animate-spin"></div>
                             </span>

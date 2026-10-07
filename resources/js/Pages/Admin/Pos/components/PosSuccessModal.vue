@@ -25,12 +25,15 @@
                                 <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
                                     <i class="fas fa-check-circle"></i>
                                 </div>
-                                <div>
-                                    <DialogTitle as="h3" class="text-base font-bold text-slate-900 dark:text-white">
-                                        {{ t('বিক্রি সফলভাবে সম্পন্ন হয়েছে!', 'Sale Completed Successfully!') }}
+                                    <DialogTitle as="h3" class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <span>{{ sale.is_offline ? t('অফলাইন বিক্রি সংরক্ষিত!', 'Offline Sale Saved!') : t('বিক্রি সফলভাবে সম্পন্ন হয়েছে!', 'Sale Completed Successfully!') }}</span>
+                                        <span v-if="sale.is_offline" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+                                            {{ t('অফলাইন ড্রাফট', 'Offline') }}
+                                        </span>
                                     </DialogTitle>
-                                    <p class="text-xs text-slate-400">{{ t('মেমো তৈরি ও সেভ হয়েছে', 'Invoice has been recorded') }}</p>
-                                </div>
+                                    <p class="text-xs text-slate-400">
+                                        {{ sale.is_offline ? t('ইন্টারনেট আসলে স্বয়ংক্রিয়ভাবে সার্ভারে সিঙ্ক হবে', 'Will auto-sync to server when back online') : t('মেমো তৈরি ও সেভ হয়েছে', 'Invoice has been recorded') }}
+                                    </p>
                             </div>
 
                             <div class="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 space-y-2 text-xs">
@@ -52,14 +55,16 @@
                                 </div>
                             </div>
 
-                            <div class="mt-6 flex justify-end gap-2.5">
+                            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                                 <button @click="$emit('print', sale.id)"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 px-4 py-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 transition-all">
+                                    type="button"
+                                    class="w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 px-4 py-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 transition-all">
                                     <PrinterIcon class="w-4 h-4" />
                                     <span>{{ t('রসিদ প্রিন্ট করুন', 'Print Receipt') }}</span>
                                 </button>
                                 <button @click="$emit('close')"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-sm">
+                                    type="button"
+                                    class="w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-sm">
                                     <PlusCircleIcon class="w-4 h-4" />
                                     <span>{{ t('পরবর্তী বিক্রি', 'Next Sale') }}</span>
                                 </button>

@@ -15,13 +15,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'id',
         'name',
         'email',
+        'phone',
         'plan_id',
-        'status',        // active, suspended, trial, cancelled
+        'status',        // active, suspended, trial, cancelled, pending
+        'discount_type',
+        'discount_value',
+        'discount_note',
         'trial_ends_at',
     ];
 
     protected $casts = [
-        'trial_ends_at' => 'datetime',
+        'trial_ends_at'  => 'datetime',
+        'discount_value' => 'decimal:2',
     ];
 
     public static function getCustomColumns(): array
@@ -30,8 +35,12 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'id',
             'name',
             'email',
+            'phone',
             'plan_id',
             'status',
+            'discount_type',
+            'discount_value',
+            'discount_note',
             'trial_ends_at',
         ];
     }

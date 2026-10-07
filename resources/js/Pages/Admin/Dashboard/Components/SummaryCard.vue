@@ -1,15 +1,15 @@
 <template>
-    <div class="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
+    <div class="p-3.5 sm:p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs dark:bg-slate-900 dark:border-slate-800 transition-all hover:shadow-md">
         <div class="flex items-center">
-            <div class="p-3 bg-blue-100 rounded-full dark:bg-blue-900">
+            <div class="p-2.5 sm:p-3 bg-indigo-50 rounded-xl dark:bg-indigo-950/60 shrink-0">
                 <component
                     :is="iconComponent"
-                    class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                    class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400"
                 />
             </div>
-            <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-300">{{ title }}</h3>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <div class="ml-3 sm:ml-4 min-w-0 flex-1">
+                <h3 class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 truncate">{{ title }}</h3>
+                <p class="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums tracking-tight truncate mt-0.5">
                     {{ formattedValue }}
                 </p>
             </div>

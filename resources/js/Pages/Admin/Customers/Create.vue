@@ -1,130 +1,166 @@
 <template>
-
-    <Head title="Customers" />
-    <AdminLayout>
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Create Customer
-            </h2>
-        </template>
-
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="p-6">
-                        <form @submit.prevent="submit">
-                            <div class="mb-4">
-                                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                                <input type="text" id="name" v-model="form.name"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <input type="email" id="email" v-model="form.email"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="mb-4">
-                                <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
-                                <input type="text" id="phone" v-model="form.phone"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    required>
-                            </div>
-                            <div class="mb-4">
-                                <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
-                                <textarea id="address" v-model="form.address"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
-                            </div>
-                            <div class="mb-4">
-                                <label for="branch_code" class="block text-sm font-medium text-gray-700">Branch Code</label>
-                                <input type="text" id="branch_code" v-model="form.branch_code"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    placeholder="e.g. 0004">
-                            </div>
-                            <div class="mb-4">
-                                <label for="branch_name" class="block text-sm font-medium text-gray-700">Branch Name</label>
-                                <input type="text" id="branch_name" v-model="form.branch_name"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                    placeholder="e.g. Bhabanipur">
-                            </div>
-                            <div class="mb-4">
-                                <label for="credit_limit" class="block text-sm font-medium text-gray-700">Credit
-                                    Limit</label>
-                                <input type="number" id="credit_limit" v-model="form.credit_limit"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="mb-4">
-                                <label for="balance" class="block text-sm font-medium text-gray-700">Balance</label>
-                                <input type="number" id="balance" v-model="form.balance"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="mb-4">
-                                <label for="points" class="block text-sm font-medium text-gray-700">Points</label>
-                                <input type="number" id="points" v-model="form.points"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="mb-4">
-                                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                                <select id="status" v-model="form.status"
-                                    class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                    <option :value="true">Active</option>
-                                    <option :value="false">Inactive</option>
-                                </select>
-                            </div>
-                            <button type="submit"
-                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                Create
-                            </button>
-                        </form>
-                    </div>
+    <Head :title="t('নতুন কাস্টমার তৈরি', 'Create Customer')" />
+    <AdminLayout :title="t('কাস্টমার ব্যবস্থাপনা', 'Customer Management')">
+        <div class="max-w-3xl mx-auto space-y-4 sm:space-y-6">
+            <!-- Header with Back Button -->
+            <div class="flex items-center gap-3">
+                <Link :href="route('admin.customers.index')"
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <ArrowLeftIcon class="h-4 w-4" />
+                </Link>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                        {{ t('নতুন কাস্টমার যোগ করুন', 'Create New Customer') }}
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ t('কাস্টমারের নাম, ফোন নম্বর ও প্রয়োজনীয় তথ্য পূরণ করুন', 'Fill in customer name, phone and details') }}
+                    </p>
                 </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xs dark:border-slate-700 dark:bg-slate-900">
+                <form @submit.prevent="submit" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Name -->
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('কাস্টমারের নাম *', 'Customer Name *') }}
+                            </label>
+                            <input type="text" v-model="form.name" required
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                :placeholder="t('যেমন: মোঃ করিমুল ইসলাম', 'e.g. John Doe')" />
+                        </div>
+
+                        <!-- Phone -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('মোবাইল নম্বর *', 'Phone *') }}
+                            </label>
+                            <input type="text" v-model="form.phone" required
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                placeholder="017XXXXXXXX" />
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('ইমেইল', 'Email') }}
+                            </label>
+                            <input type="email" v-model="form.email"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                placeholder="customer@example.com" />
+                        </div>
+
+                        <!-- Address -->
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('ঠিকানা', 'Address') }}
+                            </label>
+                            <textarea v-model="form.address" rows="2"
+                                class="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                :placeholder="t('গ্রাম/রাস্তা, থানা, জেলা...', 'Street address, city...')"></textarea>
+                        </div>
+
+                        <!-- Branch Code -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('শাখা কোড', 'Branch Code') }}
+                            </label>
+                            <input type="text" v-model="form.branch_code"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                placeholder="e.g. 0004" />
+                        </div>
+
+                        <!-- Branch Name -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('শাখার নাম', 'Branch Name') }}
+                            </label>
+                            <input type="text" v-model="form.branch_name"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
+                                placeholder="e.g. Main Branch" />
+                        </div>
+
+                        <!-- Credit Limit -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('বাকি বা ক্রেডিট সীমা (টাকা)', 'Credit Limit') }}
+                            </label>
+                            <input type="number" v-model="form.credit_limit" min="0" step="0.01"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600" />
+                        </div>
+
+                        <!-- Initial Balance -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('পূর্বের বকেয়া ব্যালেন্স (যদি থাকে)', 'Opening Balance') }}
+                            </label>
+                            <input type="number" v-model="form.balance" step="0.01"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600" />
+                        </div>
+
+                        <!-- Points -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('রিওয়ার্ড পয়েন্টস', 'Points') }}
+                            </label>
+                            <input type="number" v-model="form.points" min="0"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600" />
+                        </div>
+
+                        <!-- Status -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {{ t('অবস্থা', 'Status') }}
+                            </label>
+                            <select v-model="form.status"
+                                class="w-full min-h-[42px] px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600">
+                                <option :value="true">{{ t('সক্রিয় (Active)', 'Active') }}</option>
+                                <option :value="false">{{ t('নিষ্ক্রিয় (Inactive)', 'Inactive') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Link :href="route('admin.customers.index')"
+                            class="w-full sm:w-auto text-center px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition">
+                            {{ t('বাতিল', 'Cancel') }}
+                        </Link>
+                        <button type="submit" :disabled="form.processing"
+                            class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 disabled:opacity-50 transition">
+                            {{ t('কাস্টমার সংরক্ষণ করুন', 'Create Customer') }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </AdminLayout>
 </template>
 
-<script>
+<script setup>
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { Head } from '@inertiajs/vue3';
+import { ArrowLeft as ArrowLeftIcon } from 'lucide-vue-next'
+import { useLanguage } from '@/composables/useLanguage'
 
-export default {
-    components: {
-        AdminLayout,
-    },
-    data() {
-        return {
-            form: {
-                name: '',
-                email: '',
-                phone: '',
-                address: '',
-                branch_code: '',
-                branch_name: '',
-                credit_limit: 0,
-                balance: 0,
-                points: 0,
-                status: true,
-            },
-        }
-    },
-    methods: {
-        submit() {
-            this.$inertia.post('/admin/customers', this.form)
-                .then(() => {
-                    this.form = {
-                        name: '',
-                        email: '',
-                        phone: '',
-                        address: '',
-                        branch_code: '',
-                        branch_name: '',
-                        credit_limit: 0,
-                        balance: 0,
-                        points: 0,
-                        status: true,
-                    }
-                })
-        },
-    },
+const { t } = useLanguage()
+
+const form = useForm({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    branch_code: '',
+    branch_name: '',
+    credit_limit: 0,
+    balance: 0,
+    points: 0,
+    status: true,
+})
+
+const submit = () => {
+    form.post(route('admin.customers.store'))
 }
 </script>

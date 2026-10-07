@@ -1,7 +1,7 @@
 <template>
-    <div class="p-6 bg-white rounded-lg shadow-sm dark:bg-gray-800">
-        <h3 class="mb-4 text-lg font-medium dark:text-gray-300">Stock Status</h3>
-        <div class="h-72">
+    <div class="p-3.5 sm:p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs dark:bg-slate-900 dark:border-slate-800">
+        <h3 class="mb-3 text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200">Stock Status</h3>
+        <div class="h-56 sm:h-72 w-full">
             <BarChart
                 :data="chartData"
                 :options="chartOptions"

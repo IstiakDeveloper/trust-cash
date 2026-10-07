@@ -49,7 +49,11 @@ class HandleInertiaRequests extends Middleware
             'business_logo' => function () {
                 try {
                     if (class_exists(\App\Models\Setting::class)) {
-                        return \App\Models\Setting::get('business_logo', '');
+                        $tenantLogo = \App\Models\Setting::get('business_logo', '');
+                        if (!empty($tenantLogo)) {
+                            return $tenantLogo;
+                        }
+                        return \App\Models\Setting::getCentral('site_logo', '');
                     }
                 } catch (\Throwable $e) {}
                 return '';
@@ -62,10 +66,36 @@ class HandleInertiaRequests extends Middleware
                 } catch (\Throwable $e) {}
                 return '৳';
             },
-            'appUrl' => config('app.url'),
+            'platform' => function () {
+                try {
+                    if (class_exists(\App\Models\Setting::class)) {
+                        return [
+                            'name'          => \App\Models\Setting::getCentral('app_name', 'TrustCash'),
+                            'tagline'       => \App\Models\Setting::getCentral('app_tagline', 'Cloud POS & Accounting'),
+                            'logo'          => \App\Models\Setting::getCentral('site_logo', ''),
+                            'favicon'       => \App\Models\Setting::getCentral('site_favicon', ''),
+                            'phone'         => \App\Models\Setting::getCentral('support_phone', '+880 1700-000000'),
+                            'email'         => \App\Models\Setting::getCentral('support_email', 'support@trustcash.com'),
+                            'address'       => \App\Models\Setting::getCentral('company_address', 'Dhaka, Bangladesh'),
+                            'whatsapp'      => \App\Models\Setting::getCentral('whatsapp_number', ''),
+                            'facebook'      => \App\Models\Setting::getCentral('social_facebook', ''),
+                            'youtube'       => \App\Models\Setting::getCentral('social_youtube', ''),
+                            'currency'      => \App\Models\Setting::getCentral('currency_symbol', '৳'),
+                            'nav_features'  => in_array(\App\Models\Setting::getCentral('nav_show_features', 'true'), ['true', '1', true, 1], true),
+                            'nav_use_cases' => in_array(\App\Models\Setting::getCentral('nav_show_use_cases', 'true'), ['true', '1', true, 1], true),
+                            'nav_pricing'   => in_array(\App\Models\Setting::getCentral('nav_show_pricing', 'true'), ['true', '1', true, 1], true),
+                            'nav_faq'       => in_array(\App\Models\Setting::getCentral('nav_show_faq', 'true'), ['true', '1', true, 1], true),
+                            'nav_cta_text'  => \App\Models\Setting::getCentral('nav_cta_text', '১৪ দিন ফ্রি ট্রায়াল শুরু করুন'),
+                            'nav_cta_url'   => \App\Models\Setting::getCentral('nav_cta_url', '/register-business'),
+                        ];
+                    }
+                } catch (\Throwable $e) {}
+                return null;
+            },
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
-                'sale' => fn() => $request->session()->get('sale'),
+                'error'   => fn() => $request->session()->get('error'),
+                'sale'    => fn() => $request->session()->get('sale'),
             ],
         ];
     }

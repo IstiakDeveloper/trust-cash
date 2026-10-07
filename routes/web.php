@@ -56,6 +56,22 @@ use Inertia\Inertia;
 
 
 // SaaS Landing Page & Registration
+Route::get('/favicon.ico', function () {
+    try {
+        $favicon = \App\Models\Setting::getCentral('site_favicon', '');
+        if (!empty($favicon)) {
+            $path = base_path('storage/app/public/' . ltrim(str_replace('/storage/', '', $favicon), '/'));
+            if (file_exists($path)) {
+                return response()->file($path);
+            }
+        }
+    } catch (\Throwable $e) {}
+    if (file_exists(public_path('favicon.png'))) {
+        return response()->file(public_path('favicon.png'));
+    }
+    abort(404);
+});
+
 Route::get('/', [LandingPageController::class, 'index'])->name('home');
 Route::get('/register-business', [TenantRegistrationController::class, 'showRegistrationForm'])->name('tenant.register');
 Route::post('/register-business', [TenantRegistrationController::class, 'register'])->name('tenant.register.submit');

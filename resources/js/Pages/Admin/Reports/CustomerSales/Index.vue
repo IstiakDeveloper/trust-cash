@@ -98,29 +98,29 @@ const calculateTotal = (items) => {
 <template>
     <AdminLayout :title="t('গ্রাহক বিক্রয় রিপোর্ট', 'Customer Sales Report')">
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h2 class="font-bold text-xl text-gray-800 dark:text-white leading-tight">
                     {{ t('গ্রাহক বিক্রয় রিপোর্ট', 'Customer Sales Report') }}
                 </h2>
                 <button v-if="reportData" @click="printReport"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-md">
+                    class="inline-flex justify-center items-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg shadow-sm min-h-[38px]">
                     <Printer class="w-4 h-4 mr-2" />
-                    Print Report
+                    {{ t('প্রিন্ট রিপোর্ট', 'Print Report') }}
                 </button>
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="py-4 sm:py-8">
+            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
                 <!-- Filters Section -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6 no-print">
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-slate-200/80 dark:border-slate-700 mb-4 sm:mb-6 no-print">
+                    <div class="p-3.5 sm:p-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                             <!-- Customer Select -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">{{ t('গ্রাহক', 'Customer') }}</label>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{{ t('গ্রাহক', 'Customer') }}</label>
                                 <select v-model="filters.customer_id" @change="loadReport"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1.5">
                                     <option value="">{{ t('গ্রাহক নির্বাচন করুন', 'Select Customer') }}</option>
                                     <option v-for="customer in customers" :key="customer.id" :value="customer.id">
                                         {{ customer.name }} - {{ customer.phone }}
@@ -130,9 +130,9 @@ const calculateTotal = (items) => {
 
                             <!-- Year Select -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">{{ t('বছর', 'Year') }}</label>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{{ t('বছর', 'Year') }}</label>
                                 <select v-model="filters.year" @change="loadReport"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1.5">
                                     <option v-for="year in years" :key="year.value" :value="year.value">
                                         {{ formatYear(year.value) }}
                                     </option>
@@ -141,9 +141,9 @@ const calculateTotal = (items) => {
 
                             <!-- Month Select -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">{{ t('মাস', 'Month') }}</label>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{{ t('মাস', 'Month') }}</label>
                                 <select v-model="filters.month" @change="loadReport"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-1.5">
                                     <option v-for="month in months" :key="month.value" :value="month.value">
                                         {{ getMonthName(month.value) }}
                                     </option>
@@ -156,105 +156,91 @@ const calculateTotal = (items) => {
                 <!-- Loading State -->
                 <div v-if="loading" class="text-center py-12">
                     <div class="spinner"></div>
-                    Loading...
+                    <span class="text-xs text-slate-500 mt-2 block">{{ t('লোড হচ্ছে...', 'Loading...') }}</span>
                 </div>
 
                 <!-- Report Content -->
-                <div v-else-if="reportData" class="space-y-6">
-                    <!-- Summary Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900">Previous Balance</h3>
-                                <p class="mt-2 text-3xl font-bold text-gray-900">
-                                    {{ formatCurrency(reportData.previousBalance) }}
-                                </p>
-                            </div>
+                <div v-else-if="reportData" class="space-y-4 sm:space-y-6">
+                    <!-- Summary Cards (2-col on mobile) -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-5">
+                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('পূর্বের ব্যালেন্স', 'Previous Balance') }}</h3>
+                            <p class="mt-1 text-base sm:text-2xl font-bold font-mono text-gray-900 dark:text-white truncate">
+                                {{ formatCurrency(reportData.previousBalance) }}
+                            </p>
                         </div>
 
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900">Monthly Sales</h3>
-                                <p class="mt-2 text-3xl font-bold text-gray-900">
-                                    {{ formatCurrency(reportData.monthlyTotals.total_sales) }}
-                                </p>
-                            </div>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-5">
+                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('মাসিক বিক্রয়', 'Monthly Sales') }}</h3>
+                            <p class="mt-1 text-base sm:text-2xl font-bold font-mono text-gray-900 dark:text-white truncate">
+                                {{ formatCurrency(reportData.monthlyTotals.total_sales) }}
+                            </p>
                         </div>
 
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900">Monthly Paid</h3>
-                                <p class="mt-2 text-3xl font-bold text-gray-900">
-                                    {{ formatCurrency(reportData.monthlyTotals.total_paid) }}
-                                </p>
-                            </div>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-5">
+                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('মাসিক আদায়', 'Monthly Paid') }}</h3>
+                            <p class="mt-1 text-base sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 truncate">
+                                {{ formatCurrency(reportData.monthlyTotals.total_paid) }}
+                            </p>
                         </div>
 
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold text-gray-900">Current Due</h3>
-                                <p class="mt-2 text-3xl font-bold text-red-600">
-                                    {{ formatCurrency(reportData.monthlyTotals.total_due) }}
-                                </p>
-                            </div>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-5">
+                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('বর্তমান বকেয়া', 'Current Due') }}</h3>
+                            <p class="mt-1 text-base sm:text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 truncate">
+                                {{ formatCurrency(reportData.monthlyTotals.total_due) }}
+                            </p>
                         </div>
                     </div>
 
                     <!-- Sales Table -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales Details</h3>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
+                        <div class="p-3.5 sm:p-5">
+                            <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-3">{{ t('বিক্রয় বিবরণী', 'Sales Details') }}</h3>
+                            <div class="overflow-x-auto -mx-3.5 sm:mx-0">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                     <thead>
-                                        <tr>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Date
+                                        <tr class="bg-gray-50 dark:bg-gray-700/40 text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-left">
+                                                {{ t('তারিখ', 'Date') }}
                                             </th>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Invoice
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-left">
+                                                {{ t('ইনভয়েস', 'Invoice') }}
                                             </th>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Total
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-right">
+                                                {{ t('মোট', 'Total') }}
                                             </th>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Paid
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-right">
+                                                {{ t('পরিশোধ', 'Paid') }}
                                             </th>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Due
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-right">
+                                                {{ t('বকেয়া', 'Due') }}
                                             </th>
-                                            <th
-                                                class="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
+                                            <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-center">
+                                                {{ t('অ্যাকশন', 'Actions') }}
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        <tr v-for="sale in reportData.monthlySales" :key="sale.id">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                        <tr v-for="sale in reportData.monthlySales" :key="sale.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs text-gray-500">
                                                 {{ sale.date }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                                                 {{ sale.invoice_no }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-mono text-gray-700 dark:text-gray-300 text-right">
                                                 {{ formatCurrency(sale.total) }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-mono text-emerald-600 dark:text-emerald-400 text-right">
                                                 {{ formatCurrency(sale.paid) }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm font-mono text-rose-600 dark:text-rose-400 text-right">
                                                 {{ formatCurrency(sale.due) }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                            <td class="px-3 sm:px-6 py-2.5 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-center">
                                                 <button @click="showSaleDetails(sale)"
-                                                    class="text-indigo-600 hover:text-indigo-900">
-                                                    View Details
+                                                    class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 font-medium">
+                                                    {{ t('বিস্তারিত', 'View Details') }}
                                                 </button>
                                             </td>
                                         </tr>

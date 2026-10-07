@@ -22,30 +22,30 @@
             </div>
 
             <!-- Search Sale by Invoice -->
-            <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900">
+            <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                 <label class="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-2">
                     {{ t('বিক্রয় ইনভয়েস নং দিয়ে খুঁজুন', 'Search Sale by Invoice #') }}
                 </label>
-                <div class="flex gap-2">
+                <div class="flex flex-col sm:flex-row gap-2">
                     <input
                         type="text"
                         v-model="invoiceQuery"
                         :placeholder="t('যেমনঃ INV-2026...', 'e.g. INV-2026...')"
-                        class="flex-1 rounded-xl border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        class="flex-1 rounded-xl border-slate-200 bg-white px-3.5 py-2.5 sm:py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                         @keydown.enter.prevent="searchInvoice"
                     />
                     <button
                         type="button"
                         @click="searchInvoice"
                         :disabled="searching"
-                        class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 disabled:opacity-50"
+                        class="w-full sm:w-auto justify-center rounded-xl bg-indigo-600 px-4 py-2.5 sm:py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 active:scale-95 disabled:opacity-50 transition-all"
                     >
                         {{ searching ? t('খুঁজছে...', 'Searching...') : t('ইনভয়েস খুঁজুন', 'Find Sale') }}
                     </button>
                 </div>
 
                 <!-- Found Sale details -->
-                <div v-if="loadedSale" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                <div v-if="loadedSale" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5 sm:p-4 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/20">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <span class="font-bold text-indigo-900 dark:text-indigo-300">{{ t('ইনভয়েস #', 'Invoice #') }}{{ loadedSale.invoice_no }}</span>
@@ -57,7 +57,7 @@
                         <button
                             type="button"
                             @click="loadItemsFromSale"
-                            class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-xs"
+                            class="w-full sm:w-auto text-center rounded-lg bg-indigo-600 px-3 py-2 sm:py-1.5 text-xs font-bold text-white hover:bg-indigo-500 active:scale-95 shadow-xs transition-all"
                         >
                             {{ t('পণ্যগুলো যোগ করুন', 'Load Sale Items') }}
                         </button>
@@ -66,9 +66,9 @@
             </div>
 
             <!-- Return Form -->
-            <form @submit.prevent="submitReturn" class="space-y-6">
+            <form @submit.prevent="submitReturn" class="space-y-4 sm:space-y-6">
                 <!-- Meta Info -->
-                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                             {{ t('কাস্টমার', 'Customer') }}
@@ -110,62 +110,115 @@
                     </div>
                 </div>
 
-                <!-- Return Items Table -->
-                <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <!-- Return Items Container -->
+                <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                    <div class="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                         <h3 class="text-xs font-bold text-slate-900 dark:text-white">
                             {{ t('ফেরতকৃত পণ্যের তালিকা', 'Items to Return') }}
                         </h3>
-                        <span class="text-xs text-slate-500">{{ form.items.length }} {{ t('টি পণ্য', 'item(s)') }}</span>
+                        <span class="text-xs font-semibold text-slate-500">{{ form.items.length }} {{ t('টি পণ্য', 'item(s)') }}</span>
                     </div>
 
-                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
-                            <tr>
-                                <th class="px-4 py-3 text-left">{{ t('পণ্য', 'Product') }}</th>
-                                <th class="px-4 py-3 text-center w-36">{{ t('একক দর (৳)', 'Unit Price (৳)') }}</th>
-                                <th class="px-4 py-3 text-center w-28">{{ t('ফেরত পরিমাণ', 'Return Qty') }}</th>
-                                <th class="px-4 py-3 text-right w-36">{{ t('মোট টাকা (৳)', 'Subtotal (৳)') }}</th>
-                                <th class="px-4 py-3 text-center w-12"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="(item, idx) in form.items" :key="idx" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                                <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">{{ item.product_name }}</td>
-                                <td class="px-4 py-3">
+                    <!-- Mobile Items Card View (< sm) -->
+                    <div class="sm:hidden p-3 space-y-3">
+                        <div v-for="(item, idx) in form.items" :key="idx" class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="font-bold text-xs text-slate-900 dark:text-white min-w-0">
+                                    {{ item.product_name }}
+                                </div>
+                                <button type="button" @click="form.items.splice(idx, 1)" class="p-1 text-rose-500 hover:text-rose-700 active:scale-90 transition-all shrink-0">
+                                    <TrashIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                                        {{ t('দর (৳)', 'Price (৳)') }}
+                                    </label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         v-model.number="item.unit_price"
                                         min="0"
-                                        class="w-full text-right text-xs rounded-lg border-slate-200 py-1 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                        class="w-full text-right text-xs rounded-lg border-slate-200 py-1.5 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                     />
-                                </td>
-                                <td class="px-4 py-3">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-0.5">
+                                        {{ t('ফেরত পরিমাণ', 'Qty') }}
+                                    </label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         v-model.number="item.quantity"
                                         min="0.01"
-                                        class="w-full text-center text-xs rounded-lg border-slate-200 py-1 font-bold text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-400"
+                                        class="w-full text-center text-xs rounded-lg border-slate-200 py-1.5 font-bold text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-400"
                                     />
-                                </td>
-                                <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
-                                    ৳{{ formatNumber(item.unit_price * item.quantity) }}
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <button type="button" @click="form.items.splice(idx, 1)" class="text-rose-500 hover:text-rose-700">
-                                        <TrashIcon class="h-4 w-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr v-if="form.items.length === 0">
-                                <td colspan="5" class="px-4 py-8 text-center text-slate-400">
-                                    {{ t('এখনো কোনো পণ্য যোগ করা হয়নি। ইনভয়েস সার্চ করে পণ্য লোড করুন।', 'No items added yet. Search an invoice above to load items.') }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-1.5 border-t border-slate-200 dark:border-slate-700/60 text-xs">
+                                <span class="text-slate-500 dark:text-slate-400">{{ t('সাবটোটাল:', 'Subtotal:') }}</span>
+                                <span class="font-bold text-slate-900 dark:text-white">৳{{ formatNumber(item.unit_price * item.quantity) }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="form.items.length === 0" class="py-8 text-center text-xs text-slate-400">
+                            {{ t('এখনো কোনো পণ্য যোগ করা হয়নি। ইনভয়েস সার্চ করে পণ্য লোড করুন।', 'No items added yet. Search an invoice above to load items.') }}
+                        </div>
+                    </div>
+
+                    <!-- Desktop Items Table (sm+) -->
+                    <div class="hidden sm:block overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">{{ t('পণ্য', 'Product') }}</th>
+                                    <th class="px-4 py-3 text-center w-36">{{ t('একক দর (৳)', 'Unit Price (৳)') }}</th>
+                                    <th class="px-4 py-3 text-center w-28">{{ t('ফেরত পরিমাণ', 'Return Qty') }}</th>
+                                    <th class="px-4 py-3 text-right w-36">{{ t('মোট টাকা (৳)', 'Subtotal (৳)') }}</th>
+                                    <th class="px-4 py-3 text-center w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tr v-for="(item, idx) in form.items" :key="idx" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">{{ item.product_name }}</td>
+                                    <td class="px-4 py-3">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            v-model.number="item.unit_price"
+                                            min="0"
+                                            class="w-full text-right text-xs rounded-lg border-slate-200 py-1 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            v-model.number="item.quantity"
+                                            min="0.01"
+                                            class="w-full text-center text-xs rounded-lg border-slate-200 py-1 font-bold text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-400"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                                        ৳{{ formatNumber(item.unit_price * item.quantity) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button type="button" @click="form.items.splice(idx, 1)" class="text-rose-500 hover:text-rose-700">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="form.items.length === 0">
+                                    <td colspan="5" class="px-4 py-8 text-center text-slate-400">
+                                        {{ t('এখনো কোনো পণ্য যোগ করা হয়নি। ইনভয়েস সার্চ করে পণ্য লোড করুন।', 'No items added yet. Search an invoice above to load items.') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Bottom Section: Refund Account & Reason -->

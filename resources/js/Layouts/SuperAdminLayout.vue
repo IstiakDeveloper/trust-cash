@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Link, usePage, router } from '@inertiajs/vue3';
+import { Link, Head, usePage, router } from '@inertiajs/vue3';
 import {
     LayoutDashboard,
     Store,
@@ -26,6 +26,9 @@ const logout = () => {
 </script>
 
 <template>
+    <Head>
+        <link v-if="page.props.platform?.favicon" rel="icon" :href="page.props.platform.favicon" />
+    </Head>
     <div class="min-h-screen bg-slate-950 text-slate-100 flex font-sans">
         <!-- Sidebar Backdrop for Mobile -->
         <div
@@ -44,15 +47,24 @@ const logout = () => {
             <!-- Logo Header -->
             <div class="p-6 border-b border-slate-800/80 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20 text-xl tracking-wider">
-                        TC
+                    <img
+                        v-if="page.props.platform?.logo"
+                        :src="page.props.platform.logo"
+                        :alt="page.props.platform?.name || 'Logo'"
+                        class="w-10 h-10 rounded-xl object-contain bg-slate-950 p-1 border border-slate-800 shadow-lg shadow-emerald-500/10"
+                    />
+                    <div
+                        v-else
+                        class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20 text-xl tracking-wider"
+                    >
+                        {{ (page.props.platform?.name || 'TC').substring(0, 2).toUpperCase() }}
                     </div>
                     <div>
                         <div class="font-bold text-lg text-white tracking-tight flex items-center gap-1.5">
-                            TrustCash
+                            {{ page.props.platform?.name || 'TrustCash' }}
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">PRO</span>
                         </div>
-                        <p class="text-xs text-slate-400">Super Admin Portal</p>
+                        <p class="text-xs text-slate-400">{{ page.props.platform?.tagline || 'Super Admin Portal' }}</p>
                     </div>
                 </div>
                 <button @click="isSidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white p-1">

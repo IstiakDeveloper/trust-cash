@@ -40,10 +40,14 @@ class Setting extends Model
             static::updateOrCreate(['key' => $key], ['value' => $value]);
             $tenantId = function_exists('tenant') && tenant() ? tenant('id') : 'central';
             static::$runtimeCache[$tenantId][$key] = $value;
-            Cache::forget(static::getCacheKey($key));
-            Cache::forget("setting.{$key}");
+            try {
+                Cache::forget(static::getCacheKey($key));
+                Cache::forget("setting.{$key}");
+            } catch (\Throwable $ce) {
+                // Ignore cache forget errors if cache driver doesn't support tags
+            }
         } catch (\Throwable $e) {
-            // Log or ignore during migration/bootstrapping
+            \Illuminate\Support\Facades\Log::error("Setting::set error for [{$key}]: " . $e->getMessage());
         }
     }
 
@@ -53,6 +57,31 @@ class Setting extends Model
             return static::pluck('value', 'key')->toArray();
         } catch (\Throwable $e) {
             return [];
+        }
+    }
+
+    /**
+     * Get a setting strictly from the Central (Landlord) database,
+     * even when running inside a Tenant context.
+     */
+    public static function getCentral(string $key, $default = null)
+    {
+        if (isset(static::$runtimeCache['central'][$key])) {
+            return static::$runtimeCache['central'][$key];
+        }
+
+        try {
+            $centralConn = config('tenancy.database.central_connection', 'mysql');
+            $val = \Illuminate\Support\Facades\DB::connection($centralConn)
+                ->table('settings')
+                ->where('key', $key)
+                ->value('value');
+
+            $result = ($val !== null && $val !== '') ? $val : $default;
+            static::$runtimeCache['central'][$key] = $result;
+            return $result;
+        } catch (\Throwable $e) {
+            return $default;
         }
     }
 }

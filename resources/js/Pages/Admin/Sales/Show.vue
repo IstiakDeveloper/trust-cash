@@ -4,17 +4,17 @@
 
         <div class="space-y-6">
             <!-- Header Actions -->
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
                     <Link :href="route('admin.sales.index')"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 shrink-0">
                         <ArrowLeftIcon class="h-4 w-4" />
                     </Link>
-                    <div>
-                        <h1 class="text-xl font-bold text-slate-900 dark:text-white">
+                    <div class="min-w-0">
+                        <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
                             {{ t('বিক্রয়ের বিবরণ', 'Sale Details') }}
                         </h1>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
                             {{ t('ইনভয়েস:', 'Invoice:') }} <span class="font-bold text-slate-800 dark:text-slate-200">#{{ sale.invoice_no }}</span>
                         </p>
                     </div>
@@ -22,7 +22,7 @@
 
                 <div class="flex items-center gap-2">
                     <button @click="printReceipt"
-                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all">
+                        class="w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 sm:py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 active:scale-95 transition-all">
                         <PrinterIcon class="h-4 w-4" />
                         <span>{{ t('রসিদ প্রিন্ট', 'Print Receipt') }}</span>
                     </button>
@@ -30,36 +30,36 @@
             </div>
 
             <!-- Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <!-- Left Column - Sale Info & Items -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="lg:col-span-2 space-y-4 sm:space-y-6">
                     <!-- Basic Info Card -->
-                    <div class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3 sm:mb-4">
                             {{ t('বিক্রয় সংক্রান্ত তথ্য', 'Sale Information') }}
                         </h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('ইনভয়েস নং', 'Invoice No') }}
                                 </span>
-                                <span class="text-xs font-bold text-slate-900 dark:text-white mt-1 block">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1 block truncate">
                                     {{ sale.invoice_no }}
                                 </span>
                             </div>
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('তারিখ ও সময়', 'Date & Time') }}
                                 </span>
-                                <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 block">
+                                <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 sm:mt-1 block">
                                     {{ sale.date }}
                                 </span>
                             </div>
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('পরিশোধের অবস্থা', 'Payment Status') }}
                                 </span>
-                                <span class="mt-1 inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold"
+                                <span class="mt-0.5 sm:mt-1 inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold"
                                     :class="{
                                         'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': sale.payment_status === 'paid',
                                         'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': sale.payment_status === 'partial',
@@ -69,24 +69,52 @@
                                 </span>
                             </div>
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('বিক্রেতা (ক্যাশিয়ার)', 'Created By') }}
                                 </span>
-                                <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 block">
+                                <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5 sm:mt-1 block truncate">
                                     {{ sale.created_by || '—' }}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Items Table Card -->
-                    <div class="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden dark:border-slate-700 dark:bg-slate-900">
-                        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <!-- Items Card -->
+                    <div class="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
+                        <div class="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <h3 class="text-sm font-bold text-slate-900 dark:text-white">
                                 {{ t('পণ্যসমূহের তালিকা', 'Sale Items') }}
                             </h3>
+                            <span class="text-xs font-semibold text-slate-400">
+                                {{ sale.items?.length || 0 }} {{ t('টি পণ্য', 'items') }}
+                            </span>
                         </div>
-                        <div class="overflow-x-auto">
+
+                        <!-- Mobile Items Card View (< sm) -->
+                        <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-2.5">
+                            <div v-for="item in sale.items" :key="item.id" class="pt-2.5 first:pt-0">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-slate-900 dark:text-slate-100">
+                                            {{ item.product?.name || item.product_name }}
+                                        </p>
+                                        <p v-if="item.product?.sku" class="text-[11px] font-mono text-slate-400 mt-0.5">
+                                            {{ item.product.sku }}
+                                        </p>
+                                    </div>
+                                    <span class="text-xs font-extrabold text-slate-900 dark:text-white shrink-0 tabular-nums">
+                                        ৳{{ formatNumber(item.subtotal) }}
+                                    </span>
+                                </div>
+                                <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1.5 rounded-lg">
+                                    <span>{{ t('দর', 'Rate') }}: ৳{{ formatNumber(item.unit_price) }}</span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-300">× {{ item.quantity }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop Items Table (sm+) -->
+                        <div class="hidden sm:block overflow-x-auto">
                             <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                                 <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
                                     <tr>
@@ -100,9 +128,9 @@
                                     <tr v-for="item in sale.items" :key="item.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                                         <td class="px-5 py-3 whitespace-nowrap">
                                             <div class="text-xs font-bold text-slate-900 dark:text-slate-100">
-                                                {{ item.product.name }}
+                                                {{ item.product?.name || item.product_name }}
                                             </div>
-                                            <div class="text-[11px] font-mono text-slate-400">
+                                            <div v-if="item.product?.sku" class="text-[11px] font-mono text-slate-400">
                                                 {{ item.product.sku }}
                                             </div>
                                         </td>
@@ -123,23 +151,23 @@
                 </div>
 
                 <!-- Right Column - Customer & Summary -->
-                <div class="space-y-6">
+                <div class="space-y-4 sm:space-y-6">
                     <!-- Customer Info Card -->
-                    <div class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3 sm:mb-4">
                             {{ t('কাস্টমার তথ্য', 'Customer Information') }}
                         </h3>
-                        <div v-if="sale.customer" class="space-y-3">
+                        <div v-if="sale.customer" class="space-y-2.5 sm:space-y-3">
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('নাম', 'Name') }}
                                 </span>
-                                <span class="text-xs font-bold text-slate-900 dark:text-white mt-0.5 block">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white mt-0.5 block truncate">
                                     {{ sale.customer.name }}
                                 </span>
                             </div>
                             <div>
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('ফোন নম্বর', 'Phone') }}
                                 </span>
                                 <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5 block">
@@ -147,7 +175,7 @@
                                 </span>
                             </div>
                             <div v-if="sale.customer.address">
-                                <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                     {{ t('ঠিকানা', 'Address') }}
                                 </span>
                                 <span class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 block">
@@ -161,8 +189,8 @@
                     </div>
 
                     <!-- Payment Summary Card -->
-                    <div class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">
+                    <div class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3 sm:mb-4">
                             {{ t('হিসাব বিবরণী', 'Payment Summary') }}
                         </h3>
                         <div class="space-y-3 text-xs">

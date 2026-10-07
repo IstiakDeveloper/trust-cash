@@ -12,58 +12,98 @@
             />
 
             <!-- Page Header -->
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                         {{ t('অনলাইন ও পেন্ডিং অর্ডার', 'Customer Orders') }}
                     </h1>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {{ t('অপেক্ষমাণ অর্ডারসমূহ যাচাই করে অনুমোদন (Approve) বা বাতিল (Reject) করুন', 'Pending orders can be approved or rejected.') }}
                     </p>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div class="inline-flex rounded-xl bg-white p-1 shadow-xs border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
-                        <button type="button" @click="setStatus('pending')" :class="tabClass('pending')">
+                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    <div class="flex overflow-x-auto no-scrollbar rounded-xl bg-white p-1 shadow-xs border border-slate-200 dark:bg-slate-800 dark:border-slate-700 max-w-full">
+                        <button type="button" @click="setStatus('pending')" :class="tabClass('pending')" class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg transition">
                             {{ t('অপেক্ষমাণ (Pending)', 'Pending') }}
                         </button>
-                        <button type="button" @click="setStatus('approved')" :class="tabClass('approved')">
+                        <button type="button" @click="setStatus('approved')" :class="tabClass('approved')" class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg transition">
                             {{ t('অনুমোদিত (Approved)', 'Approved') }}
                         </button>
-                        <button type="button" @click="setStatus('rejected')" :class="tabClass('rejected')">
+                        <button type="button" @click="setStatus('rejected')" :class="tabClass('rejected')" class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg transition">
                             {{ t('বাতিলকৃত (Rejected)', 'Rejected') }}
                         </button>
                     </div>
-                    <div class="relative w-full sm:w-72">
-                        <input v-model="q" @keydown.enter.prevent="applyFilters" type="text"
-                            :placeholder="t('অর্ডার বা কাস্টমার খুঁজুন...', 'Search order/customer...')"
-                            class="block w-full rounded-xl border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700" />
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1 sm:w-64">
+                            <input v-model="q" @keydown.enter.prevent="applyFilters" type="text"
+                                :placeholder="t('অর্ডার বা কাস্টমার খুঁজুন...', 'Search order/customer...')"
+                                class="block w-full min-h-[40px] rounded-xl border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700" />
+                        </div>
+                        <button type="button" @click="applyFilters" :disabled="isLoading"
+                            class="min-h-[40px] rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 shadow-xs shrink-0">
+                            <span v-if="isLoading && loadingAction === 'filter'" class="inline-flex items-center gap-1.5">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>{{ t('খুঁজছে...', 'Applying...') }}</span>
+                            </span>
+                            <span v-else>{{ t('ফিল্টার', 'Apply') }}</span>
+                        </button>
                     </div>
-                    <button type="button" @click="applyFilters" :disabled="isLoading"
-                        class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 shadow-xs">
-                        <span v-if="isLoading && loadingAction === 'filter'" class="inline-flex items-center gap-1.5">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>{{ t('খুঁজছে...', 'Applying...') }}</span>
-                        </span>
-                        <span v-else>{{ t('ফিল্টার', 'Apply') }}</span>
-                    </button>
                 </div>
             </div>
 
             <!-- Compact list for Approved / Rejected -->
-            <div v-if="pendingSales.data.length && filters.status !== 'pending'" class="mt-6">
+            <div v-if="pendingSales.data.length && filters.status !== 'pending'" class="mt-4 sm:mt-6">
                 <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
-                            <tr>
-                                <th class="px-5 py-3 text-left">{{ t('অর্ডার নং', 'Order No') }}</th>
-                                <th class="px-4 py-3 text-left">{{ t('কাস্টমার', 'Customer') }}</th>
-                                <th class="px-4 py-3 text-left">
-                                    {{ filters.status === 'approved' ? t('অনুমোদনের তারিখ', 'Approved at') : t('বাতিলের তারিখ', 'Rejected at') }}
-                                </th>
-                                <th class="px-4 py-3 text-right">{{ t('মোট টাকা', 'Total') }}</th>
-                                <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
-                            </tr>
-                        </thead>
+                    <!-- Mobile List (md:hidden) -->
+                    <div class="md:hidden divide-y divide-gray-100 dark:divide-slate-800">
+                        <div v-for="o in pendingSales.data" :key="'m-' + o.id" class="p-3.5 space-y-2">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white">{{ o.public_order_no }}</span>
+                                    <span class="text-[11px] text-slate-400 block">{{ o.date }}</span>
+                                </div>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white">
+                                    {{ formatCurrency(o.total) }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-50 dark:border-slate-800">
+                                <div>
+                                    <span v-if="o.customer" class="font-medium text-slate-800 dark:text-slate-200">
+                                        {{ o.customer.name }} ({{ o.customer.phone }})
+                                    </span>
+                                    <span v-else class="text-slate-400">—</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400">
+                                    {{ filters.status === 'approved' ? (o.approved_at || '—') : (o.rejected_at || '—') }}
+                                </div>
+                            </div>
+                            <div v-if="filters.status === 'approved' && o.sale_id" class="pt-1 flex justify-end">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
+                                    @click="printReceipt(o.sale_id)"
+                                >
+                                    <i class="fas fa-print text-[11px]"></i>
+                                    <span>{{ t('রসিদ প্রিন্ট', 'Print Receipt') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Table (hidden md:block) -->
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                                <tr>
+                                    <th class="px-5 py-3 text-left">{{ t('অর্ডার নং', 'Order No') }}</th>
+                                    <th class="px-4 py-3 text-left">{{ t('কাস্টমার', 'Customer') }}</th>
+                                    <th class="px-4 py-3 text-left">
+                                        {{ filters.status === 'approved' ? t('অনুমোদনের তারিখ', 'Approved at') : t('বাতিলের তারিখ', 'Rejected at') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-right">{{ t('মোট টাকা', 'Total') }}</th>
+                                    <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
+                                </tr>
+                            </thead>
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                 <tr v-for="o in pendingSales.data" :key="o.id" class="hover:bg-gray-50/60 dark:hover:bg-white/5">
                                     <td class="px-4 py-3">
@@ -101,60 +141,61 @@
                         </table>
                     </div>
                 </div>
+            </div>
 
-                <!-- Detailed cards for Pending -->
-                <div v-else-if="pendingSales.data.length" class="mt-8 space-y-4">
-                    <div v-for="o in pendingSales.data" :key="o.id"
-                        class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-sm font-bold text-slate-900 dark:text-white">{{ o.public_order_no }}</span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ o.date }}</span>
-                                </div>
-                                <p class="mt-1 text-xs text-slate-700 dark:text-slate-300">
-                                    <span class="font-bold text-slate-900 dark:text-slate-100">{{ t('কাস্টমার:', 'Customer:') }}</span>
-                                    <span v-if="o.customer"> {{ o.customer.name }} ({{ o.customer.phone }})</span>
-                                    <span v-else> —</span>
-                                </p>
-                                <p v-if="o.note" class="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                                    <span class="font-bold text-slate-900 dark:text-slate-100">{{ t('নোট:', 'Note:') }}</span> {{ o.note }}
-                                </p>
+            <!-- Detailed cards for Pending -->
+            <div v-else-if="pendingSales.data.length" class="mt-6 sm:mt-8 space-y-4">
+                <div v-for="o in pendingSales.data" :key="o.id"
+                    class="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs dark:border-slate-700 dark:bg-slate-900 space-y-3">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ o.public_order_no }}</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">{{ o.date }}</span>
                             </div>
-
-                            <div class="flex items-center justify-between gap-3 lg:flex-col lg:items-end">
-                                <div class="text-sm font-bold text-slate-900 dark:text-white lg:text-right">
-                                    {{ t('মোট:', 'Total:') }} {{ formatCurrency(o.total) }}
-                                </div>
-                                <template v-if="filters.status === 'pending'">
-                                    <div class="inline-flex items-center gap-2 whitespace-nowrap">
-                                        <button type="button" @click="approve(o.id)" :disabled="isLoading"
-                                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-60 shadow-xs">
-                                            <span v-if="isLoading && loadingAction === 'approve' && loadingId === o.id" class="inline-flex items-center gap-2">
-                                                <i class="fas fa-spinner fa-spin text-xs"></i>
-                                                <span>{{ t('অনুমোদন হচ্ছে...', 'Approving...') }}</span>
-                                            </span>
-                                            <span v-else class="inline-flex items-center gap-2">
-                                                <i class="fas fa-check text-xs"></i>
-                                                <span>{{ t('অনুমোদন', 'Approve') }}</span>
-                                            </span>
-                                        </button>
-
-                                        <button type="button" @click="reject(o.id)" :disabled="isLoading"
-                                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-60 shadow-xs">
-                                            <span v-if="isLoading && loadingAction === 'reject' && loadingId === o.id" class="inline-flex items-center gap-2">
-                                                <i class="fas fa-spinner fa-spin text-xs"></i>
-                                                <span>{{ t('বাতিল হচ্ছে...', 'Rejecting...') }}</span>
-                                            </span>
-                                            <span v-else class="inline-flex items-center gap-2">
-                                                <i class="fas fa-ban text-xs"></i>
-                                                <span>{{ t('বাতিল', 'Reject') }}</span>
-                                            </span>
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
+                            <p class="mt-1 text-xs text-slate-700 dark:text-slate-300">
+                                <span class="font-bold text-slate-900 dark:text-slate-100">{{ t('কাস্টমার:', 'Customer:') }}</span>
+                                <span v-if="o.customer"> {{ o.customer.name }} ({{ o.customer.phone }})</span>
+                                <span v-else> —</span>
+                            </p>
+                            <p v-if="o.note" class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                                <span class="font-bold text-slate-900 dark:text-slate-100">{{ t('নোট:', 'Note:') }}</span> {{ o.note }}
+                            </p>
                         </div>
+
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 lg:flex-col lg:items-end">
+                            <div class="text-sm font-bold text-slate-900 dark:text-white lg:text-right">
+                                {{ t('মোট:', 'Total:') }} {{ formatCurrency(o.total) }}
+                            </div>
+                            <template v-if="filters.status === 'pending'">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="approve(o.id)" :disabled="isLoading"
+                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-60 shadow-xs">
+                                        <span v-if="isLoading && loadingAction === 'approve' && loadingId === o.id" class="inline-flex items-center gap-2">
+                                            <i class="fas fa-spinner fa-spin text-xs"></i>
+                                            <span>{{ t('অনুমোদন হচ্ছে...', 'Approving...') }}</span>
+                                        </span>
+                                        <span v-else class="inline-flex items-center gap-2">
+                                            <i class="fas fa-check text-xs"></i>
+                                            <span>{{ t('অনুমোদন', 'Approve') }}</span>
+                                        </span>
+                                    </button>
+
+                                    <button type="button" @click="reject(o.id)" :disabled="isLoading"
+                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-60 shadow-xs">
+                                        <span v-if="isLoading && loadingAction === 'reject' && loadingId === o.id" class="inline-flex items-center gap-2">
+                                            <i class="fas fa-spinner fa-spin text-xs"></i>
+                                            <span>{{ t('বাতিল হচ্ছে...', 'Rejecting...') }}</span>
+                                        </span>
+                                        <span v-else class="inline-flex items-center gap-2">
+                                            <i class="fas fa-ban text-xs"></i>
+                                            <span>{{ t('বাতিল', 'Reject') }}</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
 
                         <div class="mt-4 overflow-x-auto">
                             <table class="min-w-[700px] w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">

@@ -1,40 +1,40 @@
 <template>
     <AdminLayout :title="t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report')">
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                     {{ t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report') }}
                 </h2>
-                <div class="flex items-center space-x-2 no-print">
+                <div class="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:items-center no-print">
                     <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
                         type="button"
-                        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                        class="inline-flex justify-center items-center px-2.5 sm:px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 min-h-[38px]">
+                        <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড', 'Word') }}</span>
+                        <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
                     </button>
                     <button @click="downloadReport"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                        <DocumentArrowDownIcon class="h-5 w-5 mr-1" />
-                        {{ t('পিডিএফ', 'PDF') }}
+                        class="inline-flex justify-center items-center px-2.5 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 min-h-[38px]">
+                        <DocumentArrowDownIcon class="h-4 w-4 mr-1 shrink-0" />
+                        <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
                     </button>
                     <button @click="printReport"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700">
-                        <PrinterIcon class="h-5 w-5 mr-1" />
-                        {{ t('প্রিন্ট', 'Print') }}
+                        class="inline-flex justify-center items-center px-2.5 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 min-h-[38px]">
+                        <PrinterIcon class="h-4 w-4 mr-1 shrink-0" />
+                        <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
                     </button>
                 </div>
             </div>
         </template>
 
         <!-- Filters -->
-        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 no-print">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="mb-4 sm:mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4 no-print">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                         {{ t('পণ্য', 'Product') }}
                     </label>
                     <select v-model="filters.product_id"
-                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                        class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                         @change="applyFilters">
                         <option value="">{{ t('সব পণ্য', 'All Products') }}</option>
                         <option v-for="product in products" :key="product.id" :value="product.id">
@@ -44,11 +44,11 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                         {{ t('ক্যাটাগরি', 'Category') }}
                     </label>
                     <select v-model="filters.category_id"
-                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                        class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                         @change="applyFilters">
                         <option value="">{{ t('সব ক্যাটাগরি', 'All Categories') }}</option>
                         <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -58,13 +58,13 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                         {{ t('শুরুর তারিখ', 'From Date') }}
                     </label>
                     <div class="relative">
                         <input v-model="fromDateText" type="text" inputmode="numeric"
                             :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-2 pr-10 text-sm text-gray-700 dark:text-gray-200"
+                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-1.5 pr-10 text-xs text-gray-700 dark:text-gray-200"
                             @change="handleTypedDate('from', fromDateText)">
                         <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
                             :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('from')">
@@ -77,13 +77,13 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                         {{ t('শেষের তারিখ', 'To Date') }}
                     </label>
                     <div class="relative">
                         <input v-model="toDateText" type="text" inputmode="numeric"
                             :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-2 pr-10 text-sm text-gray-700 dark:text-gray-200"
+                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-1.5 pr-10 text-xs text-gray-700 dark:text-gray-200"
                             @change="handleTypedDate('to', toDateText)">
                         <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
                             :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('to')">
@@ -98,27 +98,27 @@
         </div>
 
         <!-- DASHBOARD VIEW -->
-        <div v-show="viewMode === 'dashboard'" class="no-print space-y-6">
-            <div v-if="reports.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ t('সারাংশ', 'Overall Summary') }} ({{ filters.from_date }} {{ t('থেকে', 'to') }} {{ filters.to_date }})</h3>
+        <div v-show="viewMode === 'dashboard'" class="no-print space-y-4 sm:space-y-6">
+            <div v-if="reports.length > 0" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
+            <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white">{{ t('সারাংশ', 'Overall Summary') }} ({{ filters.from_date }} {{ t('থেকে', 'to') }} {{ filters.to_date }})</h3>
             </div>
 
-            <div class="p-4">
-                <div class="grid grid-cols-3 gap-6">
+            <div class="p-3 sm:p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
                     <!-- Purchase Summary -->
-                    <div class="p-4 bg-green-50 dark:bg-green-900/10 rounded-lg">
-                        <h4 class="text-sm font-medium text-gray-500 mb-2">{{ t('মোট ক্রয়', 'Total Purchases') }}</h4>
+                    <div class="p-3.5 sm:p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200/60 dark:border-green-800/40">
+                        <h4 class="text-xs sm:text-sm font-semibold text-green-800 dark:text-green-300 mb-2">{{ t('মোট ক্রয়', 'Total Purchases') }}</h4>
                         <div class="space-y-2">
-                            <div class="flex justify-between border-b pb-2">
+                            <div class="flex justify-between border-b border-green-200/50 pb-2 text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
-                                <span class="font-medium text-green-600">
+                                <span class="font-bold font-mono text-green-600">
                                     {{ formatQty(summary.total_purchase_quantity) }}
                                 </span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('মান', 'Value') }}:</span>
-                                <span class="font-medium text-gray-900 dark:text-white">
+                                <span class="font-bold font-mono text-gray-900 dark:text-white">
                                     {{ formatPrice(summary.total_purchase_value) }}
                                 </span>
                             </div>
@@ -126,18 +126,18 @@
                     </div>
 
                     <!-- Sales Summary -->
-                    <div class="p-4 bg-red-50 dark:bg-red-900/10 rounded-lg">
-                        <h4 class="text-sm font-medium text-gray-500 mb-2">{{ t('মোট বিক্রয়', 'Total Sales') }}</h4>
+                    <div class="p-3.5 sm:p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200/60 dark:border-red-800/40">
+                        <h4 class="text-xs sm:text-sm font-semibold text-red-800 dark:text-red-300 mb-2">{{ t('মোট বিক্রয়', 'Total Sales') }}</h4>
                         <div class="space-y-2">
-                            <div class="flex justify-between border-b pb-2">
+                            <div class="flex justify-between border-b border-red-200/50 pb-2 text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
-                                <span class="font-medium text-red-600">
+                                <span class="font-bold font-mono text-red-600">
                                     {{ formatQty(summary.total_sales_quantity) }}
                                 </span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('মান', 'Value') }}:</span>
-                                <span class="font-medium text-gray-900 dark:text-white">
+                                <span class="font-bold font-mono text-gray-900 dark:text-white">
                                     {{ formatPrice(summary.total_sales_value) }}
                                 </span>
                             </div>
@@ -145,18 +145,18 @@
                     </div>
 
                     <!-- Stock Summary -->
-                    <div class="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
-                        <h4 class="text-sm font-medium text-gray-500 mb-2">{{ t('চলতি স্টক', 'Current Stock') }}</h4>
+                    <div class="p-3.5 sm:p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-200/60 dark:border-blue-800/40">
+                        <h4 class="text-xs sm:text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">{{ t('চলতি স্টক', 'Current Stock') }}</h4>
                         <div class="space-y-2">
-                            <div class="flex justify-between border-b pb-2">
+                            <div class="flex justify-between border-b border-blue-200/50 pb-2 text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('পরিমাণ', 'Quantity') }}:</span>
-                                <span class="font-medium">
+                                <span class="font-bold font-mono text-blue-600 dark:text-blue-400">
                                     {{ formatQty(summary.total_current_stock) }}
                                 </span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between text-xs sm:text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">{{ t('মান', 'Value') }}:</span>
-                                <span class="font-medium text-gray-900 dark:text-white">
+                                <span class="font-bold font-mono text-gray-900 dark:text-white">
                                     {{ formatPrice(summary.total_stock_value) }}
                                 </span>
                             </div>
@@ -167,28 +167,28 @@
         </div>
 
         <div v-for="report in reports" :key="report.product.id"
-            class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            class="mb-4 sm:mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
             <!-- Product Header -->
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex justify-between items-center">
+            <div class="p-3.5 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                             {{ report.product.name }}
-                            <span class="ml-2 text-sm text-gray-500">({{ report.product.sku }})</span>
+                            <span class="ml-1 sm:ml-2 text-xs sm:text-sm font-mono text-gray-500">({{ report.product.sku }})</span>
                         </h3>
-                        <p class="mt-1 text-sm text-gray-500">
+                        <p class="mt-0.5 text-xs text-gray-500">
                             {{ report.product.category }} | {{ report.product.unit }}
                         </p>
                     </div>
-                    <div class="text-sm">
-                        <div class="grid grid-cols-2 gap-4">
+                    <div class="text-xs sm:text-sm w-full sm:w-auto">
+                        <div class="grid grid-cols-2 gap-3 sm:gap-4 bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-0 rounded-lg sm:bg-transparent">
                             <div>
-                                <p class="text-gray-500">{{ t('শুরুর স্টক', 'Opening Stock') }}:</p>
-                                <p class="font-medium">{{ formatQty(report.summary.opening_stock) }}</p>
+                                <p class="text-[11px] sm:text-xs text-gray-500">{{ t('শুরুর স্টক', 'Opening Stock') }}:</p>
+                                <p class="font-bold font-mono">{{ formatQty(report.summary.opening_stock) }}</p>
                             </div>
                             <div>
-                                <p class="text-gray-500">{{ t('চলতি স্টক', 'Current Stock') }}:</p>
-                                <p class="font-medium" :class="getStockClass(report.summary.current_stock)">
+                                <p class="text-[11px] sm:text-xs text-gray-500">{{ t('চলতি স্টক', 'Current Stock') }}:</p>
+                                <p class="font-bold font-mono" :class="getStockClass(report.summary.current_stock)">
                                     {{ formatQty(report.summary.current_stock) }}
                                 </p>
                             </div>
@@ -197,36 +197,36 @@
                 </div>
             </div>
 
-            <!-- Summary Stats -->
-            <div class="grid grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-700">
+            <!-- Summary Stats (2-col on mobile) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/60 border-b border-gray-200 dark:border-gray-700">
                 <div>
-                    <p class="text-sm text-gray-500">{{ t('মোট ক্রয়', 'Total Purchased') }}</p>
-                    <p class="text-lg font-medium text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500">{{ t('মোট ক্রয়', 'Total Purchased') }}</p>
+                    <p class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-white">
                         {{ formatQty(report.summary.total_purchased) }}
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">{{ t('মোট বিক্রয়', 'Total Sold') }}</p>
-                    <p class="text-lg font-medium text-red-600 dark:text-red-400">
+                    <p class="text-xs text-gray-500">{{ t('মোট বিক্রয়', 'Total Sold') }}</p>
+                    <p class="text-base sm:text-lg font-bold font-mono text-red-600 dark:text-red-400">
                         {{ formatQty(report.summary.total_sold) }}
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">{{ t('গড় খরচ', 'Average Cost') }}</p>
-                    <p class="text-lg font-medium text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500">{{ t('গড় খরচ', 'Average Cost') }}</p>
+                    <p class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-white truncate">
                         {{ formatPrice(report.summary.avg_cost) }}
                     </p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">{{ t('স্টক মূল্য', 'Stock Value') }}</p>
-                    <p class="text-lg font-medium text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500">{{ t('স্টক মূল্য', 'Stock Value') }}</p>
+                    <p class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-white truncate">
                         {{ formatPrice(report.summary.stock_value) }}
                     </p>
                 </div>
             </div>
 
-            <div class="p-4">
-                <div class="grid grid-cols-2 gap-6">
+            <div class="p-3 sm:p-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     <!-- Purchase History -->
                     <div>
                         <h4 class="font-medium text-gray-900 dark:text-white mb-3">{{ t('ক্রয় ইতিহাস', 'Purchase History') }}</h4>
@@ -313,7 +313,7 @@
         <!-- ============================================================
              B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
              ============================================================ -->
-        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+        <div :class="[viewMode === 'document' ? 'block py-4 overflow-x-auto' : 'print-only']">
             <WordReportLayout
                 ref="wordReportRef"
                 :title="t('স্টক মুভমেন্ট রিপোর্ট', 'Stock Movement Report')"

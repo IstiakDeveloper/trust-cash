@@ -1,21 +1,21 @@
 <!-- resources/js/Components/DateRangePicker.vue -->
 <template>
-    <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-2">
-            <label class="text-sm font-medium text-gray-700">Start Date:</label>
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">Start:</label>
             <input
                 type="date"
                 v-model="localStartDate"
-                class="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full sm:w-auto px-2.5 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl shadow-xs focus:ring-1 focus:ring-indigo-500"
                 @change="emitUpdate"
             >
         </div>
-        <div class="flex items-center space-x-2">
-            <label class="text-sm font-medium text-gray-700">End Date:</label>
+        <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">End:</label>
             <input
                 type="date"
                 v-model="localEndDate"
-                class="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full sm:w-auto px-2.5 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl shadow-xs focus:ring-1 focus:ring-indigo-500"
                 @change="emitUpdate"
             >
         </div>

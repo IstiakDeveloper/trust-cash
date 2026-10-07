@@ -46,52 +46,96 @@
                 </div>
             </div>
 
-            <!-- Units Table -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                    <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
-                        <tr>
-                            <th class="px-5 py-3 text-left">{{ t('এককের নাম', 'Name') }}</th>
-                            <th class="px-4 py-3 text-left">{{ t('সংক্ষিপ্ত রূপ', 'Short Name') }}</th>
-                            <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
-                            <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-if="units.data.length === 0">
-                            <td colspan="4" class="px-6 py-10 text-center text-slate-400">
-                                {{ t('কোনো একক পাওয়া যায়নি।', 'No units found.') }}
-                            </td>
-                        </tr>
-                        <tr v-for="unit in units.data" :key="unit.id"
-                            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                            <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ unit.name }}</td>
-                            <td class="px-4 py-3.5 font-mono text-slate-500 dark:text-slate-400">{{ unit.short_name }}</td>
-                            <td class="px-4 py-3.5 text-center">
+            <!-- Units Table & Mobile Cards -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <!-- Mobile Unit Cards (< sm) -->
+                <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-3">
+                    <div v-if="units.data.length === 0" class="py-8 text-center text-xs text-slate-400">
+                        {{ t('কোনো একক পাওয়া যায়নি।', 'No units found.') }}
+                    </div>
+
+                    <div v-for="unit in units.data" :key="unit.id" class="pt-3 first:pt-0 space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                        {{ unit.name }}
+                                    </h4>
+                                    <span class="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+                                        {{ unit.short_name }}
+                                    </span>
+                                </div>
                                 <span :class="[
-                                    'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
+                                    'inline-flex rounded-md px-1.5 py-0.2 text-[10px] font-bold mt-1',
                                     unit.status
                                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                                         : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                                 ]">
                                     {{ unit.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
                                 </span>
-                            </td>
-                            <td class="px-5 py-3.5 text-right font-medium">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button @click="editUnit(unit)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
-                                        <PencilIcon class="h-4 w-4" />
-                                    </button>
-                                    <button @click="deleteUnit(unit)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
-                                        <TrashIcon class="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button @click="editUnit(unit)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 active:scale-90 transition-all">
+                                    <PencilIcon class="h-4 w-4" />
+                                </button>
+                                <button @click="deleteUnit(unit)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400 active:scale-90 transition-all">
+                                    <TrashIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table (sm+) -->
+                <div class="hidden sm:block overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="px-5 py-3 text-left">{{ t('এককের নাম', 'Name') }}</th>
+                                <th class="px-4 py-3 text-left">{{ t('সংক্ষিপ্ত রূপ', 'Short Name') }}</th>
+                                <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
+                                <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-if="units.data.length === 0">
+                                <td colspan="4" class="px-6 py-10 text-center text-slate-400">
+                                    {{ t('কোনো একক পাওয়া যায়নি।', 'No units found.') }}
+                                </td>
+                            </tr>
+                            <tr v-for="unit in units.data" :key="unit.id"
+                                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ unit.name }}</td>
+                                <td class="px-4 py-3.5 font-mono text-slate-500 dark:text-slate-400">{{ unit.short_name }}</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span :class="[
+                                        'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
+                                        unit.status
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                    ]">
+                                        {{ unit.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right font-medium">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button @click="editUnit(unit)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
+                                            <PencilIcon class="h-4 w-4" />
+                                        </button>
+                                        <button @click="deleteUnit(unit)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Pagination -->
                 <div v-if="units.links && units.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
@@ -101,7 +145,7 @@
 
             <!-- Unit Modal -->
             <Modal :show="showModal" @close="closeModal" maxWidth="md">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">
                             {{ editing ? t('একক সম্পাদন করুন', 'Edit Unit') : t('নতুন একক যোগ করুন', 'Add Unit') }}
@@ -139,9 +183,9 @@
                             </button>
                         </div>
 
-                        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <SecondaryButton @click="closeModal" class="rounded-xl text-xs">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
-                            <PrimaryButton :disabled="form.processing" class="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500">
+                        <div class="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <SecondaryButton @click="closeModal" class="w-full sm:w-auto justify-center rounded-xl text-xs">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
+                            <PrimaryButton :disabled="form.processing" class="w-full sm:w-auto justify-center rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500">
                                 {{ editing ? t('সংরক্ষণ করুন', 'Update') : t('তৈরি করুন', 'Create') }}
                             </PrimaryButton>
                         </div>

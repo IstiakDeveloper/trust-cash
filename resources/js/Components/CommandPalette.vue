@@ -4,11 +4,11 @@
         <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="close"></div>
 
         <!-- Palette Dialog -->
-        <div class="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 pointer-events-none">
-            <div class="pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 transition-all">
+        <div class="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-24 px-3 sm:px-4 pointer-events-none">
+            <div class="pointer-events-auto w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 transition-all">
                 <!-- Search Input Header -->
-                <div class="relative flex items-center px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
-                    <i class="fas fa-search text-slate-400 text-base mr-3"></i>
+                <div class="relative flex items-center px-3.5 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                    <i class="fas fa-search text-slate-400 text-sm sm:text-base mr-2.5"></i>
                     <input
                         ref="searchInput"
                         v-model="query"
@@ -20,11 +20,18 @@
                         @keydown.enter.prevent="selectActive"
                         @keydown.esc.prevent="close"
                     />
+                    <button
+                        @click="close"
+                        class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 sm:hidden rounded-lg"
+                        aria-label="Close"
+                    >
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
                     <kbd class="hidden sm:inline-flex items-center px-2 py-0.5 text-[11px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">ESC</kbd>
                 </div>
 
                 <!-- Results & Options -->
-                <div class="max-h-96 overflow-y-auto p-2 divide-y divide-slate-100 dark:divide-slate-800">
+                <div class="flex-1 max-h-[65vh] sm:max-h-96 overflow-y-auto p-2 divide-y divide-slate-100 dark:divide-slate-800">
                     <!-- Quick Actions -->
                     <div v-if="filteredActions.length > 0" class="py-2">
                         <div class="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -184,7 +191,9 @@ const pages = [
     { titleBn: 'কাস্টমার ও বাকি খাতা', titleEn: 'Customers & Due Khata', icon: 'fa-user-friends', href: '/admin/customers' },
     { titleBn: 'সাপ্লায়ার / মহাজন', titleEn: 'Suppliers', icon: 'fa-truck', href: '/admin/suppliers' },
     { titleBn: 'মাল ক্রয় (পারচেজ)', titleEn: 'Purchases', icon: 'fa-truck-loading', href: '/admin/purchases' },
+    { titleBn: 'ব্যাংক ও ক্যাশ অ্যাকাউন্ট', titleEn: 'Bank Accounts', icon: 'fa-university', href: '/admin/bank-accounts' },
     { titleBn: 'দোকানের খরচ', titleEn: 'Expenses', icon: 'fa-file-invoice-dollar', href: '/admin/expenses' },
+    { titleBn: 'বাড়তি আয়', titleEn: 'Extra Income', icon: 'fa-coins', href: '/admin/extra-incomes' },
     { titleBn: 'রিপোর্ট সেন্টার', titleEn: 'Reports Hub', icon: 'fa-chart-line', href: '/admin/reports/sales' },
     { titleBn: 'দোকান সেটিংস', titleEn: 'Settings', icon: 'fa-cog', href: '/admin/settings' }
 ]

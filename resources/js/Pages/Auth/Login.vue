@@ -62,21 +62,32 @@ const submit = () => {
 </script>
 
 <template>
-    <Head :title="($page.props.business_name || 'TrustCash') + ' - লগইন'" />
+    <Head :title="($page.props.business_name || $page.props.platform?.name || 'TrustCash') + ' - লগইন'">
+        <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
+        <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
+    </Head>
 
     <div class="min-h-screen w-full flex flex-col justify-between bg-slate-50 dark:bg-slate-950 font-bengali text-slate-800 dark:text-slate-100 transition-colors duration-200">
         <!-- Top Navigation -->
         <header class="w-full max-w-6xl mx-auto px-4 py-4 flex items-center justify-between z-10">
-            <Link href="/" class="flex items-center gap-2 group">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-md shadow-emerald-500/20">
-                    <Store class="w-5 h-5 text-white" />
+            <Link href="/" class="flex items-center gap-2.5 group">
+                <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center p-1.5 shadow-sm shrink-0 overflow-hidden">
+                    <img
+                        v-if="$page.props.business_logo || $page.props.platform?.logo"
+                        :src="$page.props.business_logo || $page.props.platform?.logo"
+                        class="w-full h-full object-contain"
+                        alt="Logo"
+                    />
+                    <div v-else class="w-full h-full rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-base">
+                        {{ ($page.props.business_name || $page.props.platform?.name || 'T')[0] }}
+                    </div>
                 </div>
                 <div>
                     <span class="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        {{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}
+                        {{ $page.props.business_name || $page.props.platform?.name || 'TrustCash' }}
                     </span>
                     <span class="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium -mt-1">
-                        SaaS POS Platform
+                        {{ $page.props.platform?.tagline || 'SaaS POS Platform' }}
                     </span>
                 </div>
             </Link>

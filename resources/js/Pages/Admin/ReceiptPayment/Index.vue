@@ -1,23 +1,23 @@
 <template>
     <AdminLayout :title="t('রিসিপ্ট ও পেমেন্ট', 'Receipt & Payment')">
         <template #header>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 pb-4 no-print">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-4 no-print">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">{{ t('রিসিপ্ট ও পেমেন্ট স্টেটমেন্ট', 'Receipt & Payment Statement') }}</h2>
-                    <p class="text-xs text-gray-500 mt-1">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('রিসিপ্ট ও পেমেন্ট স্টেটমেন্ট', 'Receipt & Payment Statement') }}</h2>
+                    <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">
                         {{ t('তারিখ অনুযায়ী পিরিয়ড ও ক্রমপুঞ্জিত আয়-ব্যয়ের বিবরণী', 'Date to date period & cumulative receipt and payment statement') }}
                     </p>
                 </div>
 
                 <!-- Filter Controls -->
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
                     <!-- Bank Account Select (Default: All Accounts) -->
-                    <div class="flex items-center space-x-1.5">
-                        <label class="text-xs font-semibold text-gray-600 uppercase">{{ t('অ্যাকাউন্ট', 'Account') }}:</label>
+                    <div class="flex items-center space-x-1.5 w-full sm:w-auto">
+                        <label class="text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase whitespace-nowrap">{{ t('অ্যাকাউন্ট', 'Account') }}:</label>
                         <select
                             v-model="selectedBankAccountId"
                             @change="handleFilterChange"
-                            class="form-select text-sm rounded-md border-gray-300 shadow-sm py-1.5 pl-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500"
+                            class="form-select text-xs sm:text-sm rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm py-2 sm:py-1.5 pl-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-auto"
                         >
                             <option value="">{{ t('সকল ব্যাংক অ্যাকাউন্ট (All Banks)', 'All Bank Accounts') }}</option>
                             <option v-for="account in bankAccounts" :key="account.id" :value="account.id">
@@ -27,96 +27,100 @@
                     </div>
 
                     <!-- Date Range Inputs -->
-                    <div class="flex items-center space-x-1.5">
-                        <label class="text-xs font-semibold text-gray-600 uppercase">{{ t('শুরু', 'From') }}:</label>
-                        <input
-                            type="date"
-                            v-model="startDate"
-                            @change="handleFilterChange"
-                            class="form-input text-sm rounded-md border-gray-300 shadow-sm py-1.5 px-2.5 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 w-full sm:w-auto">
+                        <div class="flex items-center space-x-1">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase whitespace-nowrap">{{ t('শুরু', 'From') }}:</label>
+                            <input
+                                type="date"
+                                v-model="startDate"
+                                @change="handleFilterChange"
+                                class="form-input text-xs sm:text-sm rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm py-1.5 px-2 focus:ring-indigo-500 focus:border-indigo-500 w-full [color-scheme:light] dark:[color-scheme:dark]"
+                            />
+                        </div>
 
-                    <div class="flex items-center space-x-1.5">
-                        <label class="text-xs font-semibold text-gray-600 uppercase">{{ t('শেষ', 'To') }}:</label>
-                        <input
-                            type="date"
-                            v-model="endDate"
-                            @change="handleFilterChange"
-                            class="form-input text-sm rounded-md border-gray-300 shadow-sm py-1.5 px-2.5 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
+                        <div class="flex items-center space-x-1">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase whitespace-nowrap">{{ t('শেষ', 'To') }}:</label>
+                            <input
+                                type="date"
+                                v-model="endDate"
+                                @change="handleFilterChange"
+                                class="form-input text-xs sm:text-sm rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm py-1.5 px-2 focus:ring-indigo-500 focus:border-indigo-500 w-full [color-scheme:light] dark:[color-scheme:dark]"
+                            />
+                        </div>
                     </div>
 
                     <!-- Preset Buttons -->
-                    <div class="flex items-center space-x-1 bg-gray-100 p-1 rounded-md border border-gray-200">
+                    <div class="flex items-center space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg border border-gray-200 dark:border-slate-700 overflow-x-auto w-full sm:w-auto">
                         <button
                             type="button"
                             @click="applyPreset('this_month')"
-                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white hover:shadow-xs transition"
-                            :class="activePreset === 'this_month' ? 'bg-white shadow-xs text-indigo-600 font-bold' : 'text-gray-600'"
+                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition whitespace-nowrap flex-1 sm:flex-initial text-center"
+                            :class="activePreset === 'this_month' ? 'bg-white dark:bg-slate-700 shadow-xs text-indigo-600 dark:text-indigo-400 font-bold' : 'text-gray-600 dark:text-slate-300'"
                         >
                             {{ t('চলতি মাস', 'This Month') }}
                         </button>
                         <button
                             type="button"
                             @click="applyPreset('today')"
-                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white hover:shadow-xs transition"
-                            :class="activePreset === 'today' ? 'bg-white shadow-xs text-indigo-600 font-bold' : 'text-gray-600'"
+                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition whitespace-nowrap flex-1 sm:flex-initial text-center"
+                            :class="activePreset === 'today' ? 'bg-white dark:bg-slate-700 shadow-xs text-indigo-600 dark:text-indigo-400 font-bold' : 'text-gray-600 dark:text-slate-300'"
                         >
                             {{ t('আজ', 'Today') }}
                         </button>
                         <button
                             type="button"
                             @click="applyPreset('last_month')"
-                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white hover:shadow-xs transition"
-                            :class="activePreset === 'last_month' ? 'bg-white shadow-xs text-indigo-600 font-bold' : 'text-gray-600'"
+                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition whitespace-nowrap flex-1 sm:flex-initial text-center"
+                            :class="activePreset === 'last_month' ? 'bg-white dark:bg-slate-700 shadow-xs text-indigo-600 dark:text-indigo-400 font-bold' : 'text-gray-600 dark:text-slate-300'"
                         >
                             {{ t('গত মাস', 'Last Month') }}
                         </button>
                         <button
                             type="button"
                             @click="applyPreset('this_year')"
-                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white hover:shadow-xs transition"
-                            :class="activePreset === 'this_year' ? 'bg-white shadow-xs text-indigo-600 font-bold' : 'text-gray-600'"
+                            class="px-2 py-1 text-xs font-medium rounded hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition whitespace-nowrap flex-1 sm:flex-initial text-center"
+                            :class="activePreset === 'this_year' ? 'bg-white dark:bg-slate-700 shadow-xs text-indigo-600 dark:text-indigo-400 font-bold' : 'text-gray-600 dark:text-slate-300'"
                         >
                             {{ t('চলতি বছর', 'This Year') }}
                         </button>
                     </div>
 
-                    <!-- View Mode Toggle -->
-                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                        type="button"
-                        class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm transition">
-                        <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                        <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                    </button>
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-3 gap-2 w-full sm:flex sm:w-auto">
+                        <!-- View Mode Toggle -->
+                        <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                            type="button"
+                            class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-600 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 shadow-sm transition text-center">
+                            <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড', 'Word') }}</span>
+                            <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                        </button>
 
-                    <!-- PDF Download Button -->
-                    <button
-                        @click="downloadPDF"
-                        :disabled="isDownloading"
-                        class="inline-flex items-center px-3.5 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 shadow-sm transition"
-                    >
-                        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        {{ isDownloading ? t('ডাউনলোড হচ্ছে...', 'Downloading...') : t('পিডিএফ ডাউনলোড', 'Download PDF') }}
-                    </button>
+                        <!-- PDF Download Button -->
+                        <button
+                            @click="downloadPDF"
+                            :disabled="isDownloading"
+                            class="inline-flex items-center justify-center px-3 py-1.5 bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 shadow-sm transition text-center"
+                        >
+                            <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>{{ isDownloading ? '...' : 'PDF' }}</span>
+                        </button>
 
-                    <!-- Print Button -->
-                    <button
-                        @click="printReport"
-                        class="inline-flex items-center px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-black shadow-sm transition"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        {{ t('প্রিন্ট', 'Print') }}
-                    </button>
-
+                        <!-- Print Button -->
+                        <button
+                            @click="printReport"
+                            class="inline-flex items-center justify-center px-3 py-1.5 bg-black hover:bg-gray-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs sm:text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white shadow-sm transition text-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>{{ t('প্রিন্ট', 'Print') }}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -124,145 +128,145 @@
         <!-- DASHBOARD VIEW -->
         <div v-show="viewMode === 'dashboard'" class="no-print py-6 px-4 max-w-[1600px] mx-auto space-y-4">
             <!-- Statement Header Badge -->
-            <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300 flex flex-col sm:flex-row justify-between items-center text-sm gap-2">
+            <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-300 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center text-sm gap-2">
                 <div class="flex items-center space-x-2">
-                    <span class="font-bold text-gray-800 text-base uppercase tracking-wide">
+                    <span class="font-bold text-gray-800 dark:text-slate-100 text-base uppercase tracking-wide">
                         {{ t('রিসিপ্ট ও পেমেন্ট বিবরণী', 'Statement of Receipts & Payments') }}
                     </span>
                     <span class="px-2.5 py-0.5 rounded text-xs font-semibold"
-                          :class="selectedBankAccountId ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-green-50 text-green-700 border border-green-200'">
+                          :class="selectedBankAccountId ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800' : 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/60 dark:text-green-300 dark:border-green-800'">
                         {{ selectedAccountName || t('সকল ব্যাংক অ্যাকাউন্ট (Consolidated)', 'All Bank Accounts (Consolidated)') }}
                     </span>
                 </div>
-                <div class="text-xs sm:text-sm font-semibold text-gray-700 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-300">
-                    <span class="text-gray-500 mr-1.5">{{ t('তারিখ সীমা:', 'Date:') }}</span>
-                    <span class="text-indigo-700 font-bold">{{ formattedDateRange }}</span>
+                <div class="text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-900/60 px-3 py-1.5 rounded-md border border-gray-300 dark:border-slate-700">
+                    <span class="text-gray-500 dark:text-slate-400 mr-1.5">{{ t('তারিখ সীমা:', 'Date:') }}</span>
+                    <span class="text-indigo-700 dark:text-indigo-400 font-bold">{{ formattedDateRange }}</span>
                 </div>
             </div>
 
             <!-- Two-Column Statement Grid with Complete Cell Borders -->
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
                 <!-- ================= RECEIPTS SECTION ================= -->
-                <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col justify-between border-2 border-gray-400">
+                <div class="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden flex flex-col justify-between border-2 border-gray-400 dark:border-slate-700">
                     <div>
-                        <div class="bg-emerald-700 text-white px-4 py-2.5 flex justify-between items-center border-b-2 border-emerald-800">
+                        <div class="bg-emerald-700 dark:bg-emerald-800 text-white px-4 py-2.5 flex justify-between items-center border-b-2 border-emerald-800 dark:border-emerald-900">
                             <h3 class="text-base font-bold tracking-wide uppercase">{{ t('রিসিপ্ট (Receipts)', 'Receipts') }}</h3>
                             <span class="text-xs font-medium text-emerald-100">{{ t('ইনফ্লো / প্রাপ্তি', 'Inflows') }}</span>
                         </div>
-                        <table class="w-full text-sm border-collapse border border-gray-400">
+                        <table class="w-full text-sm border-collapse border border-gray-400 dark:border-slate-700">
                             <thead>
-                                <tr class="bg-gray-200 text-xs font-bold text-gray-800 uppercase">
-                                    <th class="text-center py-2.5 px-3 w-12 border border-gray-400">{{ t('ক্রমিক', 'SL') }}</th>
-                                    <th class="text-left py-2.5 px-3 border border-gray-400">{{ t('বিবরণ', 'Particulars') }}</th>
-                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400">{{ t('চলতি পিরিয়ড', 'Current Month') }}</th>
-                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400">{{ t('ক্রমপুঞ্জিত', 'Cumulative') }}</th>
+                                <tr class="bg-gray-200 dark:bg-slate-700/80 text-xs font-bold text-gray-800 dark:text-slate-200 uppercase">
+                                    <th class="text-center py-2.5 px-3 w-12 border border-gray-400 dark:border-slate-700">{{ t('ক্রমিক', 'SL') }}</th>
+                                    <th class="text-left py-2.5 px-3 border border-gray-400 dark:border-slate-700">{{ t('বিবরণ', 'Particulars') }}</th>
+                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400 dark:border-slate-700">{{ t('চলতি পিরিয়ড', 'Current Month') }}</th>
+                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400 dark:border-slate-700">{{ t('ক্রমপুঞ্জিত', 'Cumulative') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- 1. Opening Cash in Hand / Bank -->
-                                <tr class="hover:bg-gray-50/50 transition">
-                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 border border-gray-300">1</td>
-                                    <td class="py-2 px-3 font-semibold text-gray-800 border border-gray-300">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition">
+                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 dark:text-slate-400 border border-gray-300 dark:border-slate-700">1</td>
+                                    <td class="py-2 px-3 font-semibold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('ব্যাংকে শুরুর নগদ', 'Opening Cash in Hand / Bank') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-emerald-700 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-emerald-700 dark:text-emerald-400 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.opening_cash_on_bank?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-emerald-800 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-emerald-800 dark:text-emerald-300 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.opening_cash_on_bank?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 2. Sale Collection -->
-                                <tr class="bg-gray-50/40 hover:bg-gray-50 transition">
-                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 border border-gray-300">2</td>
-                                    <td class="py-2 px-3 font-semibold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-50/40 dark:bg-slate-800/40 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition">
+                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 dark:text-slate-400 border border-gray-300 dark:border-slate-700">2</td>
+                                    <td class="py-2 px-3 font-semibold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('বিক্রয় সংগ্রহ', 'Sale Collection') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-emerald-700 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-emerald-700 dark:text-emerald-400 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.sale_collection?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-emerald-800 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-emerald-800 dark:text-emerald-300 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.sale_collection?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 3. Others Income (Header) -->
-                                <tr class="bg-gray-100 font-bold border border-gray-400">
-                                    <td class="text-center py-2 px-3 font-bold text-gray-800 border border-gray-300">3</td>
-                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-100 dark:bg-slate-700/60 font-bold border border-gray-400 dark:border-slate-700">
+                                    <td class="text-center py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">3</td>
+                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('অন্যান্য আয়', 'Others Income') }}
                                     </td>
                                 </tr>
                                 <!-- Extra Income Sub-rows -->
                                 <template v-if="receipt?.extra_income?.categories && receipt.extra_income.categories.length > 0">
-                                    <tr v-for="(cat, idx) in receipt.extra_income.categories" :key="idx" class="hover:bg-emerald-50/30 transition text-xs">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 text-gray-700 border border-gray-300">
+                                    <tr v-for="(cat, idx) in receipt.extra_income.categories" :key="idx" class="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition text-xs">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-700">
                                             <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
                                             {{ cat.category }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-emerald-600 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-emerald-600 dark:text-emerald-400 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(cat.period || 0) }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-emerald-700 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-emerald-700 dark:text-emerald-300 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(cat.cumulative || 0) }}
                                         </td>
                                     </tr>
                                 </template>
                                 <template v-else>
-                                    <tr class="text-xs text-gray-400 italic">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 border border-gray-300">{{ t('এই পিরিয়ডে অন্য কোনো আয় নেই', 'No others income in this period') }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
+                                    <tr class="text-xs text-gray-400 dark:text-slate-500 italic">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 border border-gray-300 dark:border-slate-700">{{ t('এই পিরিয়ডে অন্য কোনো আয় নেই', 'No others income in this period') }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
                                     </tr>
                                 </template>
                                 <!-- Total Others Income -->
-                                <tr class="bg-emerald-50/60 font-semibold text-xs sm:text-sm">
-                                    <td class="border border-gray-300"></td>
-                                    <td class="py-2 px-3 pl-8 text-gray-800 font-bold border border-gray-300">
+                                <tr class="bg-emerald-50/60 dark:bg-emerald-950/40 font-semibold text-xs sm:text-sm">
+                                    <td class="border border-gray-300 dark:border-slate-700"></td>
+                                    <td class="py-2 px-3 pl-8 text-gray-800 dark:text-slate-200 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ t('মোট অন্যান্য আয়', 'Total Others Income') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-emerald-700 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-emerald-700 dark:text-emerald-400 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.extra_income?.total?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-emerald-800 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-emerald-800 dark:text-emerald-300 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.extra_income?.total?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 4. Fund Receive (ফান্ড গ্রহণ) -->
-                                <tr class="bg-gray-100 font-bold border border-gray-400">
-                                    <td class="text-center py-2 px-3 font-bold text-gray-800 border border-gray-300">4</td>
-                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-100 dark:bg-slate-700/60 font-bold border border-gray-400 dark:border-slate-700">
+                                    <td class="text-center py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">4</td>
+                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('ফান্ড গ্রহণ', 'Fund Receive') }}
                                     </td>
                                 </tr>
                                 <template v-if="receipt?.fund_receive?.items && receipt.fund_receive.items.length > 0">
-                                    <tr v-for="(item, idx) in receipt.fund_receive.items" :key="idx" class="hover:bg-emerald-50/30 transition text-xs">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 text-gray-700 border border-gray-300">
+                                    <tr v-for="(item, idx) in receipt.fund_receive.items" :key="idx" class="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition text-xs">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-700">
                                             <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
                                             {{ item.name }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-emerald-600 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-emerald-600 dark:text-emerald-400 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.period || 0) }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-emerald-700 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-emerald-700 dark:text-emerald-300 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.cumulative || 0) }}
                                         </td>
                                     </tr>
                                 </template>
-                                <tr class="bg-emerald-50/60 font-semibold text-xs sm:text-sm">
-                                    <td class="border border-gray-300"></td>
-                                    <td class="py-2 px-3 pl-8 text-gray-800 font-bold border border-gray-300">
+                                <tr class="bg-emerald-50/60 dark:bg-emerald-950/40 font-semibold text-xs sm:text-sm">
+                                    <td class="border border-gray-300 dark:border-slate-700"></td>
+                                    <td class="py-2 px-3 pl-8 text-gray-800 dark:text-slate-200 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ t('মোট ফান্ড গ্রহণ', 'Total Fund Receive') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-emerald-700 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-emerald-700 dark:text-emerald-400 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.fund_receive?.total?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-emerald-800 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-emerald-800 dark:text-emerald-300 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(receipt?.fund_receive?.total?.cumulative || 0) }}
                                     </td>
                                 </tr>
@@ -271,15 +275,15 @@
                     </div>
 
                     <!-- Total Receipt Row (Pinned to bottom for baseline match) -->
-                    <div class="border-t-2 border-gray-400 bg-emerald-50 px-4 py-3 mt-auto">
+                    <div class="border-t-2 border-gray-400 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-950/50 px-4 py-3 mt-auto">
                         <div class="grid grid-cols-12 items-center text-sm sm:text-base font-bold">
-                            <span class="col-span-6 text-gray-900 uppercase tracking-wide">
+                            <span class="col-span-6 text-gray-900 dark:text-slate-100 uppercase tracking-wide">
                                 {{ t('মোট রিসিপ্ট', 'Total Receipt') }}
                             </span>
-                            <span class="col-span-3 text-right text-emerald-700 font-extrabold pr-3">
+                            <span class="col-span-3 text-right text-emerald-700 dark:text-emerald-400 font-extrabold pr-3">
                                 {{ formatCurrency(receipt?.total?.period || 0) }}
                             </span>
-                            <span class="col-span-3 text-right text-emerald-800 font-black">
+                            <span class="col-span-3 text-right text-emerald-800 dark:text-emerald-300 font-black">
                                 {{ formatCurrency(receipt?.total?.cumulative || 0) }}
                             </span>
                         </div>
@@ -287,63 +291,63 @@
                 </div>
 
                 <!-- ================= PAYMENTS SECTION ================= -->
-                <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col justify-between border-2 border-gray-400">
+                <div class="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden flex flex-col justify-between border-2 border-gray-400 dark:border-slate-700">
                     <div>
-                        <div class="bg-rose-700 text-white px-4 py-2.5 flex justify-between items-center border-b-2 border-rose-800">
+                        <div class="bg-rose-700 dark:bg-rose-800 text-white px-4 py-2.5 flex justify-between items-center border-b-2 border-rose-800 dark:border-rose-900">
                             <h3 class="text-base font-bold tracking-wide uppercase">{{ t('পেমেন্ট (Payments)', 'Payments') }}</h3>
                             <span class="text-xs font-medium text-rose-100">{{ t('আউটফ্লো / খরচ', 'Outflows') }}</span>
                         </div>
-                        <table class="w-full text-sm border-collapse border border-gray-400">
+                        <table class="w-full text-sm border-collapse border border-gray-400 dark:border-slate-700">
                             <thead>
-                                <tr class="bg-gray-200 text-xs font-bold text-gray-800 uppercase">
-                                    <th class="text-center py-2.5 px-3 w-12 border border-gray-400">{{ t('ক্রমিক', 'SL') }}</th>
-                                    <th class="text-left py-2.5 px-3 border border-gray-400">{{ t('বিবরণ', 'Particulars') }}</th>
-                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400">{{ t('চলতি পিরিয়ড', 'Current Month') }}</th>
-                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400">{{ t('ক্রমপুঞ্জিত', 'Cumulative') }}</th>
+                                <tr class="bg-gray-200 dark:bg-slate-700/80 text-xs font-bold text-gray-800 dark:text-slate-200 uppercase">
+                                    <th class="text-center py-2.5 px-3 w-12 border border-gray-400 dark:border-slate-700">{{ t('ক্রমিক', 'SL') }}</th>
+                                    <th class="text-left py-2.5 px-3 border border-gray-400 dark:border-slate-700">{{ t('বিবরণ', 'Particulars') }}</th>
+                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400 dark:border-slate-700">{{ t('চলতি পিরিয়ড', 'Current Month') }}</th>
+                                    <th class="text-right py-2.5 px-3 w-36 border border-gray-400 dark:border-slate-700">{{ t('ক্রমপুঞ্জিত', 'Cumulative') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- 1. Purchase (Net) -->
-                                <tr class="hover:bg-gray-50/50 transition">
-                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 border border-gray-300">1</td>
-                                    <td class="py-2 px-3 font-semibold text-gray-800 border border-gray-300">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition">
+                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 dark:text-slate-400 border border-gray-300 dark:border-slate-700">1</td>
+                                    <td class="py-2 px-3 font-semibold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('ক্রয়', 'Purchase') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-700 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-700 dark:text-rose-400 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.purchase?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-800 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-800 dark:text-rose-300 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.purchase?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 2. Supplier Payment (Due Paid) -->
-                                <tr class="bg-gray-50/40 hover:bg-gray-50 transition">
-                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 border border-gray-300">2</td>
-                                    <td class="py-2 px-3 font-semibold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-50/40 dark:bg-slate-800/40 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition">
+                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 dark:text-slate-400 border border-gray-300 dark:border-slate-700">2</td>
+                                    <td class="py-2 px-3 font-semibold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         <div class="flex items-center gap-1.5">
                                             <span>{{ t('সরবরাহকারী পরিশোধ (বকেয়া/দেনা)', 'Supplier Payment (Due Paid)') }}</span>
                                             <span v-if="(payment?.supplier_payment?.period || 0) > 0"
-                                                  class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700">
+                                                  class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">
                                                 {{ t('পরিশোধ', 'Paid') }}
                                             </span>
                                         </div>
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-700 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-700 dark:text-rose-400 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.supplier_payment?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-800 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-800 dark:text-rose-300 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.supplier_payment?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 3. Fixed Asset Purchase (Header & Breakdown) -->
-                                <tr class="bg-gray-100 font-bold border border-gray-400">
-                                    <td class="text-center py-2 px-3 font-bold text-gray-800 border border-gray-300">3</td>
-                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-100 dark:bg-slate-700/60 font-bold border border-gray-400 dark:border-slate-700">
+                                    <td class="text-center py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">3</td>
+                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         <div class="flex items-center gap-2">
                                             <span>{{ t('স্থায়ী সম্পদ ক্রয়', 'Fixed Asset Purchase') }}</span>
-                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300">
                                                 {{ t('সম্পদ', 'Asset') }}
                                             </span>
                                         </div>
@@ -351,131 +355,131 @@
                                 </tr>
                                 <!-- Fixed Asset Items Breakdown -->
                                 <template v-if="payment?.fixed_assets?.items && payment.fixed_assets.items.length > 0">
-                                    <tr v-for="(item, idx) in payment.fixed_assets.items" :key="idx" class="hover:bg-rose-50/30 transition text-xs">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 text-gray-700 border border-gray-300">
+                                    <tr v-for="(item, idx) in payment.fixed_assets.items" :key="idx" class="hover:bg-rose-50/30 dark:hover:bg-rose-950/20 transition text-xs">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-700">
                                             <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>
                                             {{ item.name }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-600 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-600 dark:text-rose-400 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.period || 0) }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-700 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-700 dark:text-rose-300 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.cumulative || 0) }}
                                         </td>
                                     </tr>
                                 </template>
                                 <template v-else>
-                                    <tr class="text-xs text-gray-400 italic">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 border border-gray-300">{{ t('এই পিরিয়ডে স্থায়ী সম্পদ কেনা হয়নি', 'No fixed asset purchase in this period') }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
+                                    <tr class="text-xs text-gray-400 dark:text-slate-500 italic">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 border border-gray-300 dark:border-slate-700">{{ t('এই পিরিয়ডে স্থায়ী সম্পদ কেনা হয়নি', 'No fixed asset purchase in this period') }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
                                     </tr>
                                 </template>
                                 <!-- Total Fixed Assets -->
-                                <tr class="bg-rose-50/50 font-semibold text-xs sm:text-sm">
-                                    <td class="border border-gray-300"></td>
-                                    <td class="py-2 px-3 pl-8 text-gray-800 font-bold border border-gray-300">
+                                <tr class="bg-rose-50/50 dark:bg-rose-950/40 font-semibold text-xs sm:text-sm">
+                                    <td class="border border-gray-300 dark:border-slate-700"></td>
+                                    <td class="py-2 px-3 pl-8 text-gray-800 dark:text-slate-200 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ t('মোট স্থায়ী সম্পদ ক্রয়', 'Total Fixed Asset Purchase') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-700 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-700 dark:text-rose-400 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.fixed_assets?.total?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-800 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-800 dark:text-rose-300 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.fixed_assets?.total?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 4. Fund Refund / Fund Out (Header & Items) -->
-                                <tr class="bg-gray-100 font-bold border border-gray-400">
-                                    <td class="text-center py-2 px-3 font-bold text-gray-800 border border-gray-300">4</td>
-                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-100 dark:bg-slate-700/60 font-bold border border-gray-400 dark:border-slate-700">
+                                    <td class="text-center py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">4</td>
+                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('ফান্ড রিফান্ড / ফান্ড আউট', 'Fund Refund / Fund Out') }}
                                     </td>
                                 </tr>
                                 <template v-if="payment?.fund_refund?.items && payment.fund_refund.items.length > 0">
-                                    <tr v-for="(item, idx) in payment.fund_refund.items" :key="idx" class="hover:bg-rose-50/30 transition text-xs">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 text-gray-700 border border-gray-300">
+                                    <tr v-for="(item, idx) in payment.fund_refund.items" :key="idx" class="hover:bg-rose-50/30 dark:hover:bg-rose-950/20 transition text-xs">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-700">
                                             <span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 mr-2"></span>
                                             {{ item.name }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-600 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-600 dark:text-rose-400 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.period || 0) }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-700 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-700 dark:text-rose-300 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(item.cumulative || 0) }}
                                         </td>
                                     </tr>
                                 </template>
-                                <tr class="bg-rose-50/50 font-semibold text-xs sm:text-sm">
-                                    <td class="border border-gray-300"></td>
-                                    <td class="py-2 px-3 pl-8 text-gray-800 font-bold border border-gray-300">
+                                <tr class="bg-rose-50/50 dark:bg-rose-950/40 font-semibold text-xs sm:text-sm">
+                                    <td class="border border-gray-300 dark:border-slate-700"></td>
+                                    <td class="py-2 px-3 pl-8 text-gray-800 dark:text-slate-200 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ t('মোট ফান্ড রিফান্ড / আউট', 'Total Fund Refund / Out') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-700 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-700 dark:text-rose-400 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.fund_refund?.total?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-800 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-800 dark:text-rose-300 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.fund_refund?.total?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 5. Expenses (Header & Categories) -->
-                                <tr class="bg-gray-100 font-bold border border-gray-400">
-                                    <td class="text-center py-2 px-3 font-bold text-gray-800 border border-gray-300">5</td>
-                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 border border-gray-300">
+                                <tr class="bg-gray-100 dark:bg-slate-700/60 font-bold border border-gray-400 dark:border-slate-700">
+                                    <td class="text-center py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">5</td>
+                                    <td colspan="3" class="py-2 px-3 font-bold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('খরচসমূহ', 'Expenses') }}
                                     </td>
                                 </tr>
                                 <template v-if="payment?.expenses?.categories && payment.expenses.categories.length > 0">
-                                    <tr v-for="(cat, idx) in payment.expenses.categories" :key="idx" class="hover:bg-rose-50/30 transition text-xs">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 text-gray-700 border border-gray-300">
+                                    <tr v-for="(cat, idx) in payment.expenses.categories" :key="idx" class="hover:bg-rose-50/30 dark:hover:bg-rose-950/20 transition text-xs">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 text-gray-700 dark:text-slate-300 border border-gray-300 dark:border-slate-700">
                                             <span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 mr-2"></span>
                                             {{ cat.category }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-600 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-600 dark:text-rose-400 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(cat.period || 0) }}
                                         </td>
-                                        <td class="text-right py-1.5 px-3 text-rose-700 font-medium border border-gray-300">
+                                        <td class="text-right py-1.5 px-3 text-rose-700 dark:text-rose-300 font-medium border border-gray-300 dark:border-slate-700">
                                             {{ formatCurrency(cat.cumulative || 0) }}
                                         </td>
                                     </tr>
                                 </template>
                                 <template v-else>
-                                    <tr class="text-xs text-gray-400 italic">
-                                        <td class="border border-gray-300"></td>
-                                        <td class="py-1.5 px-3 pl-8 border border-gray-300">{{ t('এই পিরিয়ডে কোনো খরচ নেই', 'No expenses in this period') }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
-                                        <td class="text-right py-1.5 px-3 border border-gray-300">{{ formatCurrency(0) }}</td>
+                                    <tr class="text-xs text-gray-400 dark:text-slate-500 italic">
+                                        <td class="border border-gray-300 dark:border-slate-700"></td>
+                                        <td class="py-1.5 px-3 pl-8 border border-gray-300 dark:border-slate-700">{{ t('এই পিরিয়ডে কোনো খরচ নেই', 'No expenses in this period') }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
+                                        <td class="text-right py-1.5 px-3 border border-gray-300 dark:border-slate-700">{{ formatCurrency(0) }}</td>
                                     </tr>
                                 </template>
                                 <!-- Total Expenses -->
-                                <tr class="bg-rose-50/50 font-semibold text-xs sm:text-sm">
-                                    <td class="border border-gray-300"></td>
-                                    <td class="py-2 px-3 pl-8 text-gray-800 font-bold border border-gray-300">
+                                <tr class="bg-rose-50/50 dark:bg-rose-950/40 font-semibold text-xs sm:text-sm">
+                                    <td class="border border-gray-300 dark:border-slate-700"></td>
+                                    <td class="py-2 px-3 pl-8 text-gray-800 dark:text-slate-200 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ t('মোট খরচ', 'Total Expenses') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-700 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-700 dark:text-rose-400 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.expenses?.total?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 text-rose-800 font-bold border border-gray-300">
+                                    <td class="text-right py-2 px-3 text-rose-800 dark:text-rose-300 font-bold border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.expenses?.total?.cumulative || 0) }}
                                     </td>
                                 </tr>
 
                                 <!-- 6. Closing Cash at Bank -->
-                                <tr class="hover:bg-gray-50/50 transition">
-                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 border border-gray-300">6</td>
-                                    <td class="py-2 px-3 font-semibold text-gray-800 border border-gray-300">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition">
+                                    <td class="text-center py-2 px-3 font-semibold text-gray-600 dark:text-slate-400 border border-gray-300 dark:border-slate-700">6</td>
+                                    <td class="py-2 px-3 font-semibold text-gray-800 dark:text-slate-200 border border-gray-300 dark:border-slate-700">
                                         {{ t('ব্যাংকে সমাপনী নগদ', 'Closing Cash at Bank') }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-700 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-700 dark:text-rose-400 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.closing_cash_at_bank?.period || 0) }}
                                     </td>
-                                    <td class="text-right py-2 px-3 font-bold text-rose-800 border border-gray-300">
+                                    <td class="text-right py-2 px-3 font-bold text-rose-800 dark:text-rose-300 border border-gray-300 dark:border-slate-700">
                                         {{ formatCurrency(payment?.closing_cash_at_bank?.cumulative || 0) }}
                                     </td>
                                 </tr>
@@ -484,15 +488,15 @@
                     </div>
 
                     <!-- Total Payment Row (Pinned to bottom for baseline match) -->
-                    <div class="border-t-2 border-gray-400 bg-rose-50 px-4 py-3 mt-auto">
+                    <div class="border-t-2 border-gray-400 dark:border-slate-700 bg-rose-50 dark:bg-rose-950/50 px-4 py-3 mt-auto">
                         <div class="grid grid-cols-12 items-center text-sm sm:text-base font-bold">
-                            <span class="col-span-6 text-gray-900 uppercase tracking-wide">
+                            <span class="col-span-6 text-gray-900 dark:text-slate-100 uppercase tracking-wide">
                                 {{ t('মোট পেমেন্ট', 'Total Payment') }}
                             </span>
-                            <span class="col-span-3 text-right text-rose-700 font-extrabold pr-3">
+                            <span class="col-span-3 text-right text-rose-700 dark:text-rose-400 font-extrabold pr-3">
                                 {{ formatCurrency(payment?.total?.period || 0) }}
                             </span>
-                            <span class="col-span-3 text-right text-rose-800 font-black">
+                            <span class="col-span-3 text-right text-rose-800 dark:text-rose-300 font-black">
                                 {{ formatCurrency(payment?.total?.cumulative || 0) }}
                             </span>
                         </div>

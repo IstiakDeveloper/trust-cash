@@ -1,14 +1,25 @@
 <template>
-    <Head title="ব্যবসা রেজিস্ট্রেশন - TrustCash" />
+    <Head :title="($page.props.platform?.name || 'TrustCash') + ' - ব্যবসা রেজিস্ট্রেশন'">
+        <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
+        <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
+    </Head>
     <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-6">
         <div class="max-w-xl w-full mx-auto my-auto pt-6 pb-12">
             <!-- Logo Header -->
             <div class="text-center mb-8">
-                <Link href="/" class="inline-flex items-center gap-2 mb-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-blue-500/30">
-                        T
+                <Link href="/" class="inline-flex items-center gap-3 mb-4 group">
+                    <div class="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-800 flex items-center justify-center p-2 shadow-lg overflow-hidden transition-transform group-hover:scale-105">
+                        <img
+                            v-if="$page.props.platform?.logo"
+                            :src="$page.props.platform.logo"
+                            :alt="$page.props.platform?.name || 'Logo'"
+                            class="w-full h-full object-contain"
+                        />
+                        <div v-else class="w-full h-full rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-blue-500/30">
+                            {{ ($page.props.platform?.name || 'T')[0] }}
+                        </div>
                     </div>
-                    <span class="text-2xl font-bold text-white tracking-tight">TrustCash</span>
+                    <span class="text-2xl font-bold text-white tracking-tight">{{ $page.props.platform?.name || 'TrustCash' }}</span>
                 </Link>
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white">আপনার ব্যবসার একাউন্ট তৈরি করুন</h1>
                 <p class="text-xs sm:text-sm text-slate-400 mt-2">১৪ দিনের ফ্রি ট্রায়াল শুরু করুন। কোনো ক্রেডিট কার্ডের প্রয়োজন নেই।</p>

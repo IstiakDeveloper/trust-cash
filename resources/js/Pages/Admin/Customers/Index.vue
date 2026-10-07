@@ -2,20 +2,20 @@
     <AdminLayout :title="t('কাস্টমার খাতা ও তালিকা', 'Customers')">
         <Head :title="t('কাস্টমার খাতা ও তালিকা', 'Customers')" />
 
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6">
             <!-- Header Actions -->
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-white">
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                         {{ t('কাস্টমার ও বাকির খাতা', 'Customers Management') }}
                     </h1>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                         {{ t('সকল কাস্টমারদের তালিকা, মোট বিক্রয় ও বকেয়া হিসাব নিরীক্ষা করুন', 'Track customer records, total purchases, and outstanding dues') }}
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
                     <Link :href="route('admin.customers.create')"
-                        class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all">
+                        class="w-full sm:w-auto inline-flex justify-center items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 sm:py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all min-h-[40px]">
                         <PlusIcon class="h-4 w-4" />
                         <span>{{ t('নতুন কাস্টমার যোগ', 'Add Customer') }}</span>
                     </Link>
@@ -23,7 +23,7 @@
             </div>
 
             <!-- Filter Bar -->
-            <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-700 dark:bg-slate-900">
+            <div class="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-4 shadow-xs dark:border-slate-700 dark:bg-slate-900">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
                     <div class="relative">
                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -42,8 +42,79 @@
                 </div>
             </div>
 
-            <!-- Customers Table -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
+            <!-- Mobile Customer Cards (md:hidden) -->
+            <div class="md:hidden space-y-3">
+                <div v-for="customer in customers.data" :key="customer.id"
+                    class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 p-3.5 shadow-xs space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <div class="font-bold text-sm text-slate-900 dark:text-white">
+                                {{ customer.name }}
+                            </div>
+                            <a v-if="customer.phone" :href="`tel:${customer.phone}`"
+                                class="inline-flex items-center gap-1 text-xs font-mono text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
+                                <PhoneIcon class="h-3.5 w-3.5" />
+                                <span>{{ customer.phone }}</span>
+                            </a>
+                            <div v-if="customer.email" class="text-[11px] text-slate-400 mt-0.5">
+                                {{ customer.email }}
+                            </div>
+                            <div v-if="customer.branch_code || customer.branch_name" class="text-[11px] text-slate-400 mt-0.5">
+                                {{ t('শাখা:', 'Branch:') }} {{ customer.branch_name || '-' }} ({{ customer.branch_code || '-' }})
+                            </div>
+                        </div>
+                        <span class="inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold shrink-0"
+                            :class="{
+                                'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': customer.status,
+                                'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': !customer.status
+                            }">
+                            {{ customer.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                        </span>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 text-xs">
+                        <div>
+                            <span class="text-[11px] text-slate-500 block">{{ t('মোট বিক্রয়', 'Total Sales') }}</span>
+                            <span class="font-bold font-mono text-slate-900 dark:text-slate-100">
+                                ৳{{ formatNumber(customer.total_sales) }}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] text-slate-500 block">{{ t('বকেয়া টাকা', 'Due Amount') }}</span>
+                            <span v-if="customer.total_due > 0" class="font-bold font-mono text-rose-600 dark:text-rose-400">
+                                ৳{{ formatNumber(customer.total_due) }}
+                            </span>
+                            <span v-else class="font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                ৳0.00
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <Link :href="route('admin.customers.show', customer.id)"
+                            class="inline-flex justify-center items-center py-2 px-2 text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg min-h-[36px]">
+                            {{ t('লেজার', 'Ledger') }}
+                        </Link>
+                        <Link :href="route('admin.customers.edit', customer.id)"
+                            class="inline-flex justify-center items-center py-2 px-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg min-h-[36px]">
+                            {{ t('সম্পাদন', 'Edit') }}
+                        </Link>
+                        <button @click="confirmToggleStatus(customer)"
+                            class="inline-flex justify-center items-center py-2 px-2 text-xs font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/40 rounded-lg min-h-[36px]">
+                            {{ customer.status ? t('বন্ধ', 'Off') : t('চালু', 'On') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="customers.data.length === 0" class="bg-white dark:bg-slate-900 rounded-xl p-8 text-center text-slate-400">
+                    {{ t('কোনো কাস্টমার পাওয়া যায়নি।', 'No customers found') }}
+                </div>
+            </div>
+
+            <!-- Desktop Customers Table (hidden md:block) -->
+            <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                     <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
                         <tr>
@@ -129,11 +200,11 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
 
-                <!-- Pagination -->
-                <div v-if="customers.links && customers.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
-                    <Pagination :links="customers.links" />
-                </div>
+            <!-- Pagination -->
+            <div v-if="customers.links && customers.links.length > 3" class="px-2 py-2">
+                <Pagination :links="customers.links" />
             </div>
         </div>
 
@@ -164,7 +235,7 @@ import _ from 'lodash'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Pagination from '@/Components/Pagination.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
-import { Search as SearchIcon, Plus as PlusIcon } from 'lucide-vue-next'
+import { Search as SearchIcon, Plus as PlusIcon, Phone as PhoneIcon } from 'lucide-vue-next'
 import { useLanguage } from '@/composables/useLanguage'
 
 const { t } = useLanguage()

@@ -1,11 +1,38 @@
 import '../css/app.css';
 import './bootstrap';
 
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createApp, h } from 'vue';
+import { createApp, h, Fragment } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { setThemeOnLoad } from './theme';
+
+// Import PWA Manager
+import PwaManager from './Components/PwaManager.vue';
+
+// Ensure browser tab favicon dynamically updates on navigation / setting changes
+function syncFavicon(faviconUrl) {
+    if (!faviconUrl) return;
+    const cacheBusted = faviconUrl.includes('?') ? faviconUrl : `${faviconUrl}?v=${Date.now()}`;
+    let links = document.querySelectorAll("link[rel*='icon']");
+    if (!links || links.length === 0) {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = cacheBusted;
+        document.head.appendChild(link);
+    } else {
+        links.forEach(link => {
+            link.href = cacheBusted;
+        });
+    }
+}
+
+router.on('navigate', (event) => {
+    const platform = event.detail.page.props?.platform;
+    if (platform?.favicon) {
+        syncFavicon(platform.favicon);
+    }
+});
 // Import layouts
 import UserLayout from './Layouts/UserLayout.vue';
 
@@ -33,7 +60,12 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) });
+        const app = createApp({
+            render: () => h(Fragment, null, [
+                h(App, props),
+                h(PwaManager)
+            ])
+        });
 
         // Register global components
         app.component('ConfirmDialog', ConfirmDialog);

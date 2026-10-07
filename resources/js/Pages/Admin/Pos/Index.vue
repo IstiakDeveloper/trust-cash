@@ -1,25 +1,79 @@
 <template>
     <AdminLayout :title="t('ক্যাশ কাউন্টার (POS)', 'Point of Sale')">
-        <div class="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
+        <div class="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-slate-50 dark:bg-slate-900">
             <!-- Compact Header -->
-            <div class="bg-white dark:bg-slate-800 shadow-xs border-b border-slate-200 dark:border-slate-700 px-4 py-2">
+            <div class="bg-white dark:bg-slate-800 shadow-xs border-b border-slate-200 dark:border-slate-700 px-3 sm:px-4 py-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-cash-register text-emerald-600 dark:text-emerald-400"></i>
-                        <h1 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('ক্যাশ কাউন্টার (POS)', 'Point of Sale (POS)') }}</h1>
+                        <h1 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{{ t('ক্যাশ কাউন্টার (POS)', 'Point of Sale (POS)') }}</h1>
                     </div>
-                    <div class="text-xs font-mono text-slate-500 dark:text-slate-400">
-                        {{ new Date().toLocaleTimeString() }}
+                    <div class="flex items-center gap-2">
+                        <span v-if="cartItems.length > 0" class="lg:hidden text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                            ৳{{ formatNumber(total) }}
+                        </span>
+                        <div class="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                            {{ new Date().toLocaleTimeString() }}
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Mobile POS Segmented Tabs (Shown only on mobile/tablet < lg) -->
+            <div class="lg:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-1.5 flex items-center gap-1 shrink-0 shadow-xs">
+                <button
+                    @click="mobilePosTab = 'catalog'"
+                    type="button"
+                    :class="[
+                        'flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5',
+                        mobilePosTab === 'catalog'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                    ]"
+                >
+                    <i class="fas fa-boxes text-xs"></i>
+                    <span>{{ t('পণ্য', 'Catalog') }}</span>
+                </button>
+                <button
+                    @click="mobilePosTab = 'cart'"
+                    type="button"
+                    :class="[
+                        'flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 relative',
+                        mobilePosTab === 'cart'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                    ]"
+                >
+                    <i class="fas fa-shopping-cart text-xs"></i>
+                    <span>{{ t('কার্ট', 'Cart') }}</span>
+                    <span v-if="cartItems.length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500 text-white font-black">
+                        {{ cartItems.length }}
+                    </span>
+                </button>
+                <button
+                    @click="mobilePosTab = 'checkout'"
+                    type="button"
+                    :class="[
+                        'flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5',
+                        mobilePosTab === 'checkout'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
+                    ]"
+                >
+                    <i class="fas fa-credit-card text-xs"></i>
+                    <span>{{ t('পেমেন্ট', 'Pay') }}</span>
+                </button>
+            </div>
+
             <!-- Main Content -->
-            <div class="flex flex-1 min-h-0">
-                <!-- Left Panel - Products & Cart (65%) -->
-                <div class="flex flex-col w-2/3 min-w-0 bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+            <div class="flex flex-col lg:flex-row flex-1 min-h-0 relative">
+                <!-- Left Panel - Products & Cart -->
+                <div :class="[
+                    'flex-col lg:w-2/3 min-w-0 bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex-1 min-h-0',
+                    mobilePosTab === 'checkout' ? 'hidden lg:flex' : 'flex'
+                ]">
                     <!-- Search Section -->
-                    <div class="p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    <div :class="['p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50', mobilePosTab === 'cart' ? 'hidden lg:block' : 'block']">
                         <PosSearch
                             :categories="categories"
                             :selected-category="selectedCategory"
@@ -32,7 +86,7 @@
                     <!-- Products and Cart Container -->
                     <div class="flex flex-col flex-1 min-h-0">
                         <!-- Product Grid -->
-                        <div class="p-2 overflow-auto h-5/5">
+                        <div :class="['p-2 overflow-auto flex-1 min-h-0', mobilePosTab === 'cart' ? 'hidden lg:block' : 'block']">
                             <div class="mb-1 flex items-center justify-between">
                                 <h2 class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ t('পণ্যের তালিকা', 'Products Catalog') }}</h2>
                                 <span class="text-[10px] text-slate-400">{{ displayProducts.length }} {{ t('টি পণ্য', 'items') }}</span>
@@ -44,8 +98,35 @@
                             />
                         </div>
 
+                        <!-- Floating Bottom Cart Indicator in Mobile Catalog Tab -->
+                        <div
+                            v-if="cartItems.length > 0 && mobilePosTab === 'catalog'"
+                            class="lg:hidden p-2.5 bg-indigo-900 text-white flex items-center justify-between shadow-xl shrink-0 border-t border-indigo-700"
+                        >
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs">
+                                    {{ cartItems.length }}
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold">৳{{ formatNumber(total) }}</p>
+                                    <p class="text-[10px] text-indigo-300">{{ t('মোট বিল', 'Total Bill') }}</p>
+                                </div>
+                            </div>
+                            <button
+                                @click="mobilePosTab = 'cart'"
+                                type="button"
+                                class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95"
+                            >
+                                <span>{{ t('কার্ট দেখুন', 'View Cart') }}</span>
+                                <i class="fas fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+
                         <!-- Cart Section -->
-                        <div class="border-t border-slate-200 h-3/5 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <div :class="[
+                            'border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col',
+                            mobilePosTab === 'cart' ? 'flex flex-1 min-h-0' : 'hidden lg:flex lg:h-3/5'
+                        ]">
                             <div class="flex flex-col h-full p-2">
                                 <div class="flex items-center justify-between mb-2">
                                     <h2 class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -146,13 +227,32 @@
                                         </table>
                                     </div>
                                 </div>
+                                <!-- Mobile Proceed to Payment button on Cart tab -->
+                                <div v-if="mobilePosTab === 'cart'" class="lg:hidden p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+                                    <div>
+                                        <p class="text-[11px] text-slate-400">{{ t('সর্বমোট প্রদেয়', 'Total Payable') }}</p>
+                                        <p class="text-base font-black text-indigo-600 dark:text-indigo-400">৳{{ formatNumber(total) }}</p>
+                                    </div>
+                                    <button
+                                        @click="mobilePosTab = 'checkout'"
+                                        :disabled="cartItems.length === 0"
+                                        type="button"
+                                        class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm disabled:opacity-50 active:scale-95"
+                                    >
+                                        <span>{{ t('পেমেন্ট ও চেকআউটে যান', 'Proceed to Pay') }}</span>
+                                        <i class="fas fa-arrow-right text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Panel - Payment & Checkout (35%) -->
-                <div class="flex flex-col w-1/3 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800">
+                <!-- Right Panel - Payment & Checkout (35% on desktop, full screen tab on mobile) -->
+                <div :class="[
+                    'flex-col lg:w-1/3 bg-slate-50 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex-1 lg:flex-none min-h-0',
+                    mobilePosTab === 'checkout' ? 'flex' : 'hidden lg:flex'
+                ]">
                     <!-- Payment Header -->
                     <div class="p-3 text-white bg-indigo-600 dark:bg-indigo-700 flex items-center justify-between shadow-xs">
                         <div class="flex items-center gap-2">
@@ -176,6 +276,17 @@
                                     {{ customer.name }} ({{ customer.phone || 'N/A' }})
                                 </option>
                             </select>
+
+                            <!-- Customer Info Badge if selected -->
+                            <div v-if="selectedCustomerObj" class="mt-2 p-2 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg flex items-center justify-between text-[11px]">
+                                <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-medium">
+                                    <i class="fas fa-user-tag text-xs"></i>
+                                    <span>{{ t('পূর্বের বকেয়া', 'Previous Due') }}:</span>
+                                </div>
+                                <span class="font-bold text-amber-900 dark:text-amber-200 font-mono">
+                                    ৳{{ formatNumber(selectedCustomerObj.balance || 0) }}
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Bank / Cash Account -->
@@ -222,14 +333,93 @@
                             </div>
                         </div>
 
-                        <!-- Pay Amount Box -->
-                        <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 dark:bg-emerald-950/30 dark:border-emerald-800 text-center">
-                            <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
-                                {{ t('পরিশোধিত টাকা (ক্যাশ)', 'Payable Amount') }}
-                            </p>
-                            <p class="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">
-                                ৳{{ formatNumber(total) }}
-                            </p>
+                        <!-- Pay Amount / Cash & Due Box -->
+                        <div class="p-3 bg-white rounded-xl border border-slate-200/90 shadow-xs dark:bg-slate-800 dark:border-slate-700 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                    <i class="fas fa-money-bill-wave text-emerald-500"></i>
+                                    <span>{{ t('নগদ পরিশোধ (ক্যাশ)', 'Paid Cash') }}</span>
+                                </label>
+
+                                <!-- Walk-in badge vs Customer helper buttons -->
+                                <span v-if="!selectedCustomer" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>{{ t('ফিক্সড (সম্পূর্ণ নগদ)', 'Fixed (Full Cash)') }}</span>
+                                </span>
+                                <div v-else class="flex items-center gap-1">
+                                    <button type="button" @click="setFullPaid"
+                                        class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 transition-colors">
+                                        {{ t('সম্পূর্ণ নগদ', 'Full Paid') }}
+                                    </button>
+                                    <button type="button" @click="setFullDue"
+                                        class="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/60 dark:text-rose-300 transition-colors">
+                                        {{ t('সম্পূর্ণ বাকি', 'Full Due') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Case 1: Walk-in Customer (Not editable, auto fixed, no credit) -->
+                            <div v-if="!selectedCustomer" class="space-y-1.5">
+                                <div class="flex items-center justify-between w-full px-3 py-2 bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 font-bold text-sm cursor-not-allowed select-none">
+                                    <span class="font-mono text-emerald-600 dark:text-emerald-400 text-base font-black">
+                                        ৳{{ formatNumber(total) }}
+                                    </span>
+                                    <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        <i class="fas fa-lock text-[10px] text-amber-500"></i>
+                                        <span>{{ t('সম্পূর্ণ নগদ আবশ্যক', 'Full cash only') }}</span>
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1 leading-tight">
+                                    <i class="fas fa-info-circle text-xs shrink-0"></i>
+                                    <span>{{ t('সাধারণ কাস্টমারের জন্য বাকি বিক্রি সম্ভব নয় (নগদ এডিটেবল নয়)।', 'Walk-in customer must pay full in cash (Due not allowed).') }}</span>
+                                </p>
+                            </div>
+
+                            <!-- Case 2: Registered Customer (Auto-filled with total, editable for partial/due) -->
+                            <div v-else class="space-y-2">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
+                                    <input type="number" v-model.number="paidAmount" @input="onPaidInput"
+                                        class="w-full pl-7 pr-3 py-2 font-bold text-sm border rounded-lg transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                        :class="[
+                                            dueAmount > 0
+                                                ? 'border-amber-300 bg-amber-50/50 text-slate-900 dark:bg-slate-900 dark:border-amber-600 dark:text-white'
+                                                : 'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
+                                        ]"
+                                        min="0" :max="total" step="0.01" placeholder="0.00" />
+                                </div>
+
+                                <!-- Due Banner if due > 0 -->
+                                <div v-if="dueAmount > 0" class="p-2.5 rounded-lg bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/60 flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-300 font-semibold">
+                                        <i class="fas fa-hand-holding-usd text-rose-500"></i>
+                                        <span>{{ t('বাকি টাকা (Due)', 'Due Balance') }}:</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm font-black text-rose-600 dark:text-rose-400 font-mono">
+                                            ৳{{ formatNumber(dueAmount) }}
+                                        </span>
+                                        <p class="text-[10px] text-rose-500 dark:text-rose-400">
+                                            {{ t('কাস্টমারের বকেয়ায় যুক্ত হবে', 'Added to customer balance') }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Full Paid badge if due == 0 -->
+                                <div v-else-if="total > 0 && effectivePaid >= total" class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-semibold">
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fas fa-check-circle text-emerald-500"></i>
+                                        <span>{{ t('সম্পূর্ণ পরিশোধিত (Paid in Full)', 'Paid in Full') }}</span>
+                                    </span>
+                                    <span class="font-mono font-bold">৳{{ formatNumber(total) }}</span>
+                                </div>
+
+                                <!-- Change amount if customer gave more cash than total -->
+                                <div v-if="changeAmount > 0" class="p-2 rounded-lg bg-indigo-50 border border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300 font-semibold">
+                                    <span>{{ t('কাস্টমারকে ফেরত দিন (Change)', 'Change Return') }}:</span>
+                                    <span class="font-mono font-bold">৳{{ formatNumber(changeAmount) }}</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Note Box -->
@@ -253,11 +443,50 @@
                             class="flex items-center justify-center w-full py-3 text-xs font-bold text-white transition-all rounded-xl shadow-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98">
                             <i v-if="!processing" class="fas fa-check-circle mr-1.5 text-sm"></i>
                             <i v-else class="fas fa-spinner fa-spin mr-1.5 text-sm"></i>
-                            <span>{{ processing ? t('প্রসেসিং হচ্ছে...', 'Processing...') : t('বিক্রি সম্পন্ন করুন (Print Invoice)', 'Complete Sale') }}</span>
+                            <span v-if="processing">{{ t('প্রসেসিং হচ্ছে...', 'Processing...') }}</span>
+                            <span v-else-if="dueAmount > 0">
+                                {{ t(`বিক্রি সম্পন্ন করুন (নগদ: ৳${formatNumber(effectivePaid)}, বাকি: ৳${formatNumber(dueAmount)})`, `Complete Sale (Cash: ৳${formatNumber(effectivePaid)}, Due: ৳${formatNumber(dueAmount)})`) }}
+                            </span>
+                            <span v-else>
+                                {{ t(`বিক্রি সম্পন্ন করুন (৳${formatNumber(total)})`, `Complete Sale (৳${formatNumber(total)})`) }}
+                            </span>
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Fixed Display Corner Overlay Complete Sale Button (Desktop Only, hidden on mobile) -->
+        <div class="hidden lg:flex fixed bottom-6 right-6 z-50 items-center gap-2 drop-shadow-2xl">
+            <button
+                @click="processSale"
+                :disabled="!canProcessSale || processing"
+                class="flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-2xl shadow-emerald-950/60 border border-emerald-400/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+            >
+                <i v-if="!processing" class="fas fa-check-circle text-lg text-emerald-200"></i>
+                <i v-else class="fas fa-spinner fa-spin text-lg"></i>
+
+                <div class="flex flex-col text-left">
+                    <span class="text-sm font-black tracking-wide">
+                        {{ processing ? t('প্রসেসিং হচ্ছে...', 'Processing...') : t('বিক্রি সম্পন্ন করুন', 'Complete Sale') }}
+                    </span>
+                    <span v-if="dueAmount > 0" class="text-[10px] text-amber-200 font-semibold">
+                        {{ t('বাকি:', 'Due:') }} ৳{{ formatNumber(dueAmount) }} | {{ t('নগদ:', 'Paid:') }} ৳{{ formatNumber(effectivePaid) }}
+                    </span>
+                    <span v-else class="text-[10px] text-emerald-100 font-medium">
+                        {{ t('সম্পূর্ণ নগদ পরিশোধ', 'Full Paid') }}
+                    </span>
+                </div>
+
+                <div class="ml-1 pl-3 border-l border-white/25 flex items-center gap-2">
+                    <span class="bg-black/30 px-2.5 py-0.5 rounded-lg font-mono text-xs font-black text-white">
+                        ৳{{ formatNumber(total) }}
+                    </span>
+                    <span class="hidden sm:inline-block bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">
+                        F4
+                    </span>
+                </div>
+            </button>
         </div>
 
         <!-- Success Modal -->
@@ -271,7 +500,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import PosSearch from './components/PosSearch.vue'
@@ -280,6 +509,7 @@ import PosSuccessModal from './components/PosSuccessModal.vue'
 import { Howl } from 'howler'
 import { useLanguage } from '@/composables/useLanguage'
 import { getImageUrl } from '@/utils/image'
+import { offlineSync } from '@/services/offlineSync'
 
 const { t } = useLanguage()
 
@@ -290,6 +520,7 @@ const props = defineProps({
 })
 
 // State
+const mobilePosTab = ref('catalog') // 'catalog' | 'cart' | 'checkout'
 const searchQuery = ref('')
 const products = ref([])
 const searchResults = ref([])
@@ -305,6 +536,8 @@ const selectedCustomer = ref(null)
 const selectedBankAccount = ref(1)
 const discount = ref(0)
 const note = ref('')
+const paidAmount = ref(0)
+const isPaidManuallyEdited = ref(false)
 
 // Computed
 const displayProducts = computed(() => {
@@ -325,8 +558,69 @@ const total = computed(() => {
     return Math.max(0, cartSummary.value.subtotal - discount.value)
 })
 
+const selectedCustomerObj = computed(() => {
+    if (!selectedCustomer.value) return null
+    return props.customers?.find(c => c.id === selectedCustomer.value) || null
+})
+
+const effectivePaid = computed(() => {
+    if (!selectedCustomer.value) {
+        return total.value
+    }
+    const val = Number(paidAmount.value)
+    if (isNaN(val) || val < 0) return 0
+    return Math.min(total.value, val)
+})
+
+const dueAmount = computed(() => {
+    if (!selectedCustomer.value) return 0
+    return Math.max(0, total.value - effectivePaid.value)
+})
+
+const changeAmount = computed(() => {
+    if (!selectedCustomer.value) return 0
+    const rawVal = Number(paidAmount.value) || 0
+    return Math.max(0, rawVal - total.value)
+})
+
 const canProcessSale = computed(() => {
-    return cartItems.value.length > 0 && selectedBankAccount.value && total.value > 0
+    if (cartItems.value.length === 0 || !selectedBankAccount.value || total.value <= 0) {
+        return false
+    }
+    // Walk-in customer cannot have due: effectivePaid must cover total
+    if (!selectedCustomer.value && effectivePaid.value < total.value) {
+        return false
+    }
+    return true
+})
+
+// Cash payment helpers
+const setFullPaid = () => {
+    paidAmount.value = total.value
+    isPaidManuallyEdited.value = false
+}
+
+const setFullDue = () => {
+    paidAmount.value = 0
+    isPaidManuallyEdited.value = true
+}
+
+const onPaidInput = () => {
+    isPaidManuallyEdited.value = true
+}
+
+// Watchers
+watch(total, (newTotal) => {
+    if (!selectedCustomer.value || !isPaidManuallyEdited.value) {
+        paidAmount.value = newTotal
+    } else if (paidAmount.value > newTotal) {
+        paidAmount.value = newTotal
+    }
+})
+
+watch(selectedCustomer, () => {
+    paidAmount.value = total.value
+    isPaidManuallyEdited.value = false
 })
 
 // Methods
@@ -342,8 +636,14 @@ const fetchProducts = async () => {
     try {
         const response = await axios.get(route('admin.pos.products'));
         products.value = response.data;
+        // Cache to IndexedDB for offline resilience
+        offlineSync.cacheItems('pos_products', response.data).catch(() => {});
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching products, checking offline cache:', error);
+        const cached = await offlineSync.getCachedItems('pos_products');
+        if (cached && cached.length > 0) {
+            products.value = cached;
+        }
     } finally {
         loading.value = false;
     }
@@ -475,12 +775,21 @@ const resetCart = () => {
     searchQuery.value = ''
     discount.value = 0
     note.value = ''
+    paidAmount.value = 0
+    isPaidManuallyEdited.value = false
 }
 
-const processSale = () => {
+const processSale = async () => {
     if (!canProcessSale.value || processing.value) return
 
     processing.value = true
+
+    const finalPaid = !selectedCustomer.value
+        ? total.value
+        : effectivePaid.value
+    const finalDue = !selectedCustomer.value
+        ? 0
+        : dueAmount.value
 
     const saleData = {
         customer_id: selectedCustomer.value,
@@ -488,10 +797,41 @@ const processSale = () => {
         subtotal: cartSummary.value.subtotal,
         discount: discount.value,
         total: total.value,
-        paid: total.value,
-        due: 0,
+        paid: finalPaid,
+        due: finalDue,
         bank_account_id: selectedBankAccount.value,
         note: note.value
+    }
+
+    // If device is offline, store in offline outbox immediately
+    if (!navigator.onLine) {
+        try {
+            const queued = await offlineSync.queueOfflineSale(saleData)
+            processing.value = false
+            new Howl({ src: ['/sounds/success.mp3'] }).play()
+            lastSale.value = {
+                id: queued.offline_token,
+                invoice_no: queued.offline_token,
+                total: total.value,
+                paid: finalPaid,
+                due: finalDue,
+                created_at: new Date().toISOString(),
+                is_offline: true,
+                sale_items: cartItems.value.map(ci => ({
+                    product: { name: ci.name, sku: ci.sku },
+                    quantity: ci.quantity,
+                    unit_price: ci.unit_price,
+                    total_price: ci.quantity * ci.unit_price
+                }))
+            }
+            showSuccessModal.value = true
+            return
+        } catch (err) {
+            processing.value = false
+            console.error('Offline save error:', err)
+            alert('অফলাইন সংরক্ষণ ব্যর্থ হয়েছে: ' + err.message)
+            return
+        }
     }
 
     router.post(route('admin.pos.store'), saleData, {
@@ -504,9 +844,25 @@ const processSale = () => {
                 showSuccessModal.value = true
             }
         },
-        onError: (errors) => {
+        onError: async (errors) => {
             processing.value = false
             console.error('Sale error:', errors)
+            if (!navigator.onLine) {
+                const queued = await offlineSync.queueOfflineSale(saleData)
+                new Howl({ src: ['/sounds/success.mp3'] }).play()
+                lastSale.value = {
+                    id: queued.offline_token,
+                    invoice_no: queued.offline_token,
+                    total: total.value,
+                    paid: finalPaid,
+                    due: finalDue,
+                    created_at: new Date().toISOString(),
+                    is_offline: true,
+                    sale_items: cartItems.value
+                }
+                showSuccessModal.value = true
+                return
+            }
             new Howl({ src: ['/sounds/error.mp3'] }).play()
             alert(errors.error || 'Failed to process sale. Please try again.')
         },
@@ -522,12 +878,52 @@ const closeSuccessModal = () => {
 }
 
 const printReceipt = (saleId) => {
+    if (lastSale.value?.is_offline) {
+        window.print();
+        return;
+    }
     window.open(route('admin.pos.print-receipt', saleId), '_blank');
 };
+
+const handleGlobalKeydown = (e) => {
+    // If modal is open, let Escape close it
+    if (showSuccessModal.value) {
+        if (e.key === 'Escape') {
+            closeSuccessModal()
+        }
+        return
+    }
+
+    // F4 or F8 -> Complete Sale
+    if (e.key === 'F4' || e.key === 'F8') {
+        e.preventDefault()
+        if (canProcessSale.value && !processing.value) {
+            processSale()
+        }
+    }
+    // F2 -> Reset Cart
+    else if (e.key === 'F2') {
+        e.preventDefault()
+        resetCart()
+    }
+}
 
 // Lifecycle
 onMounted(() => {
     fetchProducts()
+    window.addEventListener('keydown', handleGlobalKeydown)
+
+    // Cache customers & bank accounts for offline selection
+    if (props.customers?.length) {
+        offlineSync.cacheItems('pos_customers', props.customers).catch(() => {})
+    }
+    if (props.bankAccounts?.length) {
+        offlineSync.cacheItems('pos_bank_accounts', props.bankAccounts).catch(() => {})
+    }
+})
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleGlobalKeydown)
 })
 </script>
 

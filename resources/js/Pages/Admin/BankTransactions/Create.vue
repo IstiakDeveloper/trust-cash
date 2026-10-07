@@ -6,10 +6,10 @@
             </h2>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="p-6">
+        <div class="py-4 sm:py-8">
+            <div class="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl">
+                    <div class="p-4 sm:p-6">
                         <form @submit.prevent="submit">
                             <div class="mb-4">
                                 <label for="bank_account_id" class="block text-sm font-medium text-gray-700 dark:text-gray-200">

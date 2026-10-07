@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, Head } from '@inertiajs/vue3';
 import { switchTheme } from '@/theme';
 
 const year = computed(() => new Date().getFullYear());
@@ -17,6 +17,10 @@ function toggleTheme() {
 </script>
 
 <template>
+    <Head>
+        <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
+        <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
+    </Head>
     <div
         class="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-950 dark:to-gray-900">
         <!-- Navigation -->
@@ -24,8 +28,11 @@ function toggleTheme() {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <Link :href="route('home')" class="flex items-center">
-                            <span class="text-xl font-semibold text-gray-900 dark:text-white">{{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}</span>
+                        <Link :href="route('home')" class="flex items-center gap-2.5">
+                            <div v-if="$page.props.platform?.logo || $page.props.business_logo" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                                <img :src="$page.props.business_logo || $page.props.platform?.logo" class="w-full h-full object-contain" alt="Logo" />
+                            </div>
+                            <span class="text-xl font-semibold text-gray-900 dark:text-white">{{ $page.props.platform?.name || $page.props.business_name || $page.props.app_name || 'TrustCash' }}</span>
                         </Link>
                     </div>
 

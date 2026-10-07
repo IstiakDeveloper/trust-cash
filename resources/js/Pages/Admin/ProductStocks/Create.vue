@@ -289,7 +289,7 @@
                                     </p>
                                 </div>
 
-                                <div class="flex items-center gap-4 text-right">
+                                <div class="flex items-center justify-between sm:justify-end gap-4 text-left sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-100 dark:border-amber-900/60">
                                     <div>
                                         <span class="text-[10px] uppercase font-bold text-slate-400">{{ t('বর্তমান বকেয়া দেনা', 'Current Due') }}</span>
                                         <p class="font-bold text-slate-700 dark:text-slate-300">
@@ -362,16 +362,16 @@
                     </div>
 
                     <!-- Actions Toolbar -->
-                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <Link :href="route('admin.product-stocks.index')"
-                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-all">
+                            class="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
                             {{ t('বাতিল', 'Cancel') }}
                         </Link>
 
                         <button
                             type="submit"
                             :disabled="form.processing || isSubmitDisabled"
-                            class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            class="w-full sm:w-auto justify-center inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                         >
                             <svg v-if="form.processing" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

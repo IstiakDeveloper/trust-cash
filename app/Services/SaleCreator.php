@@ -114,20 +114,22 @@ class SaleCreator
     private function generateInvoiceNo(): string
     {
         $date = date('Ymd');
-        $attempt = 0;
 
-        do {
-            $attempt++;
-            $count = Sale::where('invoice_no', 'like', "INV-{$date}-%")->count();
-            $invoiceNumber = 'INV-'.$date.'-'.str_pad($count + $attempt, 4, '0', STR_PAD_LEFT);
-            $exists = Sale::where('invoice_no', $invoiceNumber)->exists();
-        } while ($exists && $attempt < 10);
+        $lastSale = Sale::withTrashed()
+            ->where('invoice_no', 'like', "INV-{$date}-%")
+            ->orderBy('invoice_no', 'desc')
+            ->first();
 
-        if ($attempt >= 10) {
-            throw new \Exception('Failed to generate a unique invoice number after multiple attempts');
+        $nextSequence = 1;
+        if ($lastSale && preg_match('/INV-'.$date.'-(\d+)/', $lastSale->invoice_no, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
         }
 
-        return $invoiceNumber;
+        while (Sale::withTrashed()->where('invoice_no', 'INV-'.$date.'-'.str_pad($nextSequence, 4, '0', STR_PAD_LEFT))->exists()) {
+            $nextSequence++;
+        }
+
+        return 'INV-'.$date.'-'.str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
     }
 }
 

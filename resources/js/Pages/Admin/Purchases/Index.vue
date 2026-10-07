@@ -1,76 +1,164 @@
 <template>
     <Head :title="t('পণ্য ক্রয় তালিকা', 'Purchases')" />
     <AdminLayout :title="t('ক্রয় ব্যবস্থাপনা', 'Purchase Management')">
-        <div class="container mx-auto px-4 py-6">
+        <div class="space-y-4 sm:space-y-6">
             <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট ক্রয় সংখ্যা', 'Total Purchases') }}</p>
-                    <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1.5">{{ stats.total_count }}</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
+                    <p class="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('মোট ক্রয় সংখ্যা', 'Total Purchases') }}</p>
+                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-1">{{ stats.total_count }}</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট ক্রয় মূল্য', 'Total Amount') }}</p>
-                    <h3 class="text-2xl font-black text-blue-600 mt-1.5">৳{{ formatNumber(stats.total_purchases_amount) }}</h3>
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
+                    <p class="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('মোট ক্রয় মূল্য', 'Total Amount') }}</p>
+                    <h3 class="text-lg sm:text-2xl font-black text-blue-600 mt-1 truncate">৳{{ formatNumber(stats.total_purchases_amount) }}</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট পরিশোধ', 'Total Paid') }}</p>
-                    <h3 class="text-2xl font-black text-emerald-600 mt-1.5">৳{{ formatNumber(stats.total_paid) }}</h3>
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
+                    <p class="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('মোট পরিশোধ', 'Total Paid') }}</p>
+                    <h3 class="text-lg sm:text-2xl font-black text-emerald-600 mt-1 truncate">৳{{ formatNumber(stats.total_paid) }}</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('মোট বকেয়া', 'Total Due') }}</p>
-                    <h3 class="text-2xl font-black text-rose-600 mt-1.5">৳{{ formatNumber(stats.total_due) }}</h3>
+                <div class="bg-white dark:bg-gray-800 p-3.5 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
+                    <p class="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{{ t('মোট বকেয়া', 'Total Due') }}</p>
+                    <h3 class="text-lg sm:text-2xl font-black text-rose-600 mt-1 truncate">৳{{ formatNumber(stats.total_due) }}</h3>
                 </div>
             </div>
 
             <!-- Actions & Filters -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                     <div class="relative w-full sm:w-64">
                         <input
                             type="text"
                             v-model="search"
                             :placeholder="t('ক্রয় নং বা সরবরাহকারী...', 'Purchase # or Supplier...')"
-                            class="w-full pl-10 pr-4 py-2 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                            class="w-full pl-10 pr-4 py-2 text-xs font-medium border rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                         />
                         <SearchIcon class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     </div>
 
-                    <select
-                        v-model="filters.payment_status"
-                        class="border text-sm rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    >
-                        <option value="">{{ t('সকল পরিশোধ অবস্থা', 'All Payment Status') }}</option>
-                        <option value="paid">{{ t('পরিশোধিত', 'Paid') }}</option>
-                        <option value="partial">{{ t('আংশিক পরিশোধ', 'Partial') }}</option>
-                        <option value="due">{{ t('বকেয়া', 'Due') }}</option>
-                    </select>
+                    <div class="grid grid-cols-2 sm:flex items-center gap-2">
+                        <select
+                            v-model="filters.payment_status"
+                            class="border text-xs font-medium rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        >
+                            <option value="">{{ t('সকল পরিশোধ অবস্থা', 'All Status') }}</option>
+                            <option value="paid">{{ t('পরিশোধিত', 'Paid') }}</option>
+                            <option value="partial">{{ t('আংশিক', 'Partial') }}</option>
+                            <option value="due">{{ t('বকেয়া', 'Due') }}</option>
+                        </select>
 
-                    <input
-                        type="date"
-                        v-model="filters.from_date"
-                        class="border text-sm rounded-xl px-3 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                        :title="t('শুরুর তারিখ', 'From Date')"
-                    />
-                    <input
-                        type="date"
-                        v-model="filters.to_date"
-                        class="border text-sm rounded-xl px-3 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                        :title="t('শেষ তারিখ', 'To Date')"
-                    />
+                        <div class="flex items-center gap-1 sm:hidden">
+                            <input
+                                type="date"
+                                v-model="filters.from_date"
+                                class="w-full border text-[11px] rounded-xl px-2 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                :title="t('শুরুর তারিখ', 'From Date')"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="hidden sm:flex items-center gap-2">
+                        <input
+                            type="date"
+                            v-model="filters.from_date"
+                            class="border text-xs rounded-xl px-3 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                            :title="t('শুরুর তারিখ', 'From Date')"
+                        />
+                        <input
+                            type="date"
+                            v-model="filters.to_date"
+                            class="border text-xs rounded-xl px-3 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                            :title="t('শেষ তারিখ', 'To Date')"
+                        />
+                    </div>
                 </div>
 
                 <Link
                     :href="route('admin.product-stocks.create')"
-                    class="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2 text-sm font-semibold shadow-sm transition"
+                    class="w-full sm:w-auto justify-center px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-95 flex items-center gap-2 text-xs font-bold shadow-sm transition"
                 >
                     <PlusIcon class="w-4 h-4" />
-                    {{ t('নতুন ক্রয় যোগ করুন', 'New Purchase') }}
+                    <span>{{ t('নতুন ক্রয় যোগ করুন', 'New Purchase') }}</span>
                 </Link>
             </div>
 
-            <!-- Table -->
+            <!-- Table & Mobile Cards -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Purchase Cards (< md) -->
+                <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700 p-3 space-y-3">
+                    <div v-if="purchases.data.length === 0" class="py-10 text-center text-xs text-gray-400">
+                        {{ t('কোনো ক্রয় রেকর্ড পাওয়া যায়নি।', 'No purchase orders found.') }}
+                    </div>
+
+                    <div v-for="p in purchases.data" :key="p.id" class="pt-3 first:pt-0 space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <Link :href="route('admin.purchases.show', p.id)" class="text-xs font-bold text-blue-600 hover:underline">
+                                    {{ p.purchase_number }}
+                                </Link>
+                                <p class="text-xs font-semibold text-gray-900 dark:text-white mt-0.5">
+                                    {{ p.supplier?.name || t('সরবরাহকারী নেই', 'N/A') }}
+                                </p>
+                                <p v-if="p.supplier?.phone" class="text-[11px] text-gray-400">
+                                    {{ p.supplier.phone }}
+                                </p>
+                            </div>
+                            <span
+                                class="px-2 py-0.5 text-[10px] font-bold rounded-full shrink-0"
+                                :class="{
+                                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': p.payment_status === 'paid',
+                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': p.payment_status === 'partial',
+                                    'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400': p.payment_status === 'due',
+                                }"
+                            >
+                                {{ p.payment_status === 'paid' ? t('পরিশোধিত', 'Paid') : p.payment_status === 'partial' ? t('আংশিক', 'Partial') : t('বকেয়া', 'Due') }}
+                            </span>
+                        </div>
+
+                        <!-- 3-Column Amount Grid -->
+                        <div class="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-gray-750 p-2.5 rounded-xl text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-semibold">{{ t('মোট', 'Total') }}</span>
+                                <span class="font-extrabold text-gray-900 dark:text-white mt-0.5 block tabular-nums">
+                                    ৳{{ formatNumber(p.total_amount) }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-semibold">{{ t('পরিশোধ', 'Paid') }}</span>
+                                <span class="font-bold text-emerald-600 mt-0.5 block tabular-nums">
+                                    ৳{{ formatNumber(p.paid_amount) }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wider block font-semibold">{{ t('বকেয়া', 'Due') }}</span>
+                                <span class="font-bold text-rose-600 mt-0.5 block tabular-nums">
+                                    ৳{{ formatNumber(p.due_amount) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="flex items-center justify-between pt-1 text-[11px] text-gray-400">
+                            <span>{{ p.purchase_date }}</span>
+                            <div class="flex items-center gap-1.5">
+                                <Link
+                                    :href="route('admin.purchases.show', p.id)"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg active:scale-90 transition"
+                                >
+                                    <EyeIcon class="w-4 h-4" />
+                                </Link>
+                                <button
+                                    @click="deletePurchase(p)"
+                                    class="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg active:scale-90 transition"
+                                >
+                                    <TrashIcon class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table (md+) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
@@ -98,7 +186,7 @@
                                 <td class="px-6 py-3.5 text-right text-emerald-600 font-bold">৳{{ formatNumber(p.paid_amount) }}</td>
                                 <td class="px-6 py-3.5 text-right">
                                     <span v-if="p.due_amount > 0" class="text-rose-600 font-black">৳{{ formatNumber(p.due_amount) }}</span>
-                                    <span v-else class="text-gray-400 font-medium">৳0.00</span>
+                                    <span v-else class="text-emerald-600 font-bold">৳0.00</span>
                                 </td>
                                 <td class="px-6 py-3.5 text-center">
                                     <span
@@ -139,20 +227,8 @@
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="purchases.links && purchases.links.length > 3" class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm">
-                    <div class="text-gray-500 font-medium">
-                        {{ t(`মোট ${purchases.total} টির মধ্যে ${purchases.from || 0} থেকে ${purchases.to || 0} দেখাচ্ছে`, `Showing ${purchases.from || 0} to ${purchases.to || 0} of ${purchases.total} entries`) }}
-                    </div>
-                    <div class="flex gap-1">
-                        <Link
-                            v-for="(link, i) in purchases.links"
-                            :key="i"
-                            :href="link.url || '#'"
-                            v-html="link.label"
-                            class="px-3 py-1.5 rounded-lg border text-sm font-medium transition"
-                            :class="link.active ? 'bg-blue-600 text-white border-blue-600 font-bold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'"
-                        />
-                    </div>
+                <div v-if="purchases.links && purchases.links.length > 3" class="px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-gray-700">
+                    <Pagination :links="purchases.links" />
                 </div>
             </div>
         </div>
@@ -163,6 +239,7 @@
 import { ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import Pagination from '@/Components/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import debounce from 'lodash/debounce'
 import {

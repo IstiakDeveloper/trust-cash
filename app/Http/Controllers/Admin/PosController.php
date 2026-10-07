@@ -193,38 +193,60 @@ class PosController extends Controller
             Log::info('Transaction started');
 
             $saleDate = now()->toDateString();
-
-            // Generate a unique invoice number
             $date = date('Ymd');
-            $invoiceNumber = null;
-            $attempt = 0;
 
-            do {
-                $attempt++;
-                $count = Sale::where('invoice_no', 'like', "INV-{$date}-%")->count();
-                $invoiceNumber = 'INV-'.$date.'-'.str_pad($count + $attempt, 4, '0', STR_PAD_LEFT);
-                $exists = Sale::where('invoice_no', $invoiceNumber)->exists();
-            } while ($exists && $attempt < 10); // Limit attempts to prevent infinite loop
+            $total = (float) $request->total;
+            $rawPaid = (float) $request->paid;
 
-            if ($attempt >= 10) {
-                throw new \Exception('Failed to generate a unique invoice number after multiple attempts');
+            // Walk-in customer cannot have due/credit sale
+            if (empty($request->customer_id)) {
+                if ($rawPaid < $total) {
+                    throw new \Exception('সাধারণ (Walk-in) কাস্টমারের ক্ষেত্রে বাকি বিক্রয় সম্ভব নয়। সম্পূর্ণ টাকা নগদ পরিশোধ আবশ্যক।');
+                }
+                $paid = $total;
+                $due = 0.0;
+            } else {
+                $paid = min($total, max(0.0, $rawPaid));
+                $due = max(0.0, $total - $paid);
             }
 
-            // Create sale with the new unique invoice number
-            $sale = Sale::create([
-                'invoice_no' => $invoiceNumber,
-                'customer_id' => $request->customer_id,
-                'subtotal' => $request->subtotal,
-                'discount' => $request->discount,
-                'total' => $request->total,
-                'paid' => $request->paid,
-                'due' => $request->total - $request->paid,
-                'payment_status' => $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due'),
-                'note' => $request->note ?? null,
-                'created_by' => $createdBy,
-            ]);
+            // Create sale with automatic sequence detection & duplicate skip
+            $sale = null;
+            $maxAttempts = 50;
 
-            Log::info('Sale created with ID: '.$sale->id);
+            for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+                $invoiceNumber = $this->generateUniqueInvoiceNumber($date);
+
+                try {
+                    $sale = Sale::create([
+                        'invoice_no' => $invoiceNumber,
+                        'customer_id' => $request->customer_id,
+                        'subtotal' => $request->subtotal,
+                        'discount' => $request->discount,
+                        'total' => $total,
+                        'paid' => $paid,
+                        'due' => $due,
+                        'payment_status' => $due <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'due'),
+                        'note' => $request->note ?? null,
+                        'created_by' => $createdBy,
+                    ]);
+
+                    break; // Successfully created
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // Check for MySQL 1062 duplicate key error: auto-skip to next number
+                    if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1062) {
+                        Log::warning("Duplicate invoice {$invoiceNumber} detected, auto-skipping to next sequence number...");
+                        continue;
+                    }
+                    throw $e;
+                }
+            }
+
+            if (!$sale) {
+                throw new \Exception('ইনভয়েস নম্বর তৈরি করতে ব্যর্থ হয়েছে, অনুগ্রহ করে আবার চেষ্টা করুন।');
+            }
+
+            Log::info('Sale created with ID: '.$sale->id.' and Invoice: '.$sale->invoice_no);
 
             // Process each item
             foreach ($request->items as $index => $item) {
@@ -294,10 +316,12 @@ class PosController extends Controller
                 if ($customer) {
                     Log::info("Checking customer credit limit: current balance={$customer->balance}, credit limit={$customer->credit_limit}, new due={$sale->due}");
 
-                    // Check credit limit
-                    $newBalance = $customer->balance + $sale->due;
-                    if ($newBalance > $customer->credit_limit) {
-                        throw new \Exception("This sale would exceed the customer's credit limit. Current balance: {$customer->balance}, Credit limit: {$customer->credit_limit}, New due: {$sale->due}");
+                    $newBalance = (float) $customer->balance + (float) $sale->due;
+                    $creditLimit = (float) ($customer->credit_limit ?? 0);
+
+                    // Check credit limit only if credit limit is actively configured (> 0)
+                    if ($creditLimit > 0 && $newBalance > $creditLimit) {
+                        throw new \Exception("কাস্টমারের ক্রেডিট লিমিট অতিক্রম করেছে। বর্তমান বাকি: {$customer->balance}, ক্রেডিট লিমিট: {$creditLimit}, নতুন বাকি: {$sale->due}");
                     }
 
                     $customer->increment('balance', (float) $sale->due);
@@ -306,13 +330,13 @@ class PosController extends Controller
             }
 
             // Handle payment if any
-            if ($request->paid > 0) {
-                Log::info("Processing payment of {$request->paid} to bank account ID: {$request->bank_account_id}");
+            if ($sale->paid > 0) {
+                Log::info("Processing payment of {$sale->paid} to bank account ID: {$request->bank_account_id}");
 
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
                 $bankAccount->transactions()->create([
                     'transaction_type' => 'in',
-                    'amount' => $request->paid,
+                    'amount' => $sale->paid,
                     'date' => $saleDate,
                     'description' => "Payment received for invoice {$sale->invoice_no}",
                     'created_by' => $createdBy,
@@ -324,15 +348,38 @@ class PosController extends Controller
             DB::commit();
             Log::info("Transaction committed successfully with invoice number: {$invoiceNumber}");
 
+            if ($request->wantsJson() || $request->input('is_offline_sync')) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sale processed successfully',
+                    'sale' => $sale,
+                ]);
+            }
+
             return to_route('admin.pos.index')->with('sale', $sale);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             Log::error('POS Validation Error: '.json_encode($e->errors()));
 
+            if ($request->wantsJson() || $request->input('is_offline_sync')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('POS Error: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine());
+
+            if ($request->wantsJson() || $request->input('is_offline_sync')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
 
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
@@ -375,5 +422,26 @@ class PosController extends Controller
         ]);
 
         return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
+    }
+
+    protected function generateUniqueInvoiceNumber($date)
+    {
+        // Find highest sequence number for today including soft-deleted rows
+        $lastSale = Sale::withTrashed()
+            ->where('invoice_no', 'like', "INV-{$date}-%")
+            ->orderBy('invoice_no', 'desc')
+            ->first();
+
+        $nextSequence = 1;
+        if ($lastSale && preg_match('/INV-'.$date.'-(\d+)/', $lastSale->invoice_no, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        // Auto-skip any existing or soft-deleted invoice numbers
+        while (Sale::withTrashed()->where('invoice_no', 'INV-'.$date.'-'.str_pad($nextSequence, 4, '0', STR_PAD_LEFT))->exists()) {
+            $nextSequence++;
+        }
+
+        return 'INV-'.$date.'-'.str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
     }
 }

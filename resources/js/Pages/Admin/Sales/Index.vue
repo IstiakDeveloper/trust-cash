@@ -18,78 +18,88 @@
                         class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 transition-all active:scale-95"
                     >
                         <i class="fas fa-cash-register"></i>
-                        <span>{{ t('নতুন বিক্রি (POS)', 'New Sale (POS)') }}</span>
+                        <span>{{ t('নতুন বিক্রয় (POS)', 'New Sale (POS)') }}</span>
                     </Link>
                 </div>
             </div>
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 <!-- Total Sales Count -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xs">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('মোট বিক্রয় মেমো', 'Total Invoices') }}</p>
-                            <p class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        <div class="min-w-0 pr-1">
+                            <p class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ t('মোট বিক্রয় মেমো', 'Total Invoices') }}</p>
+                            <p class="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1 tabular-nums">
                                 {{ summary.total_sales }}
                             </p>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
                             <i class="fas fa-file-invoice"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Total Amount -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xs">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('মোট বিক্রয় মূল্য', 'Total Amount') }}</p>
-                            <p class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        <div class="min-w-0 pr-1">
+                            <p class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ t('মোট বিক্রয় মূল্য', 'Total Amount') }}</p>
+                            <p class="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1 tabular-nums truncate">
                                 ৳{{ formatNumber(summary.total_amount) }}
                             </p>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
                             <i class="fas fa-money-bill-wave"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Total Paid -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xs">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('নগদ কালেকশন', 'Total Collected') }}</p>
-                            <p class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                        <div class="min-w-0 pr-1">
+                            <p class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ t('নগদ কালেকশন', 'Total Collected') }}</p>
+                            <p class="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums truncate">
                                 ৳{{ formatNumber(summary.total_paid) }}
                             </p>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 flex items-center justify-center text-xl">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
                             <i class="fas fa-hand-holding-usd"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Total Due -->
-                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xs">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('মোট বাকি পাওনা', 'Total Due') }}</p>
-                            <p class="text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">
+                        <div class="min-w-0 pr-1">
+                            <p class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ t('মোট বকেয়া (Due)', 'Total Due') }}</p>
+                            <p class="text-lg sm:text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1 tabular-nums truncate">
                                 ৳{{ formatNumber(summary.total_due) }}
                             </p>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
                             <i class="fas fa-clock"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Filters Section -->
-            <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-                <form @submit.prevent="applyFilters">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <!-- Filters Section (Collapsible on mobile) -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs">
+                <div class="flex items-center justify-between sm:hidden pb-2" @click="isFilterOpen = !isFilterOpen">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-filter text-indigo-500"></i>
+                        <span>{{ t('ফিল্টার ও অনুসন্ধান', 'Filter & Search') }}</span>
+                    </span>
+                    <button type="button" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <i :class="['fas text-xs transition-transform', isFilterOpen ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="applyFilters" :class="[isFilterOpen ? 'block' : 'hidden sm:block']">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-3.5 pt-2 sm:pt-0">
                         <!-- Start Date -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -160,9 +170,89 @@
                 </form>
             </div>
 
-            <!-- Sales Data Table -->
+            <!-- Sales Data (Responsive Hybrid: Mobile Cards on < md, Data Table on md+) -->
             <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Sales Cards (< md) -->
+                <div class="md:hidden space-y-3 p-3">
+                    <div
+                        v-for="sale in sales.data"
+                        :key="'m-sale-' + sale.id"
+                        class="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 shadow-xs space-y-3"
+                    >
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <div>
+                                <Link :href="route('admin.sales.show', sale.id)" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                                    #{{ sale.invoice_no }}
+                                </Link>
+                                <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ sale.date }}</p>
+                            </div>
+                            <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full" :class="{
+                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300': sale.payment_status === 'paid',
+                                'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300': sale.payment_status === 'partial',
+                                'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300': sale.payment_status === 'due'
+                            }">
+                                {{ sale.payment_status === 'paid' ? t('পরিশোধিত', 'Paid') : (sale.payment_status === 'partial' ? t('আংশিক', 'Partial') : t('বাকি', 'Due')) }}
+                            </span>
+                        </div>
+
+                        <!-- Customer info & Amounts -->
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 pr-2">
+                                <p class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                    {{ sale.customer?.name || t('সাধারণ কাস্টমার', 'Walk-in Customer') }}
+                                </p>
+                                <p v-if="sale.customer?.phone" class="text-[11px] text-slate-400 font-mono">
+                                    {{ sale.customer.phone }}
+                                </p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[10px] text-slate-400 uppercase font-semibold">{{ t('মোট বিল', 'Total') }}</p>
+                                <p class="text-sm font-extrabold text-slate-900 dark:text-white tabular-nums">৳{{ formatNumber(sale.total) }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Paid & Due Bar -->
+                        <div class="grid grid-cols-2 gap-2 p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">{{ t('নগদ কালেকশন', 'Paid') }}</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">৳{{ formatNumber(sale.paid) }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block">{{ t('বাকি', 'Due') }}</span>
+                                <span class="font-bold font-mono" :class="sale.due > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'">৳{{ formatNumber(sale.due) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Row -->
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                            <Link :href="route('admin.sales.show', sale.id)"
+                                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                                <i class="fas fa-eye text-xs"></i>
+                                <span>{{ t('বিস্তারিত', 'View') }}</span>
+                            </Link>
+                            <button @click="printReceipt(sale.id)"
+                                type="button"
+                                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                <i class="fas fa-print text-xs"></i>
+                                <span>{{ t('প্রিন্ট', 'Print') }}</span>
+                            </button>
+                            <button @click.prevent="confirmDelete(sale)"
+                                type="button"
+                                class="p-1.5 rounded-xl text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Empty State -->
+                    <div v-if="sales.data.length === 0" class="text-center py-10 text-slate-400">
+                        <i class="fas fa-inbox text-3xl mb-2 text-slate-300"></i>
+                        <p class="font-medium text-xs">{{ t('কোন বিক্রয় তথ্য পাওয়া যায়নি', 'No sales found') }}</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Sales Data Table (md+) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                         <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
                             <tr>
@@ -293,6 +383,7 @@ const props = defineProps({
     summary: Object
 })
 
+const isFilterOpen = ref(false)
 const saleToDelete = ref(null)
 const filters = ref({
     start_date: props.filters.start_date || '',

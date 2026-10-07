@@ -1,25 +1,74 @@
 <template>
     <Head :title="t('খরচের খাত / ক্যাটাগরি', 'Expense Categories')" />
     <AdminLayout :title="t('খরচের ক্যাটাগরি ব্যবস্থাপনা', 'Expense Categories')">
-        <div class="container mx-auto px-4 py-6">
+        <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
             <!-- Header Row -->
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('খরচের খাত তালিকা', 'Expense Categories') }}</h2>
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{{ t('খরচের খাত তালিকা', 'Expense Categories') }}</h2>
                     <p class="text-xs text-gray-500 mt-0.5">{{ t('খরচের ক্যাটাগরি তৈরি ও পরিচালনা করুন', 'Manage and organize expense categories') }}</p>
                 </div>
                 <button
                     @click="openCreateModal"
-                    class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition"
+                    class="px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition w-full sm:w-auto shrink-0"
                 >
                     <PlusIcon class="w-4 h-4" />
                     {{ t('নতুন ক্যাটাগরি যোগ করুন', 'Add Category') }}
                 </button>
             </div>
 
-            <!-- Categories Table -->
+            <!-- Categories List & Table -->
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Cards (< md) -->
+                <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                    <div
+                        v-for="category in categories.data"
+                        :key="category.id"
+                        class="p-3.5 space-y-2"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-sm text-gray-900 dark:text-white">
+                                {{ category.name }}
+                            </span>
+                            <span
+                                class="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                                :class="category.status
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                    : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'"
+                            >
+                                {{ category.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                            </span>
+                        </div>
+
+                        <div v-if="category.description" class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ category.description }}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-1 pt-1 border-t border-gray-100 dark:border-gray-700/50">
+                            <button
+                                @click="editCategory(category)"
+                                class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                                :title="t('সম্পাদনা', 'Edit')"
+                            >
+                                <EditIcon class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="deleteCategory(category)"
+                                class="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition"
+                                :title="t('মুছুন', 'Delete')"
+                            >
+                                <TrashIcon class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="categories.data.length === 0" class="p-8 text-center text-gray-400 text-xs font-medium">
+                        {{ t('কোনো ক্যাটাগরি পাওয়া যায়নি।', 'No categories found.') }}
+                    </div>
+                </div>
+
+                <!-- Desktop Table (>= md) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
@@ -62,23 +111,16 @@
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="categories.links && categories.links.length > 3" class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-1">
-                    <Link
-                        v-for="(link, i) in categories.links"
-                        :key="i"
-                        :href="link.url || '#'"
-                        v-html="link.label"
-                        class="px-3 py-1.5 rounded-lg border text-sm font-medium transition"
-                        :class="link.active ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700'"
-                    />
+                <div v-if="categories.links && categories.links.length > 3" class="px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-gray-700">
+                    <Pagination :links="categories.links" />
                 </div>
             </div>
         </div>
 
         <!-- Create/Edit Modal -->
         <Modal :show="showModal" @close="closeModal">
-            <div class="p-6">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <div class="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">
                     {{ isEditing ? t('ক্যাটাগরি সম্পাদনা করুন', 'Edit Category') : t('নতুন ক্যাটাগরি যোগ করুন', 'Add Category') }}
                 </h3>
                 <form @submit.prevent="submitForm">
@@ -115,6 +157,7 @@ import { ref, reactive } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import Pagination from '@/Components/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
     Plus as PlusIcon,

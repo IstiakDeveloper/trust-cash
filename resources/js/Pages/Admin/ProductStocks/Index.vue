@@ -90,9 +90,72 @@
                 </div>
             </div>
 
-            <!-- Stock Table -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <div class="overflow-x-auto">
+            <!-- Stock Table & Mobile Cards -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <!-- Mobile Stock Cards (< md) -->
+                <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-3">
+                    <div v-if="stocks.data.length === 0" class="py-10 text-center text-xs text-slate-400">
+                        {{ t('কোনো পণ্য বা স্টক পাওয়া যায়নি।', 'No products found') }}
+                    </div>
+
+                    <div v-for="stock in stocks.data" :key="stock.id" class="pt-3 first:pt-0 space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
+                                    {{ stock.product.name }}
+                                </h4>
+                                <p class="text-[11px] font-mono text-slate-400 mt-0.5">
+                                    SKU: {{ stock.product.sku }}
+                                </p>
+                            </div>
+                            <span class="inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold shrink-0" :class="{
+                                'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': stock.stock_status === 'in',
+                                'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': stock.stock_status === 'low',
+                                'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': stock.stock_status === 'out'
+                            }">
+                                {{ stock.stock_status === 'in' ? t('মজুদ আছে', 'In Stock') :
+                                    stock.stock_status === 'low' ? t('সীমিত স্টক', 'Low Stock') : t('স্টক শেষ', 'Out of Stock') }}
+                            </span>
+                        </div>
+
+                        <!-- 3-Column Stock Metric Grid -->
+                        <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('মজুদ', 'Available') }}</span>
+                                <span class="font-extrabold text-slate-900 dark:text-white mt-0.5 block tabular-nums text-sm">
+                                    {{ formatNumber(stock.quantity) }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('গড় মূল্য', 'Avg Cost') }}</span>
+                                <span class="font-semibold text-slate-700 dark:text-slate-300 mt-0.5 block tabular-nums">
+                                    ৳{{ formatNumber(stock.average_unit_cost) }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('স্টক মূল্য', 'Value') }}</span>
+                                <span class="font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 block tabular-nums">
+                                    ৳{{ formatNumber(stock.current_stock_value) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="flex items-center justify-between pt-1">
+                            <span class="text-[11px] text-slate-400">
+                                {{ t('মোট ক্রয়:', 'Purchased:') }} <strong class="text-slate-600 dark:text-slate-300">{{ formatNumber(stock.total_purchased) }}</strong>
+                            </span>
+
+                            <button v-if="userIsAdmin" @click="showHistory(stock.product)"
+                                class="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-300 active:scale-95 transition-all">
+                                {{ t('হিস্ট্রি দেখুন', 'View History') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table (md+) -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                         <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
                             <tr>

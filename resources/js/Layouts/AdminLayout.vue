@@ -1,26 +1,37 @@
 <template>
-    <Head v-if="title" :title="title" />
+    <Head :title="title">
+        <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
+        <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
+    </Head>
     <div class="min-h-screen bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans">
         <!-- Sidebar Navigation -->
         <aside :class="[
-            'fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 ease-in-out flex flex-col',
-            'bg-white border-r border-slate-200/90 shadow-sm',
+            'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 lg:w-64 transition-transform duration-300 ease-in-out flex flex-col',
+            'bg-white border-r border-slate-200/90 shadow-2xl lg:shadow-sm',
             'dark:bg-slate-900 dark:border-slate-800',
             isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]">
             <!-- Sidebar Header / Brand -->
             <div class="flex-shrink-0 h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800">
-                <Link href="/admin/dashboard" class="flex items-center gap-3 overflow-hidden">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm shrink-0">
-                        <img v-if="logoUrl" :src="logoUrl" alt="Logo" class="w-5 h-5 object-contain" @error="logoUrl = null" />
-                        <span v-else>T</span>
+                <Link href="/admin/dashboard" class="flex items-center gap-3 overflow-hidden group">
+                    <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shadow-xs shrink-0 overflow-hidden p-1.5 transition-transform group-hover:scale-105">
+                        <img
+                            v-if="effectiveLogo && !logoError"
+                            :src="effectiveLogo"
+                            :alt="$page.props.business_name || $page.props.platform?.name || 'Logo'"
+                            class="w-full h-full object-contain"
+                            @error="logoError = true"
+                        />
+                        <div v-else class="w-full h-full rounded-lg bg-indigo-600 flex items-center justify-center text-white font-extrabold text-base">
+                            {{ ($page.props.business_name || $page.props.platform?.name || 'T').substring(0, 1).toUpperCase() }}
+                        </div>
                     </div>
                     <div class="truncate">
                         <h1 class="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">
-                            {{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}
+                            {{ $page.props.business_name || $page.props.platform?.name || 'TrustCash' }}
                         </h1>
                         <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                            {{ t('রিটেইল ও পিওএস', 'Retail POS & ERP') }}
+                            {{ $page.props.platform?.tagline || t('রিটেইল ও পিওএস', 'Retail POS & ERP') }}
                         </p>
                     </div>
                 </Link>
@@ -169,30 +180,32 @@
 
         <!-- Main Content Area -->
         <div :class="['lg:pl-64 min-h-screen flex flex-col flex-1', isOpen && 'overflow-hidden']">
-            <!-- Sleek Top Bar (Single clean bar, zero clutter) -->
-            <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 px-4 sm:px-6">
-                <div class="flex items-center justify-between h-full gap-3">
+            <!-- Sleek Top Bar (Touch-friendly on mobile, zero clutter) -->
+            <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 px-3 sm:px-6">
+                <div class="flex items-center justify-between h-full gap-2 sm:gap-3">
                     <!-- Left: Mobile Toggle & Page Title -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                         <button
-                            class="p-2 text-slate-500 rounded-xl lg:hidden hover:bg-slate-100 dark:hover:bg-slate-800"
+                            class="p-2 text-slate-500 rounded-xl lg:hidden hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
                             @click="toggleSidebar"
+                            :aria-label="t('মেনু খুলুন', 'Open Menu')"
                         >
                             <i class="fas fa-bars text-lg"></i>
                         </button>
-                        <div class="hidden sm:block">
-                            <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        <div class="truncate">
+                            <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
                                 {{ pageTitle }}
                             </h2>
                         </div>
                     </div>
 
                     <!-- Right: Search, Language Toggle, Theme, Notification -->
-                    <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                         <!-- Quick Search Trigger -->
                         <button
                             @click="isCommandPaletteOpen = true"
-                            class="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all"
+                            class="flex items-center gap-2 p-2 sm:px-3 sm:py-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all"
+                            :title="t('খুঁজুন...', 'Search...')"
                         >
                             <i class="fas fa-search text-xs"></i>
                             <span class="hidden md:inline">{{ t('খুঁজুন...', 'Search...') }}</span>
@@ -204,18 +217,18 @@
                             <button
                                 @click="setLanguage('bn')"
                                 :class="[
-                                    'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
+                                    'px-2 py-1 text-xs font-bold rounded-lg transition-all',
                                     currentLang === 'bn'
                                         ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
                                 ]"
                             >
-                                বাংলা
+                                বাং
                             </button>
                             <button
                                 @click="setLanguage('en')"
                                 :class="[
-                                    'px-2.5 py-1 text-xs font-bold rounded-lg transition-all',
+                                    'px-2 py-1 text-xs font-bold rounded-lg transition-all',
                                     currentLang === 'en'
                                         ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -229,9 +242,18 @@
                         <button
                             @click="switchTheme"
                             class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            title="Theme toggle"
+                            :title="t('থিম পরিবর্তন', 'Theme toggle')"
                         >
                             <i class="fa-solid fa-circle-half-stroke text-base"></i>
+                        </button>
+
+                        <!-- PWA Install Button -->
+                        <button
+                            @click="triggerPwaInstall"
+                            class="p-2 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            :title="t('অ্যাপ ইনস্টল করুন', 'Install App (PWA)')"
+                        >
+                            <i class="fas fa-download text-base"></i>
                         </button>
 
                         <!-- Notification Menu -->
@@ -248,10 +270,10 @@
                 </div>
             </header>
 
-            <!-- Main Page Content -->
-            <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-20 lg:pb-8">
+            <!-- Main Page Content (Responsive padding with mobile bottom nav spacing) -->
+            <main class="flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8">
                 <!-- Page Header Slot -->
-                <div v-if="$slots.header" class="mb-6">
+                <div v-if="$slots.header" class="mb-4 sm:mb-6">
                     <slot name="header" />
                 </div>
 
@@ -261,8 +283,8 @@
                 </div>
             </main>
 
-            <!-- Footer -->
-            <footer class="mt-auto bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3 px-4 sm:px-6 text-xs text-slate-400 flex items-center justify-between">
+            <!-- Footer (Hidden on small mobile to give room to bottom nav, visible on md+) -->
+            <footer class="mt-auto hidden sm:flex bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3 px-4 sm:px-6 text-xs text-slate-400 items-center justify-between">
                 <p>© {{ new Date().getFullYear() }} {{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}</p>
                 <div class="flex items-center gap-2">
                     <span>POS: <b class="font-mono text-emerald-600">F1</b></span>
@@ -272,10 +294,82 @@
             </footer>
         </div>
 
+        <!-- Mobile Bottom Navigation Bar (Thumb-friendly quick navigation) -->
+        <nav class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 lg:hidden shadow-lg pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+            <div class="grid grid-cols-5 h-14 items-center px-1">
+                <!-- Dashboard -->
+                <Link
+                    href="/admin/dashboard"
+                    :class="[
+                        'flex flex-col items-center justify-center h-full transition-colors',
+                        isUrlMatch('/admin/dashboard')
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ]"
+                >
+                    <i class="fas fa-tachometer-alt text-base mb-1"></i>
+                    <span class="text-[10px] leading-tight">{{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                </Link>
+
+                <!-- Sales -->
+                <Link
+                    href="/admin/sales"
+                    :class="[
+                        'flex flex-col items-center justify-center h-full transition-colors',
+                        isUrlMatch('/admin/sales')
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ]"
+                >
+                    <i class="fas fa-file-invoice-dollar text-base mb-1"></i>
+                    <span class="text-[10px] leading-tight">{{ t('বিক্রি', 'Sales') }}</span>
+                </Link>
+
+                <!-- Center POS Action Button -->
+                <Link
+                    href="/admin/pos"
+                    class="flex flex-col items-center justify-center relative -top-3 group"
+                >
+                    <div class="w-12 h-12 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 transition-transform active:scale-95 border-2 border-white dark:border-slate-900">
+                        <i class="fas fa-cash-register text-lg"></i>
+                    </div>
+                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ t('পিওএস', 'POS') }}</span>
+                </Link>
+
+                <!-- Products -->
+                <Link
+                    href="/admin/products"
+                    :class="[
+                        'flex flex-col items-center justify-center h-full transition-colors',
+                        isUrlMatch('/admin/products')
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ]"
+                >
+                    <i class="fas fa-boxes text-base mb-1"></i>
+                    <span class="text-[10px] leading-tight">{{ t('পণ্য', 'Products') }}</span>
+                </Link>
+
+                <!-- Menu / Sidebar Drawer Toggle -->
+                <button
+                    @click="toggleSidebar"
+                    :class="[
+                        'flex flex-col items-center justify-center h-full transition-colors',
+                        isOpen
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    ]"
+                >
+                    <i class="fas fa-bars text-base mb-1"></i>
+                    <span class="text-[10px] leading-tight">{{ t('মেনু', 'Menu') }}</span>
+                </button>
+            </div>
+        </nav>
+
         <!-- Mobile Drawer Overlay -->
         <div
             v-if="isOpen"
-            class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+            class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs transition-opacity lg:hidden"
             @click="toggleSidebar"
         ></div>
 
@@ -303,7 +397,14 @@ const props = defineProps({
 })
 const user = computed(() => page.props.auth?.user || {})
 const counts = computed(() => page.props.counts || {})
-const logoUrl = ref('/logo.svg')
+const logoError = ref(false)
+const effectiveLogo = computed(() => {
+    return page.props.business_logo || page.props.platform?.logo || null
+})
+
+watch(() => [page.props.business_logo, page.props.platform?.logo], () => {
+    logoError.value = false
+})
 
 // Reactive Language Composable
 const { currentLang, setLanguage, t } = useLanguage()
@@ -312,6 +413,10 @@ const { currentLang, setLanguage, t } = useLanguage()
 const isOpen = ref(false)
 const activeDropdowns = ref([])
 const isCommandPaletteOpen = ref(false)
+
+const triggerPwaInstall = () => {
+    window.dispatchEvent(new CustomEvent('trustcash:prompt-install'))
+}
 
 // Clean Navigation Items
 const navItems = [

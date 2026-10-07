@@ -1,26 +1,26 @@
 <template>
     <Head :title="t('নতুন পণ্য ক্রয়', 'New Purchase')" />
     <AdminLayout :title="t('নতুন ক্রয় অর্ডার', 'New Purchase Order')">
-        <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl pb-20 sm:pb-6">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between mb-4 sm:mb-6">
                 <div class="flex items-center gap-3">
                     <Link
                         :href="route('admin.purchases.index')"
-                        class="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl text-gray-700 dark:text-gray-200 transition"
+                        class="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl text-gray-700 dark:text-gray-200 transition shrink-0"
                     >
                         <ArrowLeftIcon class="w-5 h-5" />
                     </Link>
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('নতুন ক্রয় অর্ডার তৈরি করুন', 'Create Purchase Order') }}</h2>
-                        <p class="text-xs text-gray-500">{{ t('সরবরাহকারী থেকে স্টক ইন করুন এবং ইনভেন্টরি আপডেট করুন', 'Record stock received from supplier and update inventory') }}</p>
+                    <div class="min-w-0">
+                        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{{ t('নতুন ক্রয় অর্ডার তৈরি করুন', 'Create Purchase Order') }}</h2>
+                        <p class="text-xs text-gray-500 truncate">{{ t('সরবরাহকারী থেকে স্টক ইন করুন এবং ইনভেন্টরি আপডেট করুন', 'Record stock received from supplier and update inventory') }}</p>
                     </div>
                 </div>
             </div>
 
-            <form @submit.prevent="submitPurchase" class="space-y-6">
+            <form @submit.prevent="submitPurchase" class="space-y-4 sm:space-y-6">
                 <!-- Top Details: Supplier & Date -->
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                     <div>
                         <label class="block font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1.5">{{ t('সরবরাহকারী নির্বাচন করুন *', 'Select Supplier *') }}</label>
                         <select
@@ -81,14 +81,93 @@
                     </div>
                 </div>
 
-                <!-- Products Table -->
+                <!-- Products Table & Mobile Cards -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/80">
-                        <h3 class="font-bold text-gray-900 dark:text-white text-sm">{{ t('ক্রয়কৃত পণ্যসমূহ', 'Purchase Items') }}</h3>
+                    <div class="p-3.5 sm:p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/80">
+                        <h3 class="font-bold text-gray-900 dark:text-white text-xs sm:text-sm">{{ t('ক্রয়কৃত পণ্যসমূহ', 'Purchase Items') }}</h3>
                         <span class="text-xs text-gray-500 font-medium">{{ form.items.length }} {{ t('টি পণ্য নির্বাচিত', 'item(s) selected') }}</span>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <!-- Mobile Card List (< md) -->
+                    <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                        <div v-for="(item, index) in form.items" :key="index" class="p-3.5 space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white text-sm">
+                                        <span class="text-gray-400 font-normal mr-1">#{{ index + 1 }}</span>
+                                        {{ item.product_name }}
+                                    </div>
+                                    <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="removeItem(index)"
+                                    class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition shrink-0"
+                                    :title="t('মুছে ফেলুন', 'Remove')"
+                                >
+                                    <TrashIcon class="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('একক', 'Unit') }}</label>
+                                    <select
+                                        v-model="item.unit_id"
+                                        class="w-full text-xs px-2.5 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option :value="null">{{ t('ডিফল্ট', 'Default') }}</option>
+                                        <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('পরিমাণ', 'Quantity') }} *</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        v-model.number="item.quantity"
+                                        min="0.01"
+                                        required
+                                        class="w-full text-center text-xs px-2.5 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 font-black text-blue-600 dark:text-blue-400"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('ক্রয় মূল্য (৳)', 'Cost Price (৳)') }} *</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        v-model.number="item.purchase_price"
+                                        min="0"
+                                        required
+                                        class="w-full text-right text-xs px-2.5 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 font-bold dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('বিক্রয় মূল্য (৳)', 'Selling Price (৳)') }}</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        v-model.number="item.selling_price"
+                                        min="0"
+                                        :placeholder="t('ঐচ্ছিক', 'Optional')"
+                                        class="w-full text-right text-xs px-2.5 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                                <span class="text-xs text-gray-500 font-medium">{{ t('উপমোট:', 'Subtotal:') }}</span>
+                                <span class="font-black text-sm text-gray-900 dark:text-white">৳{{ formatNumber(item.purchase_price * item.quantity) }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="form.items.length === 0" class="px-4 py-10 text-center text-gray-400 font-medium text-xs">
+                            {{ t('কোনো পণ্য যোগ করা হয়নি। উপরে সার্চ করে ক্রয় অর্ডারে পণ্য যোগ করুন।', 'No items added yet. Search above to add products to this purchase order.') }}
+                        </div>
+                    </div>
+
+                    <!-- Desktop Table (>= md) -->
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
@@ -172,9 +251,9 @@
                 </div>
 
                 <!-- Bottom Grid: Discounts, Taxes, Payment Summary -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <!-- Left: Notes & Additional Info -->
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm space-y-4">
+                    <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm space-y-4">
                         <div>
                             <label class="block font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1.5">{{ t('ক্রয় সংক্রান্ত নোট / মন্তব্য', 'Purchase Notes') }}</label>
                             <textarea
@@ -227,7 +306,7 @@
                     </div>
 
                     <!-- Right: Calculations & Submit -->
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm space-y-3.5 text-sm">
+                    <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm space-y-3.5 text-sm">
                         <div class="flex justify-between py-1 text-gray-600 dark:text-gray-300">
                             <span class="font-medium">{{ t('উপমোট:', 'Subtotal:') }}</span>
                             <span class="font-black text-gray-900 dark:text-white">৳{{ formatNumber(subtotal) }}</span>

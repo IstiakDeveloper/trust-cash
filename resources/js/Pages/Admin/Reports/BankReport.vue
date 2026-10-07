@@ -7,17 +7,17 @@
         </template>
 
         <!-- SCREEN CONTENT (Hidden during Print) -->
-        <div class="no-print space-y-6">
+        <div class="no-print space-y-4 sm:space-y-6">
             <!-- Filters -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <!-- Account Select -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             {{ t('ব্যাংক অ্যাকাউন্ট', 'Bank Account') }}
                         </label>
                         <select v-model="filters.account_id"
-                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                            class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                             @change="applyFilters">
                             <option value="">{{ t('সব অ্যাকাউন্ট', 'All Accounts') }}</option>
                             <option v-for="account in accounts" :key="account.id" :value="account.id">
@@ -28,130 +28,132 @@
 
                     <!-- Date Range -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             {{ t('শুরুর তারিখ', 'From Date') }}
                         </label>
                         <input type="date" v-model="filters.from_date"
-                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                            class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 py-1.5"
                             @change="applyFilters">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                             {{ t('শেষের তারিখ', 'To Date') }}
                         </label>
                         <input type="date" v-model="filters.to_date"
-                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                            class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 py-1.5"
                             @change="applyFilters">
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex items-end gap-2">
-                        <button @click="resetFilters"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                            <ArrowPathIcon class="h-4 w-4 mr-1.5" />
-                            {{ t('রিসেট', 'Reset') }}
-                        </button>
-                        <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                            type="button"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                            <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                            <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                        </button>
-                        <button @click="exportReport"
-                            class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700">
-                            <DocumentArrowDownIcon class="h-4 w-4 mr-1.5" />
-                            {{ t('পিডিএফ', 'PDF') }}
-                        </button>
-                        <button @click="printReport"
-                            class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800">
-                            <PrinterIcon class="h-4 w-4 mr-1.5" />
-                            {{ t('প্রিন্ট', 'Print') }}
-                        </button>
+                    <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+                        <div class="grid grid-cols-4 gap-1.5 w-full">
+                            <button @click="resetFilters"
+                                class="inline-flex justify-center items-center px-2 py-2 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 min-h-[36px]"
+                                :title="t('রিসেট', 'Reset')">
+                                <ArrowPathIcon class="h-4 w-4" />
+                            </button>
+                            <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                                type="button"
+                                class="inline-flex justify-center items-center px-2 py-2 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 min-h-[36px]">
+                                <span v-if="viewMode === 'dashboard'">📄</span>
+                                <span v-else>📊</span>
+                            </button>
+                            <button @click="exportReport"
+                                class="inline-flex justify-center items-center px-2 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 min-h-[36px]">
+                                <DocumentArrowDownIcon class="h-4 w-4 mr-0.5 shrink-0" />
+                                <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
+                            </button>
+                            <button @click="printReport"
+                                class="inline-flex justify-center items-center px-2 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-black hover:bg-gray-800 min-h-[36px]">
+                                <PrinterIcon class="h-4 w-4 mr-0.5 shrink-0" />
+                                <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- DASHBOARD VIEW -->
-            <div v-show="viewMode === 'dashboard'" class="no-print space-y-6">
-                <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট অ্যাকাউন্ট', 'Total Accounts') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+            <div v-show="viewMode === 'dashboard'" class="no-print space-y-4 sm:space-y-6">
+                <!-- Summary Cards (2-col on mobile) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট অ্যাকাউন্ট', 'Total Accounts') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono text-gray-900 dark:text-white">
                         {{ summary.total_accounts }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট ব্যালেন্স', 'Total Balance') }}</div>
-                    <div class="mt-1 text-2xl font-semibold" :class="getBalanceColorClass(summary.total_balance)">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট ব্যালেন্স', 'Total Balance') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate" :class="getBalanceColorClass(summary.total_balance)">
                         {{ formatPrice(summary.total_balance) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট ইনফ্লো', 'Total Inflows') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট ইনফ্লো', 'Total Inflows') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate text-green-600 dark:text-green-400">
                         {{ formatPrice(summary.total_inflows) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট আউটফ্লো', 'Total Outflows') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট আউটফ্লো', 'Total Outflows') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate text-red-600 dark:text-red-400">
                         {{ formatPrice(summary.total_outflows) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('পণ্য ক্রয়', 'Product Purchases') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('পণ্য ক্রয়', 'Product Purchases') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate text-red-600 dark:text-red-400">
                         {{ formatPrice(summary.total_product_purchases) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('পণ্য ফেরত', 'Product Refunds') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('পণ্য ফেরত', 'Product Refunds') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate text-green-600 dark:text-green-400">
                         {{ formatPrice(summary.total_product_refunds) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('নেট পণ্য পরিমাণ', 'Net Product Amount') }}</div>
-                    <div class="mt-1 text-2xl font-semibold" :class="getBalanceColorClass(summary.net_product_amount)">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('নেট পণ্য পরিমাণ', 'Net Product Amount') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate" :class="getBalanceColorClass(summary.net_product_amount)">
                         {{ formatPrice(summary.net_product_amount) }}
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('ইনভয়েস থেকে বিক্রয় পরিমাণ', 'Sale Amount from Invoices') }}</div>
-                    <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('ইনভয়েস থেকে বিক্রয় পরিমাণ', 'Sale Amount from Invoices') }}</div>
+                    <div class="mt-1 text-lg sm:text-2xl font-bold font-mono truncate text-green-600 dark:text-green-400">
                         {{ formatPrice(summary.total_sales_from_invoices) }}
                     </div>
                 </div>
             </div>
 
             <!-- Accounts and Transactions List -->
-            <div class="space-y-6">
+            <div class="space-y-4 sm:space-y-6">
                 <TransitionGroup name="fade">
                     <div v-for="report in reports" :key="report.account.id"
-                        class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
                         <!-- Account Header -->
-                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                            <div class="flex justify-between items-start">
+                        <div class="px-3.5 py-4 sm:px-6 sm:py-5 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
                                 <div>
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                                    <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                                         {{ report.account.bank }} - {{ report.account.name }}
                                     </h3>
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400 font-mono">
                                         {{ t('একাউন্ট নং', 'Account No') }}: {{ report.account.number }}
                                     </p>
                                 </div>
-                                <div class="text-right">
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ t('বর্তমান ব্যালেন্স', 'Current Balance') }}</div>
-                                    <div class="text-lg font-medium" :class="getBalanceColorClass(report.current_balance)">
+                                <div class="text-left sm:text-right">
+                                    <div class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">{{ t('বর্তমান ব্যালেন্স', 'Current Balance') }}</div>
+                                    <div class="text-base sm:text-lg font-bold font-mono" :class="getBalanceColorClass(report.current_balance)">
                                         {{ formatPrice(report.current_balance) }}
                                     </div>
                                 </div>
@@ -237,7 +239,7 @@
         <!-- ============================================================
              B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
              ============================================================ -->
-        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+        <div :class="[viewMode === 'document' ? 'block py-4 overflow-x-auto' : 'print-only']">
             <WordReportLayout
                 ref="wordReportRef"
                 :title="t('ব্যাংক ব্যালেন্স রিপোর্ট', 'Bank Balance Report')"

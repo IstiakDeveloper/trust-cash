@@ -141,14 +141,14 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
             <div class="mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="bg-white shadow-xl sm:rounded-lg overflow-hidden border border-gray-200">
                     <!-- Filter Section -->
-                    <div class="p-6 bg-white border-b border-gray-200 no-print">
-                        <div class="flex flex-wrap gap-4 items-end">
-                            <div class="flex-1 min-w-[240px]">
-                                <label class="block mb-1 text-sm font-medium text-gray-700">
+                    <div class="p-3.5 sm:p-6 bg-white border-b border-gray-200 no-print">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                            <div class="sm:col-span-2">
+                                <label class="block mb-1 text-xs font-semibold text-gray-700">
                                     {{ t('ব্যাংক অ্যাকাউন্ট', 'Bank Account') }}
                                 </label>
                                 <select v-model="selectedBankAccount"
-                                    class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    class="block w-full py-1.5 px-2.5 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs">
                                     <option value="">{{ t('সকল ব্যাংক অ্যাকাউন্ট (একত্রে / Consolidated)', 'All Bank Accounts (Consolidated)') }}</option>
                                     <option v-for="account in bankAccounts" :key="account.id" :value="String(account.id)">
                                         {{ account.account_name }} - {{ account.bank_name }}
@@ -156,81 +156,83 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                 </select>
                             </div>
 
-                            <div class="w-[150px]">
-                                <label class="block mb-1 text-sm font-medium text-gray-700">
+                            <div>
+                                <label class="block mb-1 text-xs font-semibold text-gray-700">
                                     {{ t('মাস', 'Month') }}
                                 </label>
                                 <select v-model="currentMonth"
-                                    class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    class="block w-full py-1.5 px-2.5 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs">
                                     <option v-for="month in months" :key="month.id" :value="month.id">
                                         {{ getMonthName(month.id) }}
                                     </option>
                                 </select>
                             </div>
 
-                            <div class="w-[120px]">
-                                <label class="block mb-1 text-sm font-medium text-gray-700">
+                            <div>
+                                <label class="block mb-1 text-xs font-semibold text-gray-700">
                                     {{ t('বছর', 'Year') }}
                                 </label>
                                 <select v-model="currentYear"
-                                    class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    class="block w-full py-1.5 px-2.5 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs">
                                     <option v-for="year in years" :key="year" :value="year">
                                         {{ formatYear(year) }}
                                     </option>
                                 </select>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                                    type="button"
-                                    class="bg-white border border-gray-300 text-gray-700 px-3.5 py-2 text-sm font-medium rounded-md hover:bg-gray-50 flex items-center gap-1.5 shadow-sm transition">
-                                    <span v-if="viewMode === 'dashboard'">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
-                                    <span v-else>📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                                </button>
-                                <button @click="downloadPdf"
-                                    class="bg-red-600 text-white px-3.5 py-2 text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center gap-1.5 shadow-sm transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    {{ t('পিডিএফ ডাউনলোড', 'Download PDF') }}
-                                </button>
-                                <button @click="printReport"
-                                    class="bg-indigo-600 text-white px-3.5 py-2 text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center gap-1.5 shadow-sm transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                    {{ t('প্রিন্ট', 'Print') }}
-                                </button>
+                            <div class="sm:col-span-2 lg:col-span-1">
+                                <div class="grid grid-cols-3 gap-1.5 w-full">
+                                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                                        type="button"
+                                        class="bg-white border border-gray-300 text-gray-700 px-2 py-2 text-xs font-medium rounded-lg hover:bg-gray-50 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
+                                        <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড', 'Word') }}</span>
+                                        <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                                    </button>
+                                    <button @click="downloadPdf"
+                                        class="bg-red-600 text-white px-2 py-2 text-xs font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
+                                    </button>
+                                    <button @click="printReport"
+                                        class="bg-indigo-600 text-white px-2 py-2 text-xs font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                        </svg>
+                                        <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Quick Balance Summary Bar -->
-                        <div class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3 pt-4 border-t border-gray-100">
-                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <span class="text-xs text-gray-500 block">{{ t('পূর্বের ব্যালেন্স', 'Previous Balance') }}</span>
-                                <span class="text-sm font-semibold text-gray-800">{{ formatAmount(previousMonthBalance) }}</span>
+                        <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-4 border-t border-gray-100">
+                            <div class="p-2.5 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <span class="text-[11px] sm:text-xs text-gray-500 block">{{ t('পূর্বের ব্যালেন্স', 'Previous Balance') }}</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-800 font-mono">{{ formatAmount(previousMonthBalance) }}</span>
                             </div>
-                            <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                                <span class="text-xs text-emerald-700 block">{{ t('মোট ডিপোজিট (+)', 'Total Deposit (+)') }}</span>
-                                <span class="text-sm font-semibold text-emerald-700">{{ formatAmount(monthTotals?.in?.total) }}</span>
+                            <div class="p-2.5 sm:p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                                <span class="text-[11px] sm:text-xs text-emerald-700 block">{{ t('মোট ডিপোজিট (+)', 'Total Deposit (+)') }}</span>
+                                <span class="text-xs sm:text-sm font-semibold text-emerald-700 font-mono">{{ formatAmount(monthTotals?.in?.total) }}</span>
                             </div>
-                            <div class="p-3 bg-rose-50 rounded-lg border border-rose-200">
-                                <span class="text-xs text-rose-700 block">{{ t('মোট উত্তোলন (-)', 'Total Withdrawal (-)') }}</span>
-                                <span class="text-sm font-semibold text-rose-700">{{ formatAmount(monthTotals?.out?.total) }}</span>
+                            <div class="p-2.5 sm:p-3 bg-rose-50 rounded-lg border border-rose-200">
+                                <span class="text-[11px] sm:text-xs text-rose-700 block">{{ t('মোট উত্তোলন (-)', 'Total Withdrawal (-)') }}</span>
+                                <span class="text-xs sm:text-sm font-semibold text-rose-700 font-mono">{{ formatAmount(monthTotals?.out?.total) }}</span>
                             </div>
-                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <span class="text-xs text-blue-700 block">{{ t('মাসের শেষ ব্যালেন্স', 'Month End Balance') }}</span>
-                                <span class="text-sm font-bold text-blue-700">{{ formatAmount(endingBalance) }}</span>
+                            <div class="p-2.5 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <span class="text-[11px] sm:text-xs text-blue-700 block">{{ t('মাসের শেষ ব্যালেন্স', 'Month End Balance') }}</span>
+                                <span class="text-xs sm:text-sm font-bold text-blue-700 font-mono">{{ formatAmount(endingBalance) }}</span>
                             </div>
-                            <div class="p-3 rounded-lg border" :class="isBalanceMatched ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'">
-                                <span class="text-xs block" :class="isBalanceMatched ? 'text-green-700' : 'text-amber-700'">
+                            <div class="p-2.5 sm:p-3 rounded-lg border col-span-2 sm:col-span-1" :class="isBalanceMatched ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'">
+                                <span class="text-[11px] sm:text-xs block" :class="isBalanceMatched ? 'text-green-700' : 'text-amber-700'">
                                     {{ t('বর্তমান ব্যাংক ব্যালেন্স', 'Current Bank Balance') }}
                                 </span>
                                 <div class="flex items-center gap-1">
-                                    <span class="text-sm font-bold" :class="isBalanceMatched ? 'text-green-800' : 'text-amber-800'">
+                                    <span class="text-xs sm:text-sm font-bold font-mono" :class="isBalanceMatched ? 'text-green-800' : 'text-amber-800'">
                                         {{ formatAmount(currentAccountBalance) }}
                                     </span>
-                                    <span v-if="isBalanceMatched" class="text-xs font-bold text-green-700 bg-green-200 px-1.5 py-0.5 rounded-full" title="মাসের শেষ ব্যালেন্স ও বর্তমান ব্যালেন্স হুবহু মিলেছে">
+                                    <span v-if="isBalanceMatched" class="text-[10px] font-bold text-green-700 bg-green-200 px-1.5 py-0.5 rounded-full" title="মাসের শেষ ব্যালেন্স ও বর্তমান ব্যালেন্স হুবহু মিলেছে">
                                         ✓ {{ t('মিলেছে', 'Matched') }}
                                     </span>
                                 </div>
@@ -442,7 +444,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
         <!-- ============================================================
              B&W WORD REPORT VIEW & PRINT / PDF TEMPLATE
              ============================================================ -->
-        <div :class="[viewMode === 'document' ? 'block py-4' : 'print-only']">
+        <div :class="[viewMode === 'document' ? 'block py-4 overflow-x-auto' : 'print-only']">
             <WordReportLayout
                 ref="wordReportRef"
                 :title="t('ব্যাংক লেনদেন রিপোর্ট', 'Bank Transaction Report')"

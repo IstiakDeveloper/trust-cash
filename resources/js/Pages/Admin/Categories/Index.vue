@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import ConfirmDialog from '@/Components/ConfirmDialog.vue'
+import Pagination from '@/Components/Pagination.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import { PlusIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
@@ -91,70 +92,108 @@ const handleConfirmDelete = () => {
                 </div>
             </div>
 
-            <!-- Categories Table -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                    <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
-                        <tr>
-                            <th class="px-5 py-3 text-left">{{ t('ক্যাটাগরি নাম', 'Category Name') }}</th>
-                            <th class="px-4 py-3 text-left">{{ t('স্লাগ (Slug)', 'Slug') }}</th>
-                            <th class="px-4 py-3 text-left">{{ t('মূল ক্যাটাগরি', 'Parent Category') }}</th>
-                            <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
-                            <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-if="categories.data.length === 0">
-                            <td colspan="5" class="px-6 py-10 text-center text-slate-400">
-                                {{ t('কোনো ক্যাটাগরি পাওয়া যায়নি।', 'No categories found.') }}
-                            </td>
-                        </tr>
-                        <tr v-for="category in categories.data" :key="category.id"
-                            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                            <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ category.name }}</td>
-                            <td class="px-4 py-3.5 font-mono text-slate-500 dark:text-slate-400">{{ category.slug }}</td>
-                            <td class="px-4 py-3.5 font-medium text-slate-600 dark:text-slate-300">
-                                {{ category.parent?.name || t('কোনোটি নয়', 'None') }}
-                            </td>
-                            <td class="px-4 py-3.5 text-center">
-                                <span :class="[
-                                    'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
-                                    category.status
-                                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                        : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                                ]">
-                                    {{ category.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
-                                </span>
-                            </td>
-                            <td class="px-5 py-3.5 text-right font-medium">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <Link :href="route('admin.categories.edit', category.id)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
-                                        <PencilIcon class="h-4 w-4" />
-                                    </Link>
-                                    <button @click="confirmDelete(category)"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
-                                        <TrashIcon class="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Categories Table & Mobile Cards -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                <!-- Mobile Card View (< sm) -->
+                <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-3">
+                    <div v-if="categories.data.length === 0" class="py-8 text-center text-xs text-slate-400">
+                        {{ t('কোনো ক্যাটাগরি পাওয়া যায়নি।', 'No categories found.') }}
+                    </div>
+
+                    <div v-for="category in categories.data" :key="category.id" class="pt-3 first:pt-0 space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                                    {{ category.name }}
+                                </h4>
+                                <p class="text-[11px] font-mono text-slate-400 mt-0.5">
+                                    {{ category.slug }}
+                                </p>
+                            </div>
+                            <span :class="[
+                                'inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold shrink-0',
+                                category.status
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                    : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                            ]">
+                                {{ category.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                                {{ t('প্যারেন্ট:', 'Parent:') }} <strong class="text-slate-700 dark:text-slate-300">{{ category.parent?.name || t('কোনোটি নয়', 'None') }}</strong>
+                            </span>
+
+                            <div class="flex items-center gap-1.5">
+                                <Link :href="route('admin.categories.edit', category.id)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 active:scale-90 transition-all">
+                                    <PencilIcon class="h-4 w-4" />
+                                </Link>
+                                <button @click="confirmDelete(category)"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400 active:scale-90 transition-all">
+                                    <TrashIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Table (sm+) -->
+                <div class="hidden sm:block overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="px-5 py-3 text-left">{{ t('ক্যাটাগরি নাম', 'Category Name') }}</th>
+                                <th class="px-4 py-3 text-left">{{ t('স্লাগ (Slug)', 'Slug') }}</th>
+                                <th class="px-4 py-3 text-left">{{ t('মূল ক্যাটাগরি', 'Parent Category') }}</th>
+                                <th class="px-4 py-3 text-center">{{ t('অবস্থা', 'Status') }}</th>
+                                <th class="px-5 py-3 text-right">{{ t('অ্যাকশন', 'Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-if="categories.data.length === 0">
+                                <td colspan="5" class="px-6 py-10 text-center text-slate-400">
+                                    {{ t('কোনো ক্যাটাগরি পাওয়া যায়নি।', 'No categories found.') }}
+                                </td>
+                            </tr>
+                            <tr v-for="category in categories.data" :key="category.id"
+                                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                <td class="px-5 py-3.5 font-bold text-slate-900 dark:text-white">{{ category.name }}</td>
+                                <td class="px-4 py-3.5 font-mono text-slate-500 dark:text-slate-400">{{ category.slug }}</td>
+                                <td class="px-4 py-3.5 font-medium text-slate-600 dark:text-slate-300">
+                                    {{ category.parent?.name || t('কোনোটি নয়', 'None') }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span :class="[
+                                        'inline-flex rounded-md px-2 py-0.5 text-[11px] font-bold',
+                                        category.status
+                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                            : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                    ]">
+                                        {{ category.status ? t('সক্রিয়', 'Active') : t('নিষ্ক্রিয়', 'Inactive') }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right font-medium">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <Link :href="route('admin.categories.edit', category.id)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
+                                            <PencilIcon class="h-4 w-4" />
+                                        </Link>
+                                        <button @click="confirmDelete(category)"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-rose-600 hover:text-rose-800 dark:border-slate-700 dark:bg-slate-800 dark:text-rose-400">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Pagination -->
                 <div v-if="categories.links && categories.links.length > 3" class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
-                    <nav class="inline-flex rounded-xl bg-white shadow-xs border border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
-                        <Link v-for="link in categories.links" :key="link.label" :href="link.url || '#'" :class="[
-                            'px-3 py-1.5 text-xs font-semibold transition-all',
-                            link.active
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700',
-                            !link.url ? 'opacity-40 cursor-not-allowed' : ''
-                        ]">
-                            <span v-html="link.label"></span>
-                        </Link>
-                    </nav>
+                    <Pagination :links="categories.links" />
                 </div>
             </div>
         </div>
