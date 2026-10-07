@@ -22,18 +22,27 @@ class TenantRegistrationController extends Controller
         // 1. Config base_domain (from config/tenancy.php, cache-safe)
         $configured = config('tenancy.base_domain');
         if ($configured && !in_array($configured, ['127.0.0.1', 'localhost', '::1'])) {
+            if (filter_var($configured, FILTER_VALIDATE_IP)) {
+                return $configured . '.nip.io';
+            }
             return $configured;
         }
 
         // 2. Current request host
         $host = $request->getHost();
         if (!in_array($host, ['127.0.0.1', 'localhost', '::1'])) {
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                return $host . '.nip.io';
+            }
             return $host;
         }
 
         // 3. Fallback to app.url host
         $appUrlHost = parse_url(config('app.url', ''), PHP_URL_HOST);
         if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1'])) {
+            if (filter_var($appUrlHost, FILTER_VALIDATE_IP)) {
+                return $appUrlHost . '.nip.io';
+            }
             return $appUrlHost;
         }
 

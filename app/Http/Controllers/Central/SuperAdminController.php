@@ -468,6 +468,13 @@ class SuperAdminController extends Controller
         }
 
         $domain = $domainModel->domain;
+
+        // Auto-fix raw IP subdomains (e.g. mousumi.160.25.226.94) which cause ERR_INVALID_REDIRECT in browsers
+        if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
+            $domain = "{$matches[1]}.{$matches[2]}.nip.io";
+            $domainModel->update(['domain' => $domain]);
+        }
+
         $port = request()->getPort();
         $scheme = request()->isSecure() ? 'https://' : 'http://';
 
