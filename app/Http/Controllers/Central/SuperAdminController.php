@@ -458,7 +458,13 @@ class SuperAdminController extends Controller
     {
         $domainModel = $tenant->domains->first();
         if (!$domainModel) {
-            return redirect()->back()->with('error', 'No domain associated with this store.');
+            // Auto-heal: generate and attach domain if missing for this tenant
+            $baseDomain = TenantRegistrationController::resolveBaseDomain();
+            $fullDomain = "{$tenant->id}.{$baseDomain}";
+            $domainModel = $tenant->domains()->create(['domain' => $fullDomain]);
+            if ($baseDomain === 'localhost') {
+                $tenant->domains()->create(['domain' => "{$tenant->id}.127.0.0.1"]);
+            }
         }
 
         $domain = $domainModel->domain;
@@ -473,6 +479,68 @@ class SuperAdminController extends Controller
         } catch (\Throwable $e) {
             // Fallback direct redirect to login
             return redirect("{$scheme}{$hostWithPort}/login")->with('info', "Direct link to store login: {$hostWithPort}");
+        }
+    }
+
+    /**
+     * Delete Tenant permanently and wipe all related databases and records.
+     * Requires Super Admin password confirmation.
+     */
+    public function deleteTenant(Request $request, Tenant $tenant)
+    {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ], [
+            'password.required' => 'কনফার্ম করতে আপনার সুপার অ্যাডমিন পাসওয়ার্ড দিন।',
+        ]);
+
+        if (!Hash::check($request->password, $request->user()->password)) {
+            return redirect()->back()->withErrors([
+                'password' => 'ভুল পাসওয়ার্ড! সুপার অ্যাডমিন পাসওয়ার্ড সঠিক নয়।',
+            ]);
+        }
+
+        try {
+            $tenantId = $tenant->id;
+            $tenantName = $tenant->name ?: $tenantId;
+
+            // 1. Drop the tenant's MySQL database completely if exists
+            try {
+                $dbName = $tenant->database()->getName();
+                if ($dbName) {
+                    \Illuminate\Support\Facades\DB::statement("DROP DATABASE IF EXISTS `{$dbName}`");
+                }
+            } catch (\Throwable $ex) {
+                \Illuminate\Support\Facades\Log::warning("Could not drop tenant database: " . $ex->getMessage());
+            }
+
+            // 2. Delete tenant domains
+            $tenant->domains()->delete();
+
+            // 3. Delete tenant subscriptions and payments
+            $tenant->subscriptions()->delete();
+            TenantPayment::where('tenant_id', $tenantId)->delete();
+
+            // 4. Delete impersonation tokens if table exists
+            if (\Illuminate\Support\Facades\Schema::hasTable('tenant_user_impersonation_tokens')) {
+                \Illuminate\Support\Facades\DB::table('tenant_user_impersonation_tokens')
+                    ->where('tenant_id', $tenantId)
+                    ->delete();
+            }
+
+            // 5. Delete tenant storage assets if any
+            try {
+                Storage::disk('public')->deleteDirectory("tenant_{$tenantId}");
+            } catch (\Throwable $ex) {}
+
+            // 6. Delete the tenant record itself
+            $tenant->delete();
+
+            return redirect()->route('super-admin.tenants.index')->with('success', "শপ '{$tenantName}' ({$tenantId}) এবং এর সমস্ত ডাটা স্থায়ীভাবে মুছে ফেলা হয়েছে।");
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors([
+                'error' => "শপ ডিলিট করা যায়নি: " . $e->getMessage(),
+            ]);
         }
     }
 

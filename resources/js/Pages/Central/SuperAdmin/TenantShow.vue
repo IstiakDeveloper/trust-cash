@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import SuperAdminLayout from '@/Layouts/SuperAdminLayout.vue';
 import {
@@ -12,7 +13,10 @@ import {
     CreditCard,
     Clock,
     Lock,
-    KeyRound
+    KeyRound,
+    Trash2,
+    AlertCircle,
+    X
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -40,6 +44,19 @@ const updateSub = () => {
 
 const formatCurrency = (val) => {
     return '৳ ' + Number(val || 0).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+};
+
+const showDeleteModal = ref(false);
+const deleteForm = useForm({
+    password: '',
+});
+
+const submitDelete = () => {
+    deleteForm.delete(route('super-admin.tenants.destroy', props.tenant.id), {
+        onSuccess: () => {
+            showDeleteModal.value = false;
+        },
+    });
 };
 </script>
 
@@ -103,6 +120,15 @@ const formatCurrency = (val) => {
                         <span>Login As Store Admin</span>
                         <ArrowUpRight class="w-4 h-4" />
                     </a>
+
+                    <button
+                        @click="showDeleteModal = true; deleteForm.reset(); deleteForm.clearErrors();"
+                        title="Delete Store Permanently"
+                        class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs border border-rose-500/30 transition shadow-sm"
+                    >
+                        <Trash2 class="w-4 h-4" />
+                        <span>Delete Store</span>
+                    </button>
                 </div>
             </div>
 
@@ -313,6 +339,79 @@ const formatCurrency = (val) => {
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- Delete Store Modal with Password Confirmation -->
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="w-full max-w-md bg-slate-900 border border-rose-500/30 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-rose-400 flex items-center gap-2">
+                        <Trash2 class="w-5 h-5 text-rose-500" />
+                        <span>শপ সম্পূর্ণ ডিলিট করুন (Permanent Delete)</span>
+                    </h3>
+                    <button @click="showDeleteModal = false" class="text-slate-400 hover:text-white">
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <AlertCircle class="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>চূড়ান্ত সতর্কতা!</span>
+                    </div>
+                    <p class="leading-relaxed text-[11px] text-rose-300/90">
+                        এই শপটি ডিলিট করলে এর ডাটাবেজ, প্রোডাক্ট, সেলস, কাস্টমার, ইউজার এবং সমস্ত ডাটা সম্পূর্ণ মুছে ফেলা হবে। এটি কোনোভাবেই ফিরিয়ে আনা সম্ভব নয়।
+                    </p>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">প্রতিষ্ঠানের নাম:</span>
+                        <span class="font-bold text-white">{{ tenant.name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">সাবডোমেইন:</span>
+                        <span class="font-mono text-emerald-400 font-semibold">{{ tenant.domains?.[0]?.domain || tenant.id }}</span>
+                    </div>
+                </div>
+
+                <form @submit.prevent="submitDelete" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5">
+                            কনফার্ম করতে আপনার সুপার অ্যাডমিন পাসওয়ার্ড দিন *
+                        </label>
+                        <input
+                            v-model="deleteForm.password"
+                            type="password"
+                            required
+                            placeholder="সুপার অ্যাডমিন পাসওয়ার্ড..."
+                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:border-rose-500 text-sm transition"
+                            :class="{ 'border-rose-500': deleteForm.errors.password }"
+                        />
+                        <div v-if="deleteForm.errors.password" class="text-rose-400 text-[11px] mt-1 font-semibold">
+                            {{ deleteForm.errors.password }}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <button
+                            type="button"
+                            @click="showDeleteModal = false"
+                            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                        >
+                            বাতিল
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="deleteForm.processing || !deleteForm.password"
+                            class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold shadow-lg shadow-rose-600/30 disabled:opacity-50 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                            <span v-if="deleteForm.processing" class="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                            <span>{{ deleteForm.processing ? 'ডাটাবেজ ও ফাইল ডিলিট হচ্ছে...' : 'হ্যাঁ, স্থায়ীভাবে ডিলিট করুন' }}</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </SuperAdminLayout>

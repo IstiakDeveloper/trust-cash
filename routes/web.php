@@ -348,6 +348,7 @@ Route::middleware(['auth', 'superadmin'])->prefix('super-admin')->name('super-ad
     Route::post('/tenants/{tenant}/update-subscription', [SuperAdminController::class, 'updateSubscription'])->name('tenants.update-subscription');
     Route::post('/tenants/{tenant}/reset-password', [SuperAdminController::class, 'resetPassword'])->name('tenants.reset-password');
     Route::get('/tenants/{tenant}/impersonate', [SuperAdminController::class, 'impersonate'])->name('tenants.impersonate');
+    Route::delete('/tenants/{tenant}', [SuperAdminController::class, 'deleteTenant'])->name('tenants.destroy');
 
     // Plans Management
     Route::get('/plans', [SuperAdminController::class, 'plans'])->name('plans.index');

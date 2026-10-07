@@ -18,17 +18,22 @@ class TenantRegistrationController extends Controller
     public static function resolveBaseDomain(?Request $request = null): string
     {
         $request = $request ?: request();
-        if ($envDomain = env('CENTRAL_DOMAIN')) {
-            return $envDomain;
+
+        // 1. Config base_domain (from config/tenancy.php, cache-safe)
+        $configured = config('tenancy.base_domain');
+        if ($configured && !in_array($configured, ['127.0.0.1', 'localhost', '::1'])) {
+            return $configured;
         }
 
+        // 2. Current request host
         $host = $request->getHost();
-        if (!in_array($host, ['127.0.0.1', 'localhost', '::1']) && filter_var($host, FILTER_VALIDATE_IP) === false) {
+        if (!in_array($host, ['127.0.0.1', 'localhost', '::1'])) {
             return $host;
         }
 
+        // 3. Fallback to app.url host
         $appUrlHost = parse_url(config('app.url', ''), PHP_URL_HOST);
-        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1']) && filter_var($appUrlHost, FILTER_VALIDATE_IP) === false) {
+        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1'])) {
             return $appUrlHost;
         }
 
