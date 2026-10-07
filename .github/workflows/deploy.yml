@@ -19,7 +19,7 @@ jobs:
           php-version: '8.4'
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: php8.4 /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
