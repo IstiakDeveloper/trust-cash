@@ -49,6 +49,18 @@ class TenantRegistrationController extends Controller
         return 'localhost';
     }
 
+    public static function resolvePortSuffix(?Request $request = null): string
+    {
+        $request = $request ?: request();
+        $hostHeader = $request->header('Host', '');
+        $headerPort = str_contains($hostHeader, ':') ? explode(':', $hostHeader)[1] : null;
+        $configuredPort = parse_url(config('app.url', ''), PHP_URL_PORT);
+        $forwardedPort = $request->header('X-Forwarded-Port');
+        $port = $headerPort ?: ($forwardedPort ?: ($configuredPort ?: $request->getPort()));
+
+        return ($port && !in_array((int) $port, [80, 443])) ? ":{$port}" : '';
+    }
+
     public function showRegistrationForm(Request $request)
     {
         $selectedPlan = null;
@@ -178,8 +190,7 @@ class TenantRegistrationController extends Controller
                 (new \Database\Seeders\TenantDatabaseSeeder())->run();
             });
 
-            $port = request()->getPort();
-            $portSuffix = ($port && !in_array($port, [80, 443])) ? ":{$port}" : '';
+            $portSuffix = self::resolvePortSuffix($request);
             $tenantUrl = request()->getScheme() . '://' . $fullDomain . $portSuffix;
 
             return response()->json([

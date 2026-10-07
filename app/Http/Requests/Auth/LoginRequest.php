@@ -70,16 +70,18 @@ class LoginRequest extends FormRequest
             if (!tenancy()->initialized) {
                 $tenant = Tenant::where('email', $login)->orWhere('id', $login)->first();
                 if ($tenant) {
-                    $domain = $tenant->domains->firstWhere('domain', 'like', '%.localhost')?->domain 
+                    $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
+                    $targetDomain = "{$tenant->id}.{$baseDomain}";
+
+                    $domain = $tenant->domains->firstWhere('domain', $targetDomain)?->domain 
                         ?? $tenant->domains->first()?->domain 
-                        ?? ($tenant->id . '.localhost');
+                        ?? $targetDomain;
                     
-                    if (str_ends_with($domain, '.127.0.0.1')) {
-                        $domain = str_replace('.127.0.0.1', '.localhost', $domain);
+                    if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
+                        $domain = "{$matches[1]}.{$matches[2]}.nip.io";
                     }
 
-                    $port = request()->getPort();
-                    $portSuffix = ($port && !in_array($port, [80, 443])) ? ":{$port}" : '';
+                    $portSuffix = \App\Http\Controllers\Central\TenantRegistrationController::resolvePortSuffix();
                     $tenantUrl = request()->getScheme() . "://{$domain}{$portSuffix}/login";
 
                     throw ValidationException::withMessages([

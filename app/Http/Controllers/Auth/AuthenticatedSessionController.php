@@ -109,16 +109,18 @@ class AuthenticatedSessionController extends Controller
                     // Generate single-use impersonation token for auto-login
                     $token = tenancy()->impersonate($tenant, $tenantUser->id, '/admin/dashboard');
 
-                    $domain = $tenant->domains->firstWhere('domain', 'like', '%.localhost')?->domain 
-                        ?? $tenant->domains->first()?->domain 
-                        ?? ($tenant->id . '.localhost');
+                    $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
+                    $targetDomain = "{$tenant->id}.{$baseDomain}";
 
-                    if (str_ends_with($domain, '.127.0.0.1')) {
-                        $domain = str_replace('.127.0.0.1', '.localhost', $domain);
+                    $domain = $tenant->domains->firstWhere('domain', $targetDomain)?->domain 
+                        ?? $tenant->domains->first()?->domain 
+                        ?? $targetDomain;
+
+                    if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
+                        $domain = "{$matches[1]}.{$matches[2]}.nip.io";
                     }
 
-                    $port = request()->getPort();
-                    $portSuffix = ($port && !in_array($port, [80, 443])) ? ":{$port}" : '';
+                    $portSuffix = \App\Http\Controllers\Central\TenantRegistrationController::resolvePortSuffix();
                     $scheme = request()->isSecure() ? 'https://' : 'http://';
                     $targetUrl = "{$scheme}{$domain}{$portSuffix}/impersonate/{$token->token}";
 

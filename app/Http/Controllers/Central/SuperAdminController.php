@@ -475,10 +475,9 @@ class SuperAdminController extends Controller
             $domainModel->update(['domain' => $domain]);
         }
 
-        $port = request()->getPort();
+        $portSuffix = TenantRegistrationController::resolvePortSuffix();
         $scheme = request()->isSecure() ? 'https://' : 'http://';
-
-        $hostWithPort = ($port && !in_array($port, [80, 443])) ? "{$domain}:{$port}" : $domain;
+        $hostWithPort = "{$domain}{$portSuffix}";
 
         try {
             $token = tenancy()->impersonate($tenant, 1, '/admin/dashboard');
