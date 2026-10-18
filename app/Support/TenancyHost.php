@@ -35,7 +35,7 @@ class TenancyHost
             }
         }
 
-        $withoutPath = preg_split('#[/?#]#', $value)[0] ?? $value;
+        $withoutPath = preg_split('~[/?#]~', $value)[0] ?? $value;
         $host = self::normalizeHost($withoutPath);
         if ($host && !in_array($host, ['http', 'https'], true)) {
             return $host;

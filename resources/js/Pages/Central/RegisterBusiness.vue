@@ -352,14 +352,11 @@ onMounted(() => {
 
 const cleanHost = (value) => {
     if (!value) return ''
-    const raw = String(value).trim()
-    try {
-        if (/^https?:/i.test(raw) || raw.includes('://')) {
-            const withScheme = raw.includes('://') ? raw : raw.replace(/^(https?)/i, '$1://')
-            return new URL(withScheme).hostname
-        }
-    } catch (e) {}
-    return raw.replace(/^https?:\/+/i, '').split('/')[0]
+    return String(value)
+        .trim()
+        .replace(/^https?:\/+/i, '')
+        .split('/')[0]
+        .split(':')[0]
 }
 
 const resolvedBaseDomain = computed(() => {
