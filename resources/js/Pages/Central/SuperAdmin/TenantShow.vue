@@ -101,11 +101,11 @@ const submitDelete = () => {
                             </span>
                         </div>
                         <a
-                            :href="'http://' + (tenant.domains?.[0]?.domain || tenant.id)"
+                            :href="tenant.shop_url || ('https://' + (tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id))"
                             target="_blank"
                             class="text-xs text-emerald-400 hover:underline flex items-center gap-1 mt-0.5"
                         >
-                            {{ tenant.domains?.[0]?.domain || tenant.id }}
+                            {{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}
                             <ExternalLink class="w-3.5 h-3.5" />
                         </a>
                     </div>
@@ -185,7 +185,7 @@ const submitDelete = () => {
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-800/60">
                             <span class="text-slate-400">Primary Domain:</span>
-                            <span class="font-mono text-emerald-400">{{ tenant.domains?.[0]?.domain }}</span>
+                            <span class="font-mono text-emerald-400">{{ tenant.shop_host || tenant.domains?.[0]?.domain }}</span>
                         </div>
                         <div class="flex justify-between py-1 border-b border-slate-800/60">
                             <span class="text-slate-400">Owner Email:</span>
@@ -372,7 +372,7 @@ const submitDelete = () => {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">সাবডোমেইন:</span>
-                        <span class="font-mono text-emerald-400 font-semibold">{{ tenant.domains?.[0]?.domain || tenant.id }}</span>
+                        <span class="font-mono text-emerald-400 font-semibold">{{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}</span>
                     </div>
                 </div>
 

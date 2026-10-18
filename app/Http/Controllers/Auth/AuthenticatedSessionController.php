@@ -109,20 +109,7 @@ class AuthenticatedSessionController extends Controller
                     // Generate single-use impersonation token for auto-login
                     $token = tenancy()->impersonate($tenant, $tenantUser->id, '/admin/dashboard');
 
-                    $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
-                    $targetDomain = "{$tenant->id}.{$baseDomain}";
-
-                    $domain = $tenant->domains->firstWhere('domain', $targetDomain)?->domain 
-                        ?? $tenant->domains->first()?->domain 
-                        ?? $targetDomain;
-
-                    if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
-                        $domain = "{$matches[1]}.{$matches[2]}.nip.io";
-                    }
-
-                    $portSuffix = \App\Http\Controllers\Central\TenantRegistrationController::resolvePortSuffix();
-                    $scheme = request()->isSecure() ? 'https://' : 'http://';
-                    $targetUrl = "{$scheme}{$domain}{$portSuffix}/impersonate/{$token->token}";
+                    $targetUrl = \App\Http\Controllers\Central\TenantRegistrationController::tenantUrl($tenant->id)."/impersonate/{$token->token}";
 
                     // Inertia location redirect seamlessly navigates to the tenant store and logs in!
                     return Inertia::location($targetUrl);

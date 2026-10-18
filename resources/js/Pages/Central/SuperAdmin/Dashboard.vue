@@ -240,7 +240,7 @@ const formatCurrency = (val) => {
                                     <td class="py-3">
                                         <div class="font-semibold text-white">{{ tenant.name }}</div>
                                         <div class="text-[11px] text-slate-400 flex items-center gap-1">
-                                            <span>{{ tenant.domains?.[0]?.domain || tenant.id }}</span>
+                                            <span>{{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}</span>
                                         </div>
                                     </td>
                                     <td class="py-3">

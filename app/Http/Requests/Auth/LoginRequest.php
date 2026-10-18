@@ -70,19 +70,7 @@ class LoginRequest extends FormRequest
             if (!tenancy()->initialized) {
                 $tenant = Tenant::where('email', $login)->orWhere('id', $login)->first();
                 if ($tenant) {
-                    $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
-                    $targetDomain = "{$tenant->id}.{$baseDomain}";
-
-                    $domain = $tenant->domains->firstWhere('domain', $targetDomain)?->domain 
-                        ?? $tenant->domains->first()?->domain 
-                        ?? $targetDomain;
-                    
-                    if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
-                        $domain = "{$matches[1]}.{$matches[2]}.nip.io";
-                    }
-
-                    $portSuffix = \App\Http\Controllers\Central\TenantRegistrationController::resolvePortSuffix();
-                    $tenantUrl = request()->getScheme() . "://{$domain}{$portSuffix}/login";
+                    $tenantUrl = \App\Http\Controllers\Central\TenantRegistrationController::tenantUrl($tenant->id).'/login';
 
                     throw ValidationException::withMessages([
                         'email' => "আপনার অ্যাকাউন্টটি '{$tenant->name}' শপের সাথে যুক্ত। আপনার শপের লগইন লিঙ্ক: {$tenantUrl}",

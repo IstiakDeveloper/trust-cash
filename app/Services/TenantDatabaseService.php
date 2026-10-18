@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Controllers\Central\TenantRegistrationController;
 use App\Models\Tenant;
+use App\Support\TenancyHost;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -83,11 +84,11 @@ class TenantDatabaseService
      */
     public function syncTenantDomains(?string $baseDomain = null): int
     {
-        $baseDomain = $baseDomain ?: TenantRegistrationController::resolveBaseDomain();
+        $baseDomain = TenancyHost::from($baseDomain) ?: TenantRegistrationController::resolveBaseDomain();
         $updated = 0;
 
         foreach (Tenant::with('domains')->get() as $tenant) {
-            $correct = $tenant->id.'.'.$baseDomain;
+            $correct = TenancyHost::shopHost($tenant->id, $baseDomain);
             $hasCorrect = $tenant->domains->contains(fn ($domain) => $domain->domain === $correct);
 
             if (!$hasCorrect) {
@@ -134,7 +135,7 @@ class TenantDatabaseService
 
     private function isStaleDomain(string $domain, string $baseDomain): bool
     {
-        if (str_contains($domain, '://')) {
+        if (TenancyHost::isMalformedShopDomain($domain)) {
             return true;
         }
         if (str_ends_with($domain, '.nip.io')) {

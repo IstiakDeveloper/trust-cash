@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TenancyHost;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -28,6 +29,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'trial_ends_at'  => 'datetime',
         'discount_value' => 'decimal:2',
     ];
+
+    protected $appends = [
+        'shop_host',
+        'shop_url',
+    ];
+
+    public function getShopHostAttribute(): string
+    {
+        return TenancyHost::shopHost($this->id);
+    }
+
+    public function getShopUrlAttribute(): string
+    {
+        return TenancyHost::shopUrl($this->id);
+    }
 
     public static function getCustomColumns(): array
     {

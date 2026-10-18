@@ -200,7 +200,7 @@ class SuperAdminController extends Controller
 
         // Attach domain dynamically
         $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
-        $fullDomain = "{$subdomain}.{$baseDomain}";
+        $fullDomain = TenantRegistrationController::tenantFqdn($subdomain);
 
         $tenant->domains()->create(['domain' => $fullDomain]);
         if ($baseDomain === 'localhost') {
@@ -469,23 +469,21 @@ class SuperAdminController extends Controller
         if (!$domainModel) {
             // Auto-heal: generate and attach domain if missing for this tenant
             $baseDomain = TenantRegistrationController::resolveBaseDomain();
-            $fullDomain = "{$tenant->id}.{$baseDomain}";
+            $fullDomain = TenantRegistrationController::tenantFqdn($tenant->id);
             $domainModel = $tenant->domains()->create(['domain' => $fullDomain]);
             if ($baseDomain === 'localhost') {
                 $tenant->domains()->create(['domain' => "{$tenant->id}.127.0.0.1"]);
             }
         }
 
-        $domain = $domainModel->domain;
-
-        // Auto-fix raw IP subdomains (e.g. mousumi.160.25.226.94) which cause ERR_INVALID_REDIRECT in browsers
-        if (preg_match('/^([a-zA-Z0-9_-]+)\.(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/', $domain, $matches)) {
-            $domain = "{$matches[1]}.{$matches[2]}.nip.io";
-            $domainModel->update(['domain' => $domain]);
+        $correctHost = TenantRegistrationController::tenantFqdn($tenant->id);
+        if ($domainModel->domain !== $correctHost) {
+            $domainModel->update(['domain' => $correctHost]);
         }
+        $domain = $correctHost;
 
         $portSuffix = TenantRegistrationController::resolvePortSuffix();
-        $scheme = request()->isSecure() ? 'https://' : 'http://';
+        $scheme = str_starts_with((string) config('app.url'), 'https://') || request()->isSecure() ? 'https://' : 'http://';
         $hostWithPort = "{$domain}{$portSuffix}";
 
         try {

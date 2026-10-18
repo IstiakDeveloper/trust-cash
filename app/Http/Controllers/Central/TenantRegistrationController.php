@@ -19,48 +19,22 @@ class TenantRegistrationController extends Controller
 {
     public static function resolveBaseDomain(?Request $request = null): string
     {
-        $request = $request ?: request();
-
-        // 1. Config base_domain (from config/tenancy.php, cache-safe)
-        $configured = TenancyHost::from((string) config('tenancy.base_domain'));
-        if ($configured && !in_array($configured, ['127.0.0.1', 'localhost', '::1'], true)) {
-            if (filter_var($configured, FILTER_VALIDATE_IP)) {
-                return $configured . '.nip.io';
-            }
-            return $configured;
-        }
-
-        // 2. Current request host
-        $host = $request->getHost();
-        if (!in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            if (filter_var($host, FILTER_VALIDATE_IP)) {
-                return $host . '.nip.io';
-            }
-            return $host;
-        }
-
-        // 3. Fallback to app.url host
-        $appUrlHost = TenancyHost::from((string) config('app.url', ''));
-        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1'], true)) {
-            if (filter_var($appUrlHost, FILTER_VALIDATE_IP)) {
-                return $appUrlHost . '.nip.io';
-            }
-            return $appUrlHost;
-        }
-
-        return 'localhost';
+        return TenancyHost::central($request);
     }
 
     public static function resolvePortSuffix(?Request $request = null): string
     {
-        $request = $request ?: request();
-        $hostHeader = $request->header('Host', '');
-        $headerPort = str_contains($hostHeader, ':') ? explode(':', $hostHeader)[1] : null;
-        $configuredPort = parse_url(config('app.url', ''), PHP_URL_PORT);
-        $forwardedPort = $request->header('X-Forwarded-Port');
-        $port = $headerPort ?: ($forwardedPort ?: ($configuredPort ?: $request->getPort()));
+        return TenancyHost::portSuffix($request);
+    }
 
-        return ($port && !in_array((int) $port, [80, 443])) ? ":{$port}" : '';
+    public static function tenantFqdn(string $subdomain, ?Request $request = null): string
+    {
+        return TenancyHost::shopHost($subdomain, self::resolveBaseDomain($request));
+    }
+
+    public static function tenantUrl(string $subdomain, ?Request $request = null): string
+    {
+        return TenancyHost::shopUrl($subdomain, self::resolveBaseDomain($request), $request);
     }
 
     public function showRegistrationForm(Request $request)
@@ -130,7 +104,7 @@ class TenantRegistrationController extends Controller
 
             // 2. Attach domain dynamically
             $baseDomain = self::resolveBaseDomain($request);
-            $fullDomain = $subdomain . '.' . $baseDomain;
+            $fullDomain = self::tenantFqdn($subdomain, $request);
 
             $tenant->domains()->create([
                 'domain' => $fullDomain,
@@ -192,8 +166,7 @@ class TenantRegistrationController extends Controller
                 (new \Database\Seeders\TenantDatabaseSeeder())->run();
             });
 
-            $portSuffix = self::resolvePortSuffix($request);
-            $tenantUrl = request()->getScheme() . '://' . $fullDomain . $portSuffix;
+            $tenantUrl = self::tenantUrl($subdomain, $request);
 
             return response()->json([
                 'success'       => true,

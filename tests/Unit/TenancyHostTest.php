@@ -17,6 +17,11 @@ class TenancyHostTest extends TestCase
         $this->assertSame('trustcash.mitsoft.bd', TenancyHost::from('http://trustcash.mitsoft.bd'));
     }
 
+    public function test_fixes_missing_colon_in_scheme(): void
+    {
+        $this->assertSame('trustcash.mitsoft.bd', TenancyHost::from('http//trustcash.mitsoft.bd'));
+    }
+
     public function test_keeps_bare_hostname(): void
     {
         $this->assertSame('trustcash.mitsoft.bd', TenancyHost::from('trustcash.mitsoft.bd'));
@@ -25,6 +30,25 @@ class TenancyHostTest extends TestCase
     public function test_strips_port_from_hostname(): void
     {
         $this->assertSame('trustcash.mitsoft.bd', TenancyHost::from('trustcash.mitsoft.bd:443'));
+    }
+
+    public function test_builds_shop_host_without_scheme(): void
+    {
+        $this->assertSame(
+            'testshop.trustcash.mitsoft.bd',
+            TenancyHost::shopHost('testshop', 'http://trustcash.mitsoft.bd')
+        );
+        $this->assertSame(
+            'testshop.trustcash.mitsoft.bd',
+            TenancyHost::shopHost('testshop', 'http//trustcash.mitsoft.bd')
+        );
+    }
+
+    public function test_detects_malformed_shop_domains(): void
+    {
+        $this->assertTrue(TenancyHost::isMalformedShopDomain('testshop.http://trustcash.mitsoft.bd'));
+        $this->assertTrue(TenancyHost::isMalformedShopDomain('testshop.http//trustcash.mitsoft.bd'));
+        $this->assertFalse(TenancyHost::isMalformedShopDomain('testshop.trustcash.mitsoft.bd'));
     }
 
     public function test_returns_null_for_empty_values(): void

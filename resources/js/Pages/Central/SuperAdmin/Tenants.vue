@@ -372,11 +372,11 @@ const formatPrice = (amount) => {
                                         </span>
                                     </div>
                                     <a
-                                        :href="'http://' + (tenant.domains?.[0]?.domain || tenant.id)"
+                                        :href="tenant.shop_url || ('https://' + (tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id))"
                                         target="_blank"
                                         class="text-[11px] text-emerald-400 hover:underline inline-flex items-center gap-1 mt-0.5"
                                     >
-                                        {{ tenant.domains?.[0]?.domain || tenant.id }}
+                                        {{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}
                                         <ExternalLink class="w-3 h-3" />
                                     </a>
                                 </td>
@@ -547,7 +547,7 @@ const formatPrice = (amount) => {
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">সাবডোমেইন:</span>
-                        <span class="font-mono text-emerald-400 font-semibold">{{ selectedApproveTenant?.domains?.[0]?.domain || selectedApproveTenant?.id }}</span>
+                        <span class="font-mono text-emerald-400 font-semibold">{{ selectedApproveTenant?.shop_host || selectedApproveTenant?.domains?.[0]?.domain || selectedApproveTenant?.id }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-400">মালিকের ইমেইল / ফোন:</span>
@@ -1032,7 +1032,7 @@ const formatPrice = (amount) => {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">সাবডোমেইন:</span>
-                        <span class="font-mono text-emerald-400 font-semibold">{{ selectedTenant?.domains?.[0]?.domain || selectedTenant?.id }}</span>
+                        <span class="font-mono text-emerald-400 font-semibold">{{ selectedTenant?.shop_host || selectedTenant?.domains?.[0]?.domain || selectedTenant?.id }}</span>
                     </div>
                 </div>
 
