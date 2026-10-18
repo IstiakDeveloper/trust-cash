@@ -34,9 +34,59 @@ class TenantDatabaseService
             return;
         }
 
+        $this->disconnectAndDrop($database);
+    }
+
+    public function exists(string $tenantId): bool
+    {
+        $database = $this->sanitizeName($this->databaseNameFor($tenantId));
+        if ($database === '') {
+            return false;
+        }
+
+        $row = DB::connection(config('tenancy.database.central_connection'))
+            ->selectOne(
+                'SELECT SCHEMA_NAME AS name FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?',
+                [$database]
+            );
+
+        return (bool) $row;
+    }
+
+    public function disconnectAndDrop(string $database): void
+    {
+        $database = $this->sanitizeName($database);
+        $central = (string) config('database.connections.'.config('tenancy.database.central_connection', 'mysql').'.database');
+        if ($database === '' || $database === $central) {
+            return;
+        }
+
+        $connection = DB::connection(config('tenancy.database.central_connection'));
+
         try {
-            DB::connection(config('tenancy.database.central_connection'))
-                ->statement("DROP DATABASE IF EXISTS `{$database}`");
+            $connection->statement('SET SESSION lock_wait_timeout = 5');
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        try {
+            $processes = $connection->select(
+                'SELECT ID FROM information_schema.PROCESSLIST WHERE DB = ? AND ID != CONNECTION_ID()',
+                [$database]
+            );
+            foreach ($processes as $process) {
+                try {
+                    $connection->statement('KILL '.(int) $process->ID);
+                } catch (\Throwable $e) {
+                    // Connection may already be gone.
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Could not kill connections to {$database}: ".$e->getMessage());
+        }
+
+        try {
+            $connection->statement("DROP DATABASE IF EXISTS `{$database}`");
         } catch (\Throwable $e) {
             Log::warning("Failed to drop tenant database {$database}: ".$e->getMessage());
         }
@@ -72,7 +122,7 @@ class TenantDatabaseService
                 continue;
             }
 
-            DB::statement("DROP DATABASE IF EXISTS `{$safe}`");
+            $this->disconnectAndDrop($safe);
             $dropped[] = $safe;
         }
 

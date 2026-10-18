@@ -395,7 +395,7 @@ class TenantDemoSeeder extends Seeder
             $before = (float) (ProductStock::where('product_id', $product->id)->orderByDesc('id')->value('available_quantity') ?? 0);
             $after = $before + $item['qty'];
 
-            ProductStock::create([
+            $stockData = [
                 'product_id' => $product->id,
                 'quantity' => $item['qty'],
                 'total_quantity' => $item['qty'],
@@ -404,10 +404,13 @@ class TenantDemoSeeder extends Seeder
                 'total_cost' => $line,
                 'type' => 'purchase',
                 'date' => $date,
-                'bank_account_id' => $cash->id,
                 'note' => "Purchase #{$number}",
                 'created_by' => $admin->id,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('product_stocks', 'bank_account_id')) {
+                $stockData['bank_account_id'] = $cash->id;
+            }
+            ProductStock::create($stockData);
 
             StockMovement::create([
                 'product_id' => $product->id,

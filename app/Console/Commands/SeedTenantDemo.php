@@ -6,9 +6,11 @@ use App\Http\Controllers\Central\TenantRegistrationController;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantDatabaseService;
 use App\Support\TenancyHost;
 use Database\Seeders\TenantDemoSeeder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 
 class SeedTenantDemo extends Command
 {
@@ -16,9 +18,10 @@ class SeedTenantDemo extends Command
 
     protected $description = 'Create (if needed) one tenant shop and fill a small faker demo: funds, purchase, sale, due customers';
 
-    public function handle(): int
+    public function handle(TenantDatabaseService $databases): int
     {
         $tenantId = strtolower((string) $this->argument('tenant'));
+        $this->step("Start demo seed for [{$tenantId}]");
 
         $tenant = Tenant::find($tenantId);
         if (! $tenant) {
@@ -29,27 +32,61 @@ class SeedTenantDemo extends Command
                 return self::FAILURE;
             }
 
-            $this->info("Creating tenant [{$tenantId}]...");
-            $tenant = Tenant::create([
-                'id' => $tenantId,
-                'name' => 'Demo Super Shop',
-                'email' => $tenantId.'@demo.trustcash.local',
-                'status' => 'active',
-                'plan_id' => $plan->id,
-                'trial_ends_at' => now()->addDays(30),
+            $dbExists = $databases->exists($tenantId);
+            if ($dbExists) {
+                $this->step('Leftover database found — reusing it (skip slow DROP).');
+            } else {
+                $this->step('Creating MySQL database + tenant row...');
+            }
+
+            $tenant = Tenant::withoutEvents(function () use ($tenantId, $plan) {
+                return Tenant::create([
+                    'id' => $tenantId,
+                    'name' => 'Demo Super Shop',
+                    'email' => $tenantId.'@demo.trustcash.local',
+                    'status' => 'active',
+                    'plan_id' => $plan->id,
+                    'trial_ends_at' => now()->addDays(30),
+                ]);
+            });
+
+            if (! $databases->exists($tenantId)) {
+                $this->step('Creating empty database '.$databases->databaseNameFor($tenantId).'...');
+                $tenant->database()->make();
+            }
+
+            $this->step('Running tenant migrations (this is the slow part, watch names below)...');
+            Artisan::call('tenants:migrate', [
+                '--tenants' => [$tenantId],
+                '--force' => true,
             ]);
+            $this->output->write(Artisan::output());
 
             $host = TenantRegistrationController::tenantFqdn($tenantId);
             $tenant->domains()->firstOrCreate(['domain' => $host]);
+            $this->step("Domain attached: {$host}");
+        } else {
+            $this->step("Tenant [{$tenantId}] already exists, skipping create.");
+            if (! $databases->exists($tenantId)) {
+                $this->step('Database missing — creating it...');
+                $tenant->database()->make();
+            }
+            $this->step('Ensuring tenant migrations are complete...');
+            Artisan::call('tenants:migrate', [
+                '--tenants' => [$tenantId],
+                '--force' => true,
+            ]);
+            $this->output->write(Artisan::output());
         }
 
+        $this->step('Initializing tenant connection...');
         tenancy()->initialize($tenant);
 
         if ($this->option('force')) {
             \App\Models\Setting::set('demo_data_seeded', '0');
         }
 
-        $this->info("Seeding small demo data into [{$tenant->id}]...");
+        $this->step('Inserting small demo rows (funds, products, sales)...');
         $seeder = app(TenantDemoSeeder::class);
         $seeder->setCommand($this);
         $seeder->run();
@@ -73,5 +110,14 @@ class SeedTenantDemo extends Command
         tenancy()->end();
 
         return self::SUCCESS;
+    }
+
+    private function step(string $message): void
+    {
+        $this->line('['.now()->format('H:i:s').'] '.$message);
+        if (function_exists('fflush')) {
+            @fflush(STDOUT);
+            @fflush(STDERR);
+        }
     }
 }
