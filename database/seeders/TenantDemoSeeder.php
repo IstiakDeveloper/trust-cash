@@ -41,8 +41,6 @@ class TenantDemoSeeder extends Seeder
             return;
         }
 
-        fake()->seed(2026);
-
         DB::transaction(function () {
             $this->call(TenantDatabaseSeeder::class);
 
