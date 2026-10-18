@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\TenantPayment;
 use App\Models\TenantSubscription;
+use App\Services\TenantDatabaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -183,7 +184,8 @@ class SuperAdminController extends Controller
 
         $trialEndsAt = $initialStatus === 'trial' ? now()->addDays($trialDays) : null;
 
-        $tenant = Tenant::create([
+        try {
+            $tenant = Tenant::create([
             'id'             => $subdomain,
             'name'           => $validated['business_name'],
             'email'          => $validated['email'],
@@ -268,6 +270,13 @@ class SuperAdminController extends Controller
         ]);
 
         return redirect()->route('super-admin.tenants.index')->with('success', "Store \"{$validated['business_name']}\" ({$fullDomain}) created successfully!");
+        } catch (\Throwable $e) {
+            app(TenantDatabaseService::class)->rollbackFailedProvision($subdomain, $tenant ?? null);
+
+            return redirect()->back()->withErrors([
+                'error' => 'Store could not be created: '.$e->getMessage(),
+            ])->withInput();
+        }
     }
 
     /**
@@ -510,15 +519,7 @@ class SuperAdminController extends Controller
             $tenantId = $tenant->id;
             $tenantName = $tenant->name ?: $tenantId;
 
-            // 1. Drop the tenant's MySQL database completely if exists
-            try {
-                $dbName = $tenant->database()->getName();
-                if ($dbName) {
-                    \Illuminate\Support\Facades\DB::statement("DROP DATABASE IF EXISTS `{$dbName}`");
-                }
-            } catch (\Throwable $ex) {
-                \Illuminate\Support\Facades\Log::warning("Could not drop tenant database: " . $ex->getMessage());
-            }
+            app(TenantDatabaseService::class)->dropIfExists($tenantId, onlyOrphan: false);
 
             // 2. Delete tenant domains
             $tenant->domains()->delete();
@@ -539,8 +540,8 @@ class SuperAdminController extends Controller
                 Storage::disk('public')->deleteDirectory("tenant_{$tenantId}");
             } catch (\Throwable $ex) {}
 
-            // 6. Delete the tenant record itself
-            $tenant->delete();
+            // 6. Delete the tenant record itself (skip DeleteDatabase; already dropped above)
+            Tenant::withoutEvents(fn () => $tenant->delete());
 
             return redirect()->route('super-admin.tenants.index')->with('success', "শপ '{$tenantName}' ({$tenantId}) এবং এর সমস্ত ডাটা স্থায়ীভাবে মুছে ফেলা হয়েছে।");
         } catch (\Throwable $e) {

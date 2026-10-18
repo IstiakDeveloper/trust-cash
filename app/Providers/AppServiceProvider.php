@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\BankTransaction;
 use App\Observers\BankTransactionObserver;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,5 +25,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
         BankTransaction::observe(BankTransactionObserver::class);
+
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
     }
 }

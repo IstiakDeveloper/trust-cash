@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\Support\TenancyHost;
 use Stancl\Tenancy\Database\Models\Domain;
 
 return [
@@ -17,13 +18,13 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => array_values(array_unique(array_filter([
-        env('CENTRAL_DOMAIN'),
-        parse_url(env('APP_URL', ''), PHP_URL_HOST),
+        TenancyHost::from(env('CENTRAL_DOMAIN')),
+        TenancyHost::from(env('APP_URL')),
         '127.0.0.1',
         'localhost',
     ]))),
 
-    'base_domain' => env('CENTRAL_DOMAIN') ?: parse_url(env('APP_URL', ''), PHP_URL_HOST),
+    'base_domain' => TenancyHost::from(env('CENTRAL_DOMAIN')) ?: TenancyHost::from(env('APP_URL')),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.

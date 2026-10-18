@@ -8,6 +8,8 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use App\Models\User;
+use App\Services\TenantDatabaseService;
+use App\Support\TenancyHost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -20,8 +22,8 @@ class TenantRegistrationController extends Controller
         $request = $request ?: request();
 
         // 1. Config base_domain (from config/tenancy.php, cache-safe)
-        $configured = config('tenancy.base_domain');
-        if ($configured && !in_array($configured, ['127.0.0.1', 'localhost', '::1'])) {
+        $configured = TenancyHost::from((string) config('tenancy.base_domain'));
+        if ($configured && !in_array($configured, ['127.0.0.1', 'localhost', '::1'], true)) {
             if (filter_var($configured, FILTER_VALIDATE_IP)) {
                 return $configured . '.nip.io';
             }
@@ -30,7 +32,7 @@ class TenantRegistrationController extends Controller
 
         // 2. Current request host
         $host = $request->getHost();
-        if (!in_array($host, ['127.0.0.1', 'localhost', '::1'])) {
+        if (!in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
             if (filter_var($host, FILTER_VALIDATE_IP)) {
                 return $host . '.nip.io';
             }
@@ -38,8 +40,8 @@ class TenantRegistrationController extends Controller
         }
 
         // 3. Fallback to app.url host
-        $appUrlHost = parse_url(config('app.url', ''), PHP_URL_HOST);
-        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1'])) {
+        $appUrlHost = TenancyHost::from((string) config('app.url', ''));
+        if ($appUrlHost && !in_array($appUrlHost, ['127.0.0.1', 'localhost', '::1'], true)) {
             if (filter_var($appUrlHost, FILTER_VALIDATE_IP)) {
                 return $appUrlHost . '.nip.io';
             }
@@ -202,13 +204,7 @@ class TenantRegistrationController extends Controller
                 'message'       => 'আপনার রেজিস্ট্রেশন সফল হয়েছে! অ্যাকাউন্টটি বর্তমানে অনুমোদনের অপেক্ষায় রয়েছে (Pending Approval)। অ্যাডমিন যাচাই করে অনুমোদন দেওয়ার পর আপনি শপে প্রবেশ করতে পারবেন।',
             ]);
         } catch (\Throwable $e) {
-            if (isset($tenant)) {
-                try {
-                    $tenant->delete();
-                } catch (\Throwable $ex) {
-                    // Ignore rollback delete errors
-                }
-            }
+            app(TenantDatabaseService::class)->rollbackFailedProvision($subdomain, $tenant ?? null);
 
             return response()->json([
                 'success' => false,
