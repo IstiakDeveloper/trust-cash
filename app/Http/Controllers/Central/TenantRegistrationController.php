@@ -169,12 +169,13 @@ class TenantRegistrationController extends Controller
             $tenantUrl = self::tenantUrl($subdomain, $request);
 
             return response()->json([
-                'success'       => true,
-                'status'        => 'pending',
-                'tenant_url'    => $tenantUrl,
-                'subdomain'     => $fullDomain,
-                'business_name' => $validated['business_name'],
-                'message'       => 'আপনার রেজিস্ট্রেশন সফল হয়েছে! অ্যাকাউন্টটি বর্তমানে অনুমোদনের অপেক্ষায় রয়েছে (Pending Approval)। অ্যাডমিন যাচাই করে অনুমোদন দেওয়ার পর আপনি শপে প্রবেশ করতে পারবেন।',
+                'success'         => true,
+                'status'          => 'pending',
+                'tenant_url'      => $tenantUrl,
+                'admin_login_url' => url('/login'),
+                'subdomain'       => $fullDomain,
+                'business_name'   => $validated['business_name'],
+                'message'         => 'রেজিস্ট্রেশন সফল হয়েছে। অনুমোদনের পর শপ অ্যাডমিনে ঢুকতে মূল ডোমেইনের লগইন পেজ ব্যবহার করুন। সাবডোমেইন শুধু কাস্টমারের লাইভ শপ।',
             ]);
         } catch (\Throwable $e) {
             app(TenantDatabaseService::class)->rollbackFailedProvision($subdomain, $tenant ?? null);

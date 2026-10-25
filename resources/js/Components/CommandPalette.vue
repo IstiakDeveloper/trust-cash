@@ -183,6 +183,7 @@ const actions = [
 ]
 
 const pages = [
+    { titleBn: 'সাহায্য', titleEn: 'Help', icon: 'fa-circle-question', href: '/admin/help' },
     { titleBn: 'ড্যাশবোর্ড', titleEn: 'Dashboard', icon: 'fa-tachometer-alt', href: '/admin/dashboard' },
     { titleBn: 'বিক্রির তালিকা', titleEn: 'Sales List', icon: 'fa-receipt', href: '/admin/sales' },
     { titleBn: 'অনলাইন অর্ডার', titleEn: 'Online Orders', icon: 'fa-clipboard-list', href: '/admin/pending-sales' },

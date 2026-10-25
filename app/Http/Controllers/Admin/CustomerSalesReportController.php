@@ -106,4 +106,59 @@ class CustomerSalesReportController extends Controller
             ];
         });
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'year' => 'required|integer',
+            'month' => 'required|integer|between:1,12',
+        ]);
+
+        $customer = Customer::findOrFail($request->customer_id);
+        $year = (int) $request->year;
+        $month = (int) $request->month;
+
+        $previousBalance = (float) Sale::where('customer_id', $customer->id)
+            ->whereDate('created_at', '<', Carbon::createFromDate($year, $month, 1))
+            ->sum('due');
+
+        $monthlySales = Sale::where('customer_id', $customer->id)
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->with(['saleItems.product', 'salePayments'])
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'id' => $sale->id,
+                    'date' => $sale->created_at->format('Y-m-d'),
+                    'invoice_no' => $sale->invoice_no,
+                    'total' => (float) $sale->total,
+                    'paid' => (float) $sale->paid,
+                    'due' => (float) $sale->due,
+                    'items' => $sale->saleItems->map(fn($item) => [
+                        'product' => $item->product->name ?? 'Product',
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                        'subtotal' => $item->subtotal,
+                    ])->toArray(),
+                ];
+            })->toArray();
+
+        $monthName = Carbon::create()->month($month)->format('F');
+        $periodLabel = "{$monthName} {$year}";
+        $slug = \Illuminate\Support\Str::slug($customer->name);
+        $filename = "customer-sales-{$slug}-{$month}-{$year}.xlsx";
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CustomerSalesExport(
+                $monthlySales,
+                $customer->toArray(),
+                $previousBalance,
+                [],
+                $periodLabel
+            ),
+            $filename
+        );
+    }
 }

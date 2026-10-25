@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     Users,
     UserPlus,
@@ -386,19 +387,21 @@ const deleteUser = (user) => {
         </div>
 
         <!-- Create / Edit User Modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs">
-            <div class="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <Modal :show="showModal" @close="showModal = false" maxWidth="md">
+            <form @submit.prevent="submitForm" class="flex flex-col h-full">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <UserPlus class="w-5 h-5 text-emerald-500 shrink-0" />
                         <span>{{ isEditing ? t('স্টাফ এডিট করুন', 'Edit Staff') : t('নতুন স্টাফ অ্যাকাউন্ট তৈরি', 'Create Staff Account') }}</span>
                     </h3>
-                    <button @click="showModal = false" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <button type="button" @click="showModal = false" class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
 
-                <form @submit.prevent="submitForm" class="space-y-3.5 text-xs">
+                <!-- Scrollable Body -->
+                <div class="p-4 sm:p-6 space-y-3.5 text-xs flex-1">
                     <div>
                         <label class="block text-gray-700 dark:text-slate-300 font-bold mb-1">{{ t('পূর্ণ নাম *', 'Full Name *') }}</label>
                         <input
@@ -406,7 +409,7 @@ const deleteUser = (user) => {
                             type="text"
                             required
                             :placeholder="t('যেমন: মোঃ সাব্বির আহমেদ', 'e.g. John Doe')"
-                            class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500"
+                            class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                         />
                     </div>
 
@@ -418,7 +421,7 @@ const deleteUser = (user) => {
                                 type="email"
                                 required
                                 placeholder="sabbir@store.com"
-                                class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500"
+                                class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
@@ -427,7 +430,7 @@ const deleteUser = (user) => {
                                 v-model="form.username"
                                 type="text"
                                 :placeholder="t('যেমন: sabbir_pos', 'e.g. sabbir_pos')"
-                                class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500"
+                                class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                             />
                         </div>
                     </div>
@@ -438,15 +441,16 @@ const deleteUser = (user) => {
                             <input
                                 v-model="form.phone"
                                 type="text"
+                                inputmode="tel"
                                 placeholder="017XXXXXXXX"
-                                class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500"
+                                class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                             />
                         </div>
                         <div>
                             <label class="block text-gray-700 dark:text-slate-300 font-bold mb-1">{{ t('দায়িত্ব / রোল *', 'Role *') }}</label>
                             <select
                                 v-model="form.role_id"
-                                class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 font-semibold"
+                                class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 font-semibold"
                             >
                                 <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
                             </select>
@@ -463,7 +467,7 @@ const deleteUser = (user) => {
                             :required="!isEditing"
                             minlength="4"
                             :placeholder="t('কমপক্ষে ৪ ডিজিটের পাসওয়ার্ড...', 'Min 4 characters...')"
-                            class="w-full min-h-[42px] px-3 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500"
+                            class="w-full min-h-[42px] px-3.5 py-2 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                         />
                     </div>
 
@@ -478,25 +482,26 @@ const deleteUser = (user) => {
                             {{ t('অ্যাকাউন্ট অ্যাক্টিভ রাখুন (সরাসরি লগইন করতে পারবে)', 'Keep account active (can log in directly)') }}
                         </label>
                     </div>
+                </div>
 
-                    <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-slate-800">
-                        <button
-                            type="button"
-                            @click="showModal = false"
-                            class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 font-bold"
-                        >
-                            {{ t('বাতিল', 'Cancel') }}
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50"
-                        >
-                            {{ isEditing ? t('আপডেট করুন', 'Update Staff') : t('তৈরি করুন', 'Create Staff') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <!-- Sticky Footer (Save button always visible) -->
+                <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    <button
+                        type="button"
+                        @click="showModal = false"
+                        class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 font-bold min-h-[42px] transition"
+                    >
+                        {{ t('বাতিল', 'Cancel') }}
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="form.processing"
+                        class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold shadow-md shadow-emerald-500/20 disabled:opacity-50 min-h-[42px] transition"
+                    >
+                        {{ isEditing ? t('আপডেট করুন', 'Update Staff') : t('তৈরি করুন', 'Create Staff') }}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     </AdminLayout>
 </template>

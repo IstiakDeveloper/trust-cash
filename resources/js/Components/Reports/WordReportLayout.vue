@@ -25,6 +25,18 @@
                 </button>
 
                 <button
+                    v-if="showExcel"
+                    type="button"
+                    @click="$emit('downloadExcel')"
+                    class="inline-flex items-center px-4 py-2 border border-emerald-600 dark:border-emerald-500 rounded-lg shadow-sm text-sm font-medium text-emerald-700 dark:text-emerald-200 bg-white hover:bg-emerald-50 dark:bg-gray-700 dark:hover:bg-emerald-950/40 transition-colors"
+                >
+                    <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>{{ t('এক্সেল ডাউনলোড', 'Download Excel') }}</span>
+                </button>
+
+                <button
                     type="button"
                     @click="printReport"
                     class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors"
@@ -144,8 +156,14 @@ const props = defineProps({
     fileName: {
         type: String,
         default: ''
+    },
+    showExcel: {
+        type: Boolean,
+        default: true
     }
 })
+
+const emit = defineEmits(['downloadExcel'])
 
 const { t } = useLanguage()
 const page = usePage()

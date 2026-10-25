@@ -160,8 +160,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/leave-shop', [SuperAdminController::class, 'leaveShop'])->name('leave-shop');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/data', [DashboardController::class, 'getDashboardData'])->name('admin.dashboard.data');
+    Route::get('/help', fn () => Inertia::render('Admin/Help/Index'))->name('help');
 
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
@@ -254,27 +256,39 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/reports/bank', [BankReportController::class, 'index'])->name('reports.bank');
     Route::get('/reports/bank/download', [BankReportController::class, 'downloadPdf'])
         ->name('reports.bank.download');
+    Route::get('/reports/bank/excel', [BankReportController::class, 'downloadExcel'])
+        ->name('reports.bank.excel');
 
     Route::get('/reports/bank-transaction-report', [BankTransactionReportController::class, 'index'])
         ->name('bank-transaction-report');
+    Route::get('/reports/bank-transactions/excel', [BankTransactionReportController::class, 'downloadExcel'])
+        ->name('reports.bank-transactions.excel');
 
     Route::get('/reports/stock', [ProductStockReportController::class, 'index'])
         ->name('reports.stock');
     Route::get('/reports/stock/download', [ProductStockReportController::class, 'downloadPdf'])
         ->name('reports.stock.download');
+    Route::get('/reports/stock/excel', [ProductStockReportController::class, 'downloadExcel'])
+        ->name('reports.stock.excel');
 
     Route::get('/reports/sales', [SaleReportController::class, 'index'])
         ->name('reports.sales');
     Route::get('/reports/sales/download', [SaleReportController::class, 'downloadPdf'])
         ->name('reports.sales.download');
+    Route::get('/reports/sales/excel', [SaleReportController::class, 'downloadExcel'])
+        ->name('reports.sales.excel');
 
     Route::get('/reports/customer-sales', [CustomerSalesReportController::class, 'index'])
         ->name('reports.customer-sales.index');
+    Route::get('/reports/customer-sales/excel', [CustomerSalesReportController::class, 'downloadExcel'])
+        ->name('reports.customer-sales.excel');
 
     Route::get('/reports/income-expenditure', [IncomeExpenditureController::class, 'index'])
         ->name('reports.income-expenditure');
     Route::get('/reports/income-expenditure/pdf', [IncomeExpenditureController::class, 'downloadPdf'])
         ->name('reports.income-expenditure.pdf');
+    Route::get('/reports/income-expenditure/excel', [IncomeExpenditureController::class, 'downloadExcel'])
+        ->name('reports.income-expenditure.excel');
     Route::get('/reports/income-expenditure/download', [BalanceSheetController::class, 'downloadPdf'])
         ->name('reports.income-expenditure.download');
 
@@ -283,6 +297,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::get('/reports/balance-sheet/pdf', [BalanceSheetController::class, 'downloadPdf'])
         ->name('reports.balance-sheet.pdf');
+    Route::get('/reports/balance-sheet/excel', [BalanceSheetController::class, 'downloadExcel'])
+        ->name('reports.balance-sheet.excel');
     Route::get('/reports/balance-sheet/download', [BalanceSheetController::class, 'downloadPdf'])
         ->name('reports.balance-sheet.download');
 
@@ -304,11 +320,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     });
     Route::get('/reports/product-analysis/pdf', [ProductAnalysisReportController::class, 'downloadPdf'])
         ->name('reports.product-analysis.pdf');
+    Route::get('/reports/product-analysis/excel', [ProductAnalysisReportController::class, 'downloadExcel'])
+        ->name('reports.product-analysis.excel');
 
     Route::get('/reports/receipt-payment', [ReceiptPaymentController::class, 'index'])
         ->name('reports.receipt-payment');
     Route::get('/reports/receipt-payment/pdf', [ReceiptPaymentController::class, 'downloadPdf'])
         ->name('reports.receipt-payment.pdf');
+    Route::get('/reports/receipt-payment/excel', [ReceiptPaymentController::class, 'downloadExcel'])
+        ->name('reports.receipt-payment.excel');
 
 });
 
@@ -342,6 +362,8 @@ Route::middleware(['auth', 'superadmin'])->prefix('super-admin')->name('super-ad
     Route::get('/tenants', [SuperAdminController::class, 'tenants'])->name('tenants.index');
     Route::post('/tenants', [SuperAdminController::class, 'createTenant'])->name('tenants.store');
     Route::get('/tenants/{tenant}', [SuperAdminController::class, 'showTenant'])->name('tenants.show');
+    Route::match(['put', 'post'], '/tenants/{tenant}/update', [SuperAdminController::class, 'updateTenant'])->name('tenants.update');
+    Route::put('/tenants/{tenant}', [SuperAdminController::class, 'updateTenant']);
     Route::post('/tenants/{tenant}/approve', [SuperAdminController::class, 'approveTenant'])->name('tenants.approve');
     Route::post('/tenants/{tenant}/toggle-status', [SuperAdminController::class, 'toggleTenantStatus'])->name('tenants.toggle-status');
     Route::post('/tenants/{tenant}/extend-trial', [SuperAdminController::class, 'extendTrial'])->name('tenants.extend-trial');

@@ -343,4 +343,34 @@ class ProductStockReportController extends Controller
 
         return $pdf->download('stock-report-'.now()->format('Y-m-d').'.pdf');
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'nullable|exists:products,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        $fromDate = $request->from_date ? Carbon::parse($request->from_date) : Carbon::now()->startOfMonth();
+        $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
+
+        $query = Product::with(['category', 'unit']);
+        if ($request->product_id) {
+            $query->where('id', $request->product_id);
+        }
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $products = $query->get();
+        $reportData = $this->generateReports($products, $fromDate, $toDate);
+
+        $fileName = 'stock-report-' . now()->format('Y-m-d') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\StockReportExport($reportData['data'], $reportData['summary']),
+            $fileName
+        );
+    }
 }

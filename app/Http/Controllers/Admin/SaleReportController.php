@@ -171,6 +171,13 @@ class SaleReportController extends Controller
         return $pdf->download('sales-report-'.now()->format('Y-m-d').'.pdf');
     }
 
+    public function downloadExcel(Request $request)
+    {
+        $data = $this->processReportData($request, false);
+        $fileName = 'sales-report-' . now()->format('Y-m-d') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\SaleReportExport($data), $fileName);
+    }
+
     private function processReportData(Request $request, bool $isBn = false)
     {
         $request->validate([

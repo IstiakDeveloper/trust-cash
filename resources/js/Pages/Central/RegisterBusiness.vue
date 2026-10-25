@@ -129,12 +129,18 @@
                     >
                         {{ t('হোম পেজে ফিরে যান', 'Back to Home') }}
                     </Link>
+                    <Link
+                        :href="registeredData?.admin_login_url || '/login'"
+                        class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs transition"
+                    >
+                        {{ t('অ্যাডমিন লগইন (মূল ডোমেইন)', 'Admin login (main domain)') }}
+                    </Link>
                     <a
                         :href="registeredData?.tenant_url"
                         target="_blank"
                         class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5"
                     >
-                        <span>{{ t('শপ স্ট্যাটাস চেক করুন', 'Check Shop Status') }}</span>
+                        <span>{{ t('লাইভ শপ দেখুন', 'View live shop') }}</span>
                         <ExternalLink class="w-3.5 h-3.5" />
                     </a>
                 </div>
@@ -161,7 +167,7 @@
                     <!-- Subdomain Slug -->
                     <div>
                         <label class="block font-semibold text-xs text-slate-700 dark:text-slate-300 mb-1.5">
-                            {{ t('আপনার সফটওয়্যার লিংক (Subdomain URL) *', 'Software Link (Subdomain URL) *') }}
+                            {{ t('কাস্টমার শপের লিংক (Live shop URL) *', 'Customer shop link (Live shop URL) *') }}
                         </label>
                         <div class="relative flex items-center">
                             <input

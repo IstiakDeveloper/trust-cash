@@ -20,7 +20,8 @@ import {
     Sparkles,
     Check,
     AlertCircle,
-    Trash2
+    Trash2,
+    Pencil
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -46,8 +47,43 @@ const showCreateModal = ref(false);
 const showApproveModal = ref(false);
 const showExtendModal = ref(false);
 const showPasswordModal = ref(false);
+const showEditModal = ref(false);
 const selectedTenant = ref(null);
 const selectedApproveTenant = ref(null);
+
+const editForm = useForm({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    plan_id: null,
+    status: 'active',
+    trial_ends_at: '',
+});
+
+const openEditModal = (tenant) => {
+    selectedTenant.value = tenant;
+    editForm.id = tenant.id;
+    editForm.name = tenant.name || '';
+    editForm.email = tenant.email || '';
+    editForm.phone = tenant.phone || '';
+    editForm.address = tenant.address || '';
+    editForm.plan_id = tenant.plan_id || props.plans?.[0]?.id;
+    editForm.status = tenant.status || 'active';
+    editForm.trial_ends_at = tenant.trial_ends_at ? tenant.trial_ends_at.slice(0, 10) : '';
+    editForm.clearErrors();
+    showEditModal.value = true;
+};
+
+const submitEdit = () => {
+    if (!selectedTenant.value) return;
+    editForm.put(route('super-admin.tenants.update', selectedTenant.value.id), {
+        onSuccess: () => {
+            showEditModal.value = false;
+        }
+    });
+};
 
 // Forms
 const createForm = useForm({
@@ -374,6 +410,7 @@ const formatPrice = (amount) => {
                                     <a
                                         :href="tenant.shop_url || ('https://' + (tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id))"
                                         target="_blank"
+                                        title="Live shop"
                                         class="text-[11px] text-emerald-400 hover:underline inline-flex items-center gap-1 mt-0.5"
                                     >
                                         {{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}
@@ -440,6 +477,15 @@ const formatPrice = (amount) => {
                                             <span>Approve</span>
                                         </button>
 
+                                        <!-- Edit Store Information Button -->
+                                        <button
+                                            @click="openEditModal(tenant)"
+                                            title="দোকানের তথ্য এডিট করুন (Edit Store Information)"
+                                            class="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition"
+                                        >
+                                            <Pencil class="w-3.5 h-3.5" />
+                                        </button>
+
                                         <!-- Profile / Details Link -->
                                         <Link
                                             :href="route('super-admin.tenants.show', tenant.id)"
@@ -452,11 +498,10 @@ const formatPrice = (amount) => {
                                         <!-- Impersonate Button -->
                                         <a
                                             :href="route('super-admin.tenants.impersonate', tenant.id)"
-                                            target="_blank"
-                                            title="1-Click Login As Store Admin"
+                                            title="Open shop admin on the main domain"
                                             class="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-1 border border-emerald-500/20 transition"
                                         >
-                                            <span>Login</span>
+                                            <span>Admin</span>
                                             <ArrowUpRight class="w-3 h-3" />
                                         </a>
 
@@ -750,7 +795,7 @@ const formatPrice = (amount) => {
 
                     <!-- Subdomain Slug with live availability check -->
                     <div>
-                        <label class="block text-slate-300 font-semibold mb-1">সাবডোমেইন লিংক (Subdomain URL) *</label>
+                        <label class="block text-slate-300 font-semibold mb-1">লাইভ শপ লিংক (Live shop URL) *</label>
                         <div class="relative flex items-center">
                             <input
                                 v-model="createForm.subdomain"
@@ -996,6 +1041,162 @@ const formatPrice = (amount) => {
                         </button>
                         <button type="submit" :disabled="passwordForm.processing" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold">
                             পাসওয়ার্ড আপডেট করুন
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Store Information Modal -->
+        <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+            <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <Pencil class="w-5 h-5 text-blue-400" />
+                        <span>দোকানের তথ্য সম্পাদনা (Edit Store Information)</span>
+                    </h3>
+                    <button @click="showEditModal = false" class="p-1 rounded-lg text-slate-400 hover:text-white transition">
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <!-- Subdomain Badge -->
+                <div class="p-3 rounded-2xl bg-slate-950 border border-slate-800/80 text-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-slate-500 text-[11px] block">সাবডোমেইন / স্টোর আইডি:</span>
+                        <span class="font-mono text-emerald-400 font-bold">{{ selectedTenant?.shop_host || selectedTenant?.domains?.[0]?.domain || selectedTenant?.id }}</span>
+                    </div>
+                    <span :class="[
+                        'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border',
+                        selectedTenant?.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        selectedTenant?.status === 'trial' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    ]">
+                        {{ selectedTenant?.status }}
+                    </span>
+                </div>
+
+                <form @submit.prevent="submitEdit" class="space-y-3.5 text-xs">
+                    <!-- Business / Store Name -->
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">
+                            দোকান / প্রতিষ্ঠানের নাম (Business Name) *
+                        </label>
+                        <input
+                            v-model="editForm.name"
+                            type="text"
+                            required
+                            placeholder="দোকানের নাম লিখুন..."
+                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <div v-if="editForm.errors.name" class="text-rose-400 text-[11px] mt-1">{{ editForm.errors.name }}</div>
+                    </div>
+
+                    <!-- Contact Email & Phone -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">
+                                ইমেইল (Contact / Owner Email) *
+                            </label>
+                            <input
+                                v-model="editForm.email"
+                                type="email"
+                                required
+                                placeholder="owner@store.com"
+                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                            <div v-if="editForm.errors.email" class="text-rose-400 text-[11px] mt-1">{{ editForm.errors.email }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">
+                                ফোন নম্বর (Contact Phone)
+                            </label>
+                            <input
+                                v-model="editForm.phone"
+                                type="text"
+                                placeholder="017XXXXXXXX"
+                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                            <div v-if="editForm.errors.phone" class="text-rose-400 text-[11px] mt-1">{{ editForm.errors.phone }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">
+                            দোকানের ঠিকানা (Store Address / Location)
+                        </label>
+                        <input
+                            v-model="editForm.address"
+                            type="text"
+                            placeholder="যেমন: ধানমন্ডি, ঢাকা"
+                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <div v-if="editForm.errors.address" class="text-rose-400 text-[11px] mt-1">{{ editForm.errors.address }}</div>
+                    </div>
+
+                    <!-- Plan & Status -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">
+                                নির্ধারিত প্যাকেজ / প্ল্যান (Plan) *
+                            </label>
+                            <select
+                                v-model="editForm.plan_id"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500"
+                            >
+                                <option v-for="p in plans" :key="p.id" :value="p.id">
+                                    {{ p.name }} (৳{{ p.price_monthly }}/মাস)
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1">
+                                অ্যাকাউন্ট স্ট্যাটাস (Account Status) *
+                            </label>
+                            <select
+                                v-model="editForm.status"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500 capitalize"
+                            >
+                                <option value="active">Active (সক্রিয়)</option>
+                                <option value="trial">Trial (ট্রায়াল)</option>
+                                <option value="pending">Pending (অপেক্ষমান)</option>
+                                <option value="suspended">Suspended (স্থগিত)</option>
+                                <option value="cancelled">Cancelled (বাতিল)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Trial / Expiry Date -->
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">
+                            মেয়াদ শেষ হওয়ার তারিখ (Expiry / Trial Ends Date)
+                        </label>
+                        <input
+                            v-model="editForm.trial_ends_at"
+                            type="date"
+                            class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-medium focus:border-blue-500"
+                        />
+                        <span class="text-[10px] text-slate-500 mt-0.5 block">রেগুলার আনলিমিটেড সাবস্ক্রিপশনের ক্ষেত্রে খালি রাখুন।</span>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                        <button
+                            type="button"
+                            @click="showEditModal = false"
+                            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"
+                        >
+                            বাতিল
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="editForm.processing"
+                            class="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold shadow-lg shadow-blue-600/30 disabled:opacity-50 transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                            <span v-if="editForm.processing" class="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                            <span>{{ editForm.processing ? 'আপডেট হচ্ছে...' : 'তথ্য আপডেট করুন' }}</span>
                         </button>
                     </div>
                 </form>

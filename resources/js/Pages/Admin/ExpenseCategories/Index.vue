@@ -118,36 +118,44 @@
         </div>
 
         <!-- Create/Edit Modal -->
-        <Modal :show="showModal" @close="closeModal">
-            <div class="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">
-                    {{ isEditing ? t('ক্যাটাগরি সম্পাদনা করুন', 'Edit Category') : t('নতুন ক্যাটাগরি যোগ করুন', 'Add Category') }}
-                </h3>
-                <form @submit.prevent="submitForm">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ t('ক্যাটাগরির নাম *', 'Category Name *') }}</label>
-                            <input type="text" v-model="form.name" required class="w-full text-sm rounded-xl border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white" :placeholder="t('যেমন: বেতন, ভাড়া, বিদ্যুৎ...', 'e.g. Salary, Rent, Utilities...')" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ t('বিবরণ (ঐচ্ছিক)', 'Description (Optional)') }}</label>
-                            <textarea v-model="form.description" rows="2" class="w-full text-sm rounded-xl border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" v-model="form.status" id="cat_status" class="w-4 h-4 rounded border-gray-300 text-blue-600" />
-                            <label for="cat_status" class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('সক্রিয় হিসেবে চিহ্নিত করুন', 'Mark as Active') }}</label>
-                        </div>
+        <Modal :show="showModal" @close="closeModal" maxWidth="md">
+            <form @submit.prevent="submitForm" class="flex flex-col h-full">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                    <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                        {{ isEditing ? t('ক্যাটাগরি সম্পাদনা করুন', 'Edit Category') : t('নতুন ক্যাটাগরি যোগ করুন', 'Add Category') }}
+                    </h3>
+                    <button type="button" @click="closeModal" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                        <span class="text-xl leading-none">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Scrollable Body -->
+                <div class="p-4 sm:p-6 space-y-4 flex-1">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('ক্যাটাগরির নাম *', 'Category Name *') }}</label>
+                        <input type="text" v-model="form.name" required class="w-full text-xs rounded-xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600" :placeholder="t('যেমন: বেতন, ভাড়া, বিদ্যুৎ...', 'e.g. Salary, Rent, Utilities...')" />
                     </div>
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" @click="closeModal" class="px-4 py-2 border rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
-                            {{ t('বাতিল', 'Cancel') }}
-                        </button>
-                        <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition">
-                            {{ isEditing ? t('আপডেট করুন', 'Update') : t('সংরক্ষণ করুন', 'Save') }}
-                        </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('বিবরণ (ঐচ্ছিক)', 'Description (Optional)') }}</label>
+                        <textarea v-model="form.description" rows="2" class="w-full text-xs rounded-xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"></textarea>
                     </div>
-                </form>
-            </div>
+                    <div class="flex items-center gap-3 pt-1">
+                        <input type="checkbox" v-model="form.status" id="cat_status" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                        <label for="cat_status" class="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">{{ t('সক্রিয় হিসেবে চিহ্নিত করুন', 'Mark as Active') }}</label>
+                    </div>
+                </div>
+
+                <!-- Sticky Footer (Save button always visible) -->
+                <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    <button type="button" @click="closeModal" class="w-full sm:w-auto px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[42px] transition">
+                        {{ t('বাতিল', 'Cancel') }}
+                    </button>
+                    <button type="submit" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 shadow-xs min-h-[42px] transition">
+                        {{ isEditing ? t('আপডেট করুন', 'Update') : t('সংরক্ষণ করুন', 'Save') }}
+                    </button>
+                </div>
+            </form>
         </Modal>
     </AdminLayout>
 </template>

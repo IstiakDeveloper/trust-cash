@@ -91,17 +91,19 @@
                 </div>
             </div>
 
-            <!-- Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 border border-slate-200 dark:border-slate-800 space-y-4">
-                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+            <!-- Branch Modal -->
+            <Modal :show="showModal" @close="showModal = false" maxWidth="md">
+                <form @submit.prevent="submitBranch" class="flex flex-col h-full">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                             {{ isEditing ? t('শাখা সম্পাদনা করুন', 'Edit Branch') : t('নতুন শাখা যোগ করুন', 'Add New Branch') }}
                         </h3>
-                        <button @click="showModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold leading-none">&times;</button>
+                        <button type="button" @click="showModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl font-bold leading-none">&times;</button>
                     </div>
 
-                    <form @submit.prevent="submitBranch" class="space-y-3.5 text-xs">
+                    <!-- Scrollable Body -->
+                    <div class="p-4 sm:p-6 space-y-3.5 text-xs flex-1">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 {{ t('শাখার নাম *', 'Branch Name *') }}
@@ -135,6 +137,7 @@
                                 </label>
                                 <input
                                     type="text"
+                                    inputmode="tel"
                                     v-model="form.phone"
                                     placeholder="017XXXXXXXX"
                                     class="w-full min-h-[42px] px-3.5 py-2 border rounded-xl border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
@@ -176,18 +179,19 @@
                                 {{ t('প্রধান শাখা হিসেবে নির্ধারণ করুন', 'Set as Primary / Main Branch') }}
                             </label>
                         </div>
+                    </div>
 
-                        <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <button type="button" @click="showModal = false" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                                {{ t('বাতিল', 'Cancel') }}
-                            </button>
-                            <button type="submit" :disabled="submitting" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-xs transition disabled:opacity-50">
-                                {{ isEditing ? t('শাখা আপডেট করুন', 'Update Branch') : t('শাখা তৈরি করুন', 'Create Branch') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <!-- Sticky Footer (Save button always visible) -->
+                    <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <button type="button" @click="showModal = false" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[42px] transition">
+                            {{ t('বাতিল', 'Cancel') }}
+                        </button>
+                        <button type="submit" :disabled="submitting" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-xs min-h-[42px] transition disabled:opacity-50">
+                            {{ isEditing ? t('শাখা আপডেট করুন', 'Update Branch') : t('শাখা তৈরি করুন', 'Create Branch') }}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     </AdminLayout>
 </template>
@@ -196,6 +200,7 @@
 import { ref } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import Modal from '@/Components/Modal.vue'
 import {
     Plus as PlusIcon,
     Pencil as PencilIcon,

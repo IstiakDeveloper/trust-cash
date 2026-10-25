@@ -156,17 +156,19 @@
 
             <!-- Brand Modal -->
             <Modal :show="showModal" @close="closeModal" maxWidth="md">
-                <div class="p-4 sm:p-6">
-                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <form @submit.prevent="submit" class="flex flex-col h-full">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">
                             {{ editing ? t('ব্র্যান্ড সম্পাদন করুন', 'Edit Brand') : t('নতুন ব্র্যান্ড যোগ করুন', 'Add Brand') }}
                         </h3>
-                        <button @click="closeModal" class="text-slate-400 hover:text-slate-600">
+                        <button type="button" @click="closeModal" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
                             <XMarkIcon class="h-5 w-5" />
                         </button>
                     </div>
 
-                    <form @submit.prevent="submit" class="space-y-4">
+                    <!-- Scrollable Body -->
+                    <div class="p-4 sm:p-6 space-y-4 flex-1">
                         <div>
                             <InputLabel for="name" :value="t('ব্র্যান্ডের নাম *', 'Brand Name *')" class="text-xs font-bold" />
                             <TextInput id="name" v-model="form.name" type="text"
@@ -203,15 +205,16 @@
                                 ]" />
                             </button>
                         </div>
+                    </div>
 
-                        <div class="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <SecondaryButton @click="closeModal" class="w-full sm:w-auto justify-center rounded-xl text-xs">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
-                            <PrimaryButton :disabled="form.processing" class="w-full sm:w-auto justify-center rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500">
-                                {{ editing ? t('সংরক্ষণ করুন', 'Update') : t('তৈরি করুন', 'Create') }}
-                            </PrimaryButton>
-                        </div>
-                    </form>
-                </div>
+                    <!-- Sticky Footer (Save button always visible) -->
+                    <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <SecondaryButton type="button" @click="closeModal" class="w-full sm:w-auto justify-center rounded-xl text-xs min-h-[42px]">{{ t('বাতিল', 'Cancel') }}</SecondaryButton>
+                        <PrimaryButton type="submit" :disabled="form.processing" class="w-full sm:w-auto justify-center rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500 min-h-[42px]">
+                            {{ editing ? t('সংরক্ষণ করুন', 'Update') : t('তৈরি করুন', 'Create') }}
+                        </PrimaryButton>
+                    </div>
+                </form>
             </Modal>
 
             <!-- Add Confirm Dialog -->

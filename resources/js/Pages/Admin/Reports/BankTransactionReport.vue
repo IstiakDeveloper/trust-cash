@@ -80,6 +80,14 @@ const printReport = () => {
     }, 150);
 };
 
+const downloadExcel = () => {
+    const params = new URLSearchParams();
+    if (currentMonth.value) params.append('month', currentMonth.value);
+    if (currentYear.value) params.append('year', currentYear.value);
+    if (selectedBankAccount.value) params.append('bank_account_id', selectedBankAccount.value);
+    window.location.href = route('admin.reports.bank-transactions.excel') + '?' + params.toString();
+};
+
 const formatAmount = (amount) => {
     const num = Number(amount) || 0;
     const hasDecimal = Math.abs(num - Math.round(num)) >= 0.0001;
@@ -142,7 +150,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                 <div class="bg-white shadow-xl sm:rounded-lg overflow-hidden border border-gray-200">
                     <!-- Filter Section -->
                     <div class="p-3.5 sm:p-6 bg-white border-b border-gray-200 no-print">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
                             <div class="sm:col-span-2">
                                 <label class="block mb-1 text-xs font-semibold text-gray-700">
                                     {{ t('ব্যাংক অ্যাকাউন্ট', 'Bank Account') }}
@@ -179,30 +187,41 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                                     </option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="sm:col-span-2 lg:col-span-1">
-                                <div class="grid grid-cols-3 gap-1.5 w-full">
-                                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                                        type="button"
-                                        class="bg-white border border-gray-300 text-gray-700 px-2 py-2 text-xs font-medium rounded-lg hover:bg-gray-50 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
-                                        <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড', 'Word') }}</span>
-                                        <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
-                                    </button>
-                                    <button @click="downloadPdf"
-                                        class="bg-red-600 text-white px-2 py-2 text-xs font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
-                                    </button>
-                                    <button @click="printReport"
-                                        class="bg-indigo-600 text-white px-2 py-2 text-xs font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex justify-center items-center gap-1 shadow-sm transition min-h-[36px]">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                        </svg>
-                                        <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
-                                    </button>
-                                </div>
+                        <!-- Actions Row: Responsive & Never Truncated -->
+                        <div class="mt-3.5 pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2.5">
+                            <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                                <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                                    type="button"
+                                    class="bg-white border border-gray-300 text-gray-700 px-3 py-2 text-xs font-semibold rounded-lg hover:bg-gray-50 flex justify-center items-center gap-1.5 shadow-sm transition whitespace-nowrap min-h-[38px]">
+                                    <span v-if="viewMode === 'dashboard'" class="whitespace-nowrap">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                                    <span v-else class="whitespace-nowrap">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                                </button>
+                                <button @click="downloadPdf"
+                                    type="button"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 text-xs font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex justify-center items-center gap-1.5 shadow-sm transition whitespace-nowrap min-h-[38px]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span class="whitespace-nowrap">{{ t('পিডিএফ', 'PDF') }}</span>
+                                </button>
+                                <button @click="downloadExcel"
+                                    type="button"
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 text-xs font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex justify-center items-center gap-1.5 shadow-sm transition whitespace-nowrap min-h-[38px]">
+                                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span class="whitespace-nowrap">{{ t('এক্সেল', 'Excel') }}</span>
+                                </button>
+                                <button @click="printReport"
+                                    type="button"
+                                    class="bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 text-xs font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 flex justify-center items-center gap-1.5 shadow-sm transition whitespace-nowrap min-h-[38px]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    <span class="whitespace-nowrap">{{ t('প্রিন্ট', 'Print') }}</span>
+                                </button>
                             </div>
                         </div>
 
@@ -451,6 +470,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
                 :date-range="`${getMonthName(currentMonth)} ${formatYear(currentYear)} | ${selectedAccountLabel}`"
                 orientation="portrait"
                 file-name="bank-transaction-report.pdf"
+                @download-excel="downloadExcel"
             >
                 <!-- Quick Summary Bar in Word line style -->
                 <table class="word-table mb-4">

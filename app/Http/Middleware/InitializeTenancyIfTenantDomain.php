@@ -18,10 +18,9 @@ class InitializeTenancyIfTenantDomain
     public function handle(Request $request, Closure $next)
     {
         $host = strtolower($request->getHost());
-        $centralDomains = array_map('strtolower', config('tenancy.central_domains', ['127.0.0.1', 'localhost']));
         $baseDomain = strtolower(TenantRegistrationController::resolveBaseDomain($request));
 
-        if (in_array($host, $centralDomains, true) || $host === $baseDomain) {
+        if (TenancyHost::isCentralRequest($request)) {
             return $next($request);
         }
 
@@ -76,25 +75,50 @@ class InitializeTenancyIfTenantDomain
                 tenancy()->initialize($tenant);
             }
 
-            if (!$request->is('impersonate/*')) {
-                if ($tenant->status === 'pending') {
-                    return response()->view('errors.store_pending', [
-                        'tenant' => $tenant,
-                    ], 403);
-                }
-
-                if ($tenant->status === 'suspended') {
-                    return response()->view('errors.store_suspended', [
-                        'tenant' => $tenant,
-                    ], 403);
-                }
+            if ($tenant->status === 'pending') {
+                return response()->view('errors.store_pending', [
+                    'tenant' => $tenant,
+                ], 403);
             }
 
-            if ($request->path() === '/' || $request->path() === '') {
-                return redirect('/admin/dashboard');
+            if ($tenant->status === 'suspended') {
+                return response()->view('errors.store_suspended', [
+                    'tenant' => $tenant,
+                ], 403);
+            }
+
+            if ($tenant->status === 'trial' && $tenant->trial_ends_at && $tenant->trial_ends_at->isPast()) {
+                return response()->view('errors.store_suspended', [
+                    'tenant' => $tenant,
+                ], 402);
+            }
+
+            if ($this->isStaffPath($request)) {
+                return redirect()->away(TenancyHost::centralOrigin($request).'/login');
             }
         }
 
         return $next($request);
+    }
+
+    private function isStaffPath(Request $request): bool
+    {
+        return $request->is(
+            'login',
+            'logout',
+            'register',
+            'forgot-password',
+            'reset-password',
+            'reset-password/*',
+            'dashboard',
+            'admin',
+            'admin/*',
+            'super-admin',
+            'super-admin/*',
+            'impersonate',
+            'impersonate/*',
+            'profile',
+            'profile/*'
+        );
     }
 }

@@ -92,6 +92,14 @@ class HandleInertiaRequests extends Middleware
                 } catch (\Throwable $e) {}
                 return null;
             },
+            'impersonation' => fn () => $request->session()->get('impersonator_id') ? true : null,
+            'shop_url' => function () {
+                if (!function_exists('tenancy') || !tenancy()->initialized || !tenant()) {
+                    return null;
+                }
+
+                return \App\Support\TenancyHost::shopUrl((string) tenant('id'));
+            },
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error'   => fn() => $request->session()->get('error'),

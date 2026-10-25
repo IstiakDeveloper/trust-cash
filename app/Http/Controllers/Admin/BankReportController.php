@@ -445,4 +445,61 @@ class BankReportController extends Controller
 
         return $pdf->download('bank-report-'.now()->format('Y-m-d').'.pdf');
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $request->validate([
+            'account_id' => 'nullable|exists:bank_accounts,id',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        $query = BankAccount::query();
+        if ($request->account_id) {
+            $query->where('id', $request->account_id);
+        }
+        $accounts = $query->get();
+
+        $fromDate = $request->from_date ? Carbon::parse($request->from_date) : Carbon::now()->startOfMonth();
+        $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
+
+        $accountRows = [];
+        foreach ($accounts as $account) {
+            $inflow = (float) BankTransaction::where('bank_account_id', $account->id)
+                ->where('transaction_type', 'in')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            $outflow = (float) BankTransaction::where('bank_account_id', $account->id)
+                ->where('transaction_type', 'out')
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->whereNull('deleted_at')
+                ->sum('amount');
+
+            $curBal = (float) $account->opening_balance +
+                (float) DB::table('bank_transactions')
+                    ->where('bank_account_id', $account->id)
+                    ->where('date', '<=', $toDate)
+                    ->whereNull('deleted_at')
+                    ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
+
+            $accountRows[] = [
+                'bank_name' => $account->bank_name,
+                'account_name' => $account->account_name,
+                'account_number' => $account->account_number,
+                'branch' => $account->branch ?? '—',
+                'opening_balance' => (float) $account->opening_balance,
+                'total_inflow' => $inflow,
+                'total_outflow' => $outflow,
+                'current_balance' => $curBal,
+            ];
+        }
+
+        $fileName = 'bank-report-' . now()->format('Y-m-d') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BankReportExport($accountRows),
+            $fileName
+        );
+    }
 }

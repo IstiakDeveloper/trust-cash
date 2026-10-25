@@ -41,6 +41,31 @@ class SettingController extends Controller
             Setting::set($key, (string) $value);
         }
 
+        // Sync to Central Tenant record if this is running in a tenant context
+        if (function_exists('tenant') && tenant()) {
+            try {
+                $tenant = tenant();
+                $tenantUpdate = [];
+                if (!empty($data['business_name'])) {
+                    $tenantUpdate['name'] = $data['business_name'];
+                }
+                if (!empty($data['business_email'])) {
+                    $tenantUpdate['email'] = $data['business_email'];
+                }
+                if (isset($data['business_phone'])) {
+                    $tenantUpdate['phone'] = $data['business_phone'];
+                }
+                if (isset($data['business_address'])) {
+                    $tenantUpdate['address'] = $data['business_address'];
+                }
+                if (!empty($tenantUpdate)) {
+                    $tenant->update($tenantUpdate);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Could not sync tenant settings to central database: " . $e->getMessage());
+            }
+        }
+
         return redirect()->back()->with('success', 'Settings updated successfully.');
     }
 }

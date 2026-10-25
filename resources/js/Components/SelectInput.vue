@@ -36,7 +36,7 @@ const computedValue = computed({
   <select
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
-    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+    class="w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-base sm:text-xs transition"
     :required="required"
     :disabled="disabled"
   >

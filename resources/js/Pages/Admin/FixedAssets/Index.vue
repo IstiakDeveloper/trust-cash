@@ -374,22 +374,23 @@
         </div>
 
         <!-- Create/Edit Asset Head Modal -->
-        <Modal :show="showAssetModal" @close="showAssetModal = false">
-            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl">
-                <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <Modal :show="showAssetModal" @close="showAssetModal = false" maxWidth="lg">
+            <form @submit.prevent="submitAssetForm" class="flex flex-col h-full">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center shrink-0">
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
                         {{ isEditingAsset ? t('স্থায়ী সম্পদ হেড সম্পাদনা', 'Edit Asset Group') : t('নতুন স্থায়ী সম্পদ হেড যোগ', 'Add New Asset Group') }}
                     </h3>
-                    <button @click="showAssetModal = false" class="text-gray-400 hover:text-gray-500">
+                    <button type="button" @click="showAssetModal = false" class="p-1 rounded-lg text-gray-400 hover:text-gray-500 dark:hover:text-gray-200 transition">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <form @submit.prevent="submitAssetForm">
-                    <div class="space-y-4">
+                <!-- Scrollable Body -->
+                <div class="p-4 sm:p-6 space-y-4 flex-1">
                         <div>
                             <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                                 {{ t('সম্পদের মূল নাম (Asset Name) *', 'Asset Name *') }}
@@ -513,47 +514,48 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <button
-                            type="button"
-                            @click="showAssetModal = false"
-                            class="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                        >
-                            {{ t('বাতিল', 'Cancel') }}
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="assetForm.processing"
-                            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition disabled:opacity-50"
-                        >
-                            {{ isEditingAsset ? t('আপডেট করুন', 'Update Asset') : t('সংরক্ষণ করুন', 'Save Asset') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <!-- Sticky Footer (Save button always visible) -->
+                <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    <button
+                        type="button"
+                        @click="showAssetModal = false"
+                        class="w-full sm:w-auto px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 min-h-[42px] transition"
+                    >
+                        {{ t('বাতিল', 'Cancel') }}
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="assetForm.processing"
+                        class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs min-h-[42px] transition disabled:opacity-50"
+                    >
+                        {{ isEditingAsset ? t('আপডেট করুন', 'Update Asset') : t('সংরক্ষণ করুন', 'Save Asset') }}
+                    </button>
+                </div>
+            </form>
         </Modal>
 
         <!-- Add / Edit Item Modal -->
-        <Modal :show="showItemModal" @close="showItemModal = false">
-            <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl">
-                <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100 dark:border-gray-700">
+        <Modal :show="showItemModal" @close="showItemModal = false" maxWidth="lg">
+            <form @submit.prevent="submitItemForm" class="flex flex-col h-full">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center shrink-0">
                     <div>
                         <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
                             {{ targetAsset?.name }}
                         </span>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mt-0.5">
+                        <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mt-0.5">
                             {{ isEditingItem ? t('আইটেম সম্পাদনা', 'Edit Item') : t('নতুন আইটেম ক্রয় / সংযোজন', 'Add Purchase Item') }}
                         </h3>
                     </div>
-                    <button @click="showItemModal = false" class="text-gray-400 hover:text-gray-500">
+                    <button type="button" @click="showItemModal = false" class="p-1 rounded-lg text-gray-400 hover:text-gray-500 dark:hover:text-gray-200 transition">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <form @submit.prevent="submitItemForm">
-                    <div class="space-y-4">
+                <!-- Scrollable Body -->
+                <div class="p-4 sm:p-6 space-y-4 flex-1">
                         <div>
                             <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                                 {{ t('আইটেমের নাম *', 'Item Name *') }}
@@ -662,24 +664,24 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <button
-                            type="button"
-                            @click="showItemModal = false"
-                            class="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                        >
-                            {{ t('বাতিল', 'Cancel') }}
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="itemForm.processing"
-                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition disabled:opacity-50"
-                        >
-                            {{ isEditingItem ? t('আপডেট করুন', 'Update Item') : t('সংরক্ষণ করুন', 'Save Item') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <!-- Sticky Footer (Save button always visible) -->
+                <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    <button
+                        type="button"
+                        @click="showItemModal = false"
+                        class="w-full sm:w-auto px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 min-h-[42px] transition"
+                    >
+                        {{ t('বাতিল', 'Cancel') }}
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="itemForm.processing"
+                        class="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs min-h-[42px] transition disabled:opacity-50"
+                    >
+                        {{ isEditingItem ? t('আপডেট করুন', 'Update Item') : t('সংরক্ষণ করুন', 'Save Item') }}
+                    </button>
+                </div>
+            </form>
         </Modal>
 
         <!-- Delete Confirmation Modal -->

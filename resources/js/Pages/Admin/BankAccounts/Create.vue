@@ -61,16 +61,9 @@
                                 <input type="number" id="opening_balance" v-model="form.opening_balance"
                                     class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                                     required />
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="current_balance"
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Current Balance
-                                </label>
-                                <input type="number" id="current_balance" v-model="form.current_balance"
-                                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    required />
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Money already in this account. It is counted as capital on the balance sheet. Current balance starts at this amount.
+                                </p>
                             </div>
 
                             <div class="mb-4">
@@ -120,6 +113,7 @@ export default {
     },
     methods: {
         submit() {
+            this.form.current_balance = this.form.opening_balance
             this.$inertia.post(route('admin.bank-accounts.store'), this.form)
                 .then(() => {
                     this.form = {

@@ -211,16 +211,18 @@
             </div>
 
             <!-- Create / Edit Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+            <Modal :show="showModal" @close="showModal = false" maxWidth="lg">
+                <form @submit.prevent="submitSupplier" class="flex flex-col h-full">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                             {{ isEditing ? t('সাপ্লায়ার তথ্য সম্পাদন', 'Edit Supplier') : t('নতুন সাপ্লায়ার যোগ করুন', 'Add New Supplier') }}
                         </h3>
-                        <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                        <button type="button" @click="showModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition text-lg">&times;</button>
                     </div>
 
-                    <form @submit.prevent="submitSupplier" class="mt-4 space-y-3 text-xs">
+                    <!-- Scrollable Body -->
+                    <div class="p-4 sm:p-6 space-y-3.5 text-xs flex-1">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('সাপ্লায়ার / প্রতিনিধির নাম *', 'Contact Name *') }}</label>
                             <input
@@ -228,7 +230,7 @@
                                 v-model="form.name"
                                 required
                                 :placeholder="t('যেমনঃ মোঃ রহিম উল্লাহ', 'e.g. Rahim Ullah')"
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                             />
                         </div>
 
@@ -238,18 +240,19 @@
                                 type="text"
                                 v-model="form.company_name"
                                 :placeholder="t('যেমনঃ মেঘনা গ্রুপ, আকিজ ফুডস...', 'e.g. Meghna Group')"
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                             />
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('মোবাইল নম্বর', 'Phone Number') }}</label>
                                 <input
                                     type="text"
+                                    inputmode="tel"
                                     v-model="form.phone"
                                     placeholder="017xxxxxxxx"
-                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                                 />
                             </div>
                             <div>
@@ -258,7 +261,7 @@
                                     type="email"
                                     v-model="form.email"
                                     placeholder="supplier@company.com"
-                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                    class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                                 />
                             </div>
                         </div>
@@ -269,10 +272,11 @@
                             </label>
                             <input
                                 type="number"
+                                inputmode="decimal"
                                 step="0.01"
                                 v-model="form.opening_balance"
                                 placeholder="0.00"
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                             />
                             <p v-if="isEditing" class="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
                                 {{ t('⚠️ প্রারম্ভিক দেনা পরিবর্তন করলে মোট দেনাতেও সমন্বয় করা হবে।', '⚠️ Updating opening balance will adjust the current payable balance.') }}
@@ -285,7 +289,7 @@
                                 v-model="form.address"
                                 rows="2"
                                 :placeholder="t('অফিস বা গুদামের ঠিকানা...', 'Shop/Office location...')"
-                                class="w-full rounded-xl border-slate-200 bg-white p-2.5 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white p-2.5 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                             ></textarea>
                         </div>
 
@@ -293,54 +297,58 @@
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('অবস্থা', 'Status') }}</label>
                             <select
                                 v-model="form.status"
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-600"
                             >
                                 <option value="active">{{ t('সক্রিয়', 'Active') }}</option>
                                 <option value="inactive">{{ t('নিষ্ক্রিয়', 'Inactive') }}</option>
                             </select>
                         </div>
-
-                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <button
-                                type="button"
-                                @click="showModal = false"
-                                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                            >
-                                {{ t('বাতিল', 'Cancel') }}
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="submitting"
-                                class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
-                            >
-                                {{ isEditing ? t('পরিবর্তন সংরক্ষণ', 'Update Supplier') : t('সংরক্ষণ করুন', 'Save Supplier') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Pay Supplier Due Modal -->
-            <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('সাপ্লায়ার দেনা পরিশোধ', 'Pay Supplier Due') }}</h3>
-                            <p class="text-xs text-slate-500">{{ activeSupplier?.name }} ({{ t('পাওনা:', 'Due:') }} ৳{{ formatNumber(activeSupplier?.current_balance) }})</p>
-                        </div>
-                        <button @click="showPaymentModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
                     </div>
 
-                    <form @submit.prevent="submitPayment" class="mt-4 space-y-3 text-xs">
+                    <!-- Sticky Footer (Save button always visible) -->
+                    <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <button
+                            type="button"
+                            @click="showModal = false"
+                            class="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 min-h-[42px] transition"
+                        >
+                            {{ t('বাতিল', 'Cancel') }}
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="submitting"
+                            class="w-full sm:w-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-xs min-h-[42px] disabled:opacity-50 transition"
+                        >
+                            {{ isEditing ? t('পরিবর্তন সংরক্ষণ', 'Update Supplier') : t('সংরক্ষণ করুন', 'Save Supplier') }}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            <!-- Pay Supplier Due Modal -->
+            <Modal :show="showPaymentModal" @close="showPaymentModal = false" maxWidth="md">
+                <form @submit.prevent="submitPayment" class="flex flex-col h-full">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{{ t('সাপ্লায়ার দেনা পরিশোধ', 'Pay Supplier Due') }}</h3>
+                            <p class="text-xs text-slate-500">{{ activeSupplier?.name }} ({{ t('পাওনা:', 'Due:') }} ৳{{ formatNumber(activeSupplier?.current_balance) }})</p>
+                        </div>
+                        <button type="button" @click="showPaymentModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition text-lg">&times;</button>
+                    </div>
+
+                    <!-- Scrollable Body -->
+                    <div class="p-4 sm:p-6 space-y-3.5 text-xs flex-1">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('পরিশোধের পরিমাণ (টাকা) *', 'Payment Amount *') }}</label>
                             <input
                                 type="number"
+                                inputmode="decimal"
                                 step="0.01"
                                 v-model="paymentForm.amount"
                                 :max="activeSupplier?.current_balance"
                                 required
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base font-bold text-rose-600 dark:bg-slate-800 dark:border-slate-700 dark:text-rose-400"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base font-bold text-rose-600 dark:bg-slate-800 dark:border-slate-700 dark:text-rose-400 focus:ring-1 focus:ring-rose-500"
                             />
                         </div>
 
@@ -377,7 +385,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('মাধ্যম', 'Payment Method') }}</label>
                                 <select
@@ -410,26 +418,27 @@
                                 class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                             />
                         </div>
+                    </div>
 
-                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <button
-                                type="button"
-                                @click="showPaymentModal = false"
-                                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                            >
-                                {{ t('বাতিল', 'Cancel') }}
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="submittingPayment || isInsufficientBalance || !paymentForm.bank_account_id || paymentForm.amount <= 0"
-                                class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {{ t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <!-- Sticky Footer (Confirm payment always visible) -->
+                    <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <button
+                            type="button"
+                            @click="showPaymentModal = false"
+                            class="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 min-h-[42px] transition"
+                        >
+                            {{ t('বাতিল', 'Cancel') }}
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="submittingPayment || isInsufficientBalance || !paymentForm.bank_account_id || paymentForm.amount <= 0"
+                            class="w-full sm:w-auto rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-rose-500 shadow-xs min-h-[42px] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            {{ t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     </AdminLayout>
 </template>
@@ -438,6 +447,7 @@
 import { ref, watch, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import Modal from '@/Components/Modal.vue'
 import Pagination from '@/Components/Pagination.vue'
 import debounce from 'lodash/debounce'
 import {

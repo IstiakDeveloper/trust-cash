@@ -90,13 +90,21 @@ class BalanceSheetController extends Controller
         // Supplier Due (Accounts Payable) up to the end date
         $supplierDue = $this->calculateSupplierDue($endDate);
 
+        // Cash already in the account when it was opened. It is owner's capital,
+        // and it is not a Fund In transaction. The asset side already includes it
+        // inside the bank balance, so the liability side must include it too.
+        $openingCapital = $this->calculateOpeningCapital();
+
         // Net Profit calculation
         $netProfit = $productTotalProfit + $extraIncomeAmount - $expensesAmount;
-        $total = $fundAmount + $netProfit + $supplierDue;
+        $total = $fundAmount + $openingCapital + $netProfit + $supplierDue;
 
         return [
             'fund' => [
                 'period' => (float) $fundAmount,
+            ],
+            'opening_capital' => [
+                'period' => (float) $openingCapital,
             ],
             'net_profit' => [
                 'period' => (float) $netProfit,
@@ -233,6 +241,12 @@ class BalanceSheetController extends Controller
         return $soldProductsCost;
     }
 
+    private function calculateOpeningCapital(): float
+    {
+        // Same accounts as the bank asset: every non-deleted account, including inactive ones.
+        return (float) BankAccount::query()->sum('opening_balance');
+    }
+
     private function calculateBankBalance(Carbon $endDate)
     {
         // Get all bank accounts
@@ -310,5 +324,30 @@ class BalanceSheetController extends Controller
 
         // Download PDF
         return $pdf->download($filename);
+    }
+
+    public function downloadExcel(Request $request)
+    {
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth();
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $fundAndLiabilities = $this->calculateFundAndLiabilities($startDate, $endDate);
+        $propertyAndAssets = $this->calculatePropertyAndAssets($startDate, $endDate);
+
+        $filename = 'balance-sheet-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BalanceSheetExport(
+                $fundAndLiabilities,
+                $propertyAndAssets,
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d')
+            ),
+            $filename
+        );
     }
 }

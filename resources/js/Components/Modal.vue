@@ -80,7 +80,7 @@ const maxWidthClass = computed(() => {
         ref="dialog"
     >
         <div
-            class="fixed inset-0 z-50 overflow-y-auto px-3 py-4 sm:px-0 sm:py-6 flex items-center justify-center min-h-screen"
+            class="fixed inset-0 z-50 overflow-y-auto px-0 sm:px-4 flex items-end sm:items-center justify-center min-h-screen"
             scroll-region
         >
             <Transition
@@ -104,18 +104,26 @@ const maxWidthClass = computed(() => {
 
             <Transition
                 enter-active-class="ease-out duration-300"
-                enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enter-from-class="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
                 enter-to-class="opacity-100 translate-y-0 sm:scale-100"
                 leave-active-class="ease-in duration-200"
                 leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-                leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                leave-to-class="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
             >
                 <div
                     v-show="show"
-                    class="transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl transition-all w-full max-h-[90vh] flex flex-col my-auto sm:mx-auto border border-slate-200/80 dark:border-slate-800"
+                    class="transform rounded-t-3xl sm:rounded-2xl bg-white dark:bg-slate-900 shadow-2xl transition-all w-full max-h-[92dvh] sm:max-h-[90vh] flex flex-col border border-slate-200/90 dark:border-slate-800 overflow-hidden text-left"
                     :class="maxWidthClass"
                 >
-                    <slot v-if="showSlot" />
+                    <!-- Drag handle pill for mobile app feel -->
+                    <div class="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+                        <span class="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                    </div>
+
+                    <!-- Scrollable Modal Content Body -->
+                    <div class="flex-1 overflow-y-auto overscroll-contain flex flex-col min-h-0">
+                        <slot v-if="showSlot" />
+                    </div>
                 </div>
             </Transition>
         </div>

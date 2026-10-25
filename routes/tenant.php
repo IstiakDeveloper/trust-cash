@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Public\StorefrontController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -11,8 +12,8 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 | Tenant Routes
 |--------------------------------------------------------------------------
 |
-| These routes are loaded when a request is made to a tenant domain/subdomain.
-| All database queries within these routes automatically target the tenant's DB!
+| A tenant subdomain is the public shop only. Shop admin lives on the main domain.
+| These routes run when the host is a tenant domain. Database queries use that shop.
 |
 */
 
@@ -22,7 +23,6 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
     \App\Http\Middleware\EnsureTenantActive::class,
 ])->group(function () {
-    // Serve dynamic favicon for tenant domains
     Route::get('/favicon.ico', function () {
         try {
             $favicon = \App\Models\Setting::getCentral('site_favicon', '');
@@ -39,7 +39,6 @@ Route::middleware([
         abort(404);
     });
 
-    // Serve tenant storage files (images, documents, etc.)
     Route::get('/storage/{path}', function (string $path) {
         $tenantFile = storage_path("app/public/{$path}");
         if (is_file($tenantFile)) {
@@ -54,21 +53,5 @@ Route::middleware([
         abort(404);
     })->where('path', '.*')->name('tenant.storage.file');
 
-    Route::get('/impersonate/{token}', function ($token) {
-        return \Stancl\Tenancy\Features\UserImpersonation::makeResponse($token);
-    })->name('tenant.impersonate');
-
-    Route::get('/', function () {
-        return redirect()->route('login');
-    });
-
-    require __DIR__ . '/auth.php';
-
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/dashboard', function () {
-            return redirect('/admin/dashboard');
-        })->name('tenant.dashboard');
-
-        // Note: The admin routes in routes/web.php are also accessible in tenant context
-    });
+    Route::get('/', [StorefrontController::class, 'index'])->name('tenant.storefront');
 });

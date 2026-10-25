@@ -315,3 +315,32 @@
         break-after: page !important;
     }
 }
+
+/* ============================================================
+   MOBILE-FIRST NATIVE APP POLISH & UTILITIES
+   ============================================================ */
+@layer utilities {
+    /* Safe Area insets for modern mobile devices (iPhone notch/home bar) */
+    .pb-safe {
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+    .pt-safe {
+        padding-top: max(0.5rem, env(safe-area-inset-top));
+    }
+    .min-h-touch {
+        min-height: 44px;
+    }
+}
+
+/* Smooth native scroll feel on iOS & Android */
+html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Modal and bottom-sheet scrollbar styling */
+.overscroll-contain {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+

@@ -232,23 +232,30 @@
                 </div>
             </div>
 
-            <!-- Pay Due Modal -->
-            <div v-if="showPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('সাপ্লায়ার দেনা পরিশোধ', 'Record Payment') }}</h3>
-                        <button @click="showPaymentModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            <!-- Pay Due Modal (Responsive Bottom-Sheet with Sticky Footer) -->
+            <Modal :show="showPaymentModal" @close="showPaymentModal = false" maxWidth="md">
+                <form @submit.prevent="submitPayment" class="flex flex-col flex-1 min-h-0">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                            {{ t('সাপ্লায়ার দেনা পরিশোধ', 'Record Payment') }}
+                        </h3>
+                        <button type="button" @click="showPaymentModal = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-lg leading-none transition">
+                            &times;
+                        </button>
                     </div>
 
-                    <form @submit.prevent="submitPayment" class="mt-4 space-y-3 text-xs">
+                    <!-- Scrollable Body -->
+                    <div class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-3.5 text-xs">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('পরিশোধের পরিমাণ (টাকা) *', 'Amount (BDT) *') }}</label>
                             <input
                                 type="number"
                                 step="0.01"
+                                inputmode="decimal"
                                 v-model="paymentForm.amount"
                                 required
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base font-bold text-rose-600 dark:bg-slate-800 dark:border-slate-700 dark:text-rose-400"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base font-bold text-rose-600 dark:bg-slate-800 dark:border-slate-700 dark:text-rose-400 min-h-[42px]"
                             />
                         </div>
 
@@ -257,7 +264,7 @@
                             <select
                                 v-model="paymentForm.bank_account_id"
                                 required
-                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base sm:text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[42px]"
                                 :class="isInsufficientBalance ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500' : ''"
                             >
                                 <option value="" disabled>{{ t('-- ব্যাংক / ক্যাশ হিসাব নির্বাচন করুন * --', '-- Select Bank / Cash Account * --') }}</option>
@@ -285,10 +292,10 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('মাধ্যম', 'Method') }}</label>
-                                <select v-model="paymentForm.payment_method" class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                <select v-model="paymentForm.payment_method" class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base sm:text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[42px]">
                                     <option value="cash">{{ t('নগদ (Cash)', 'Cash') }}</option>
                                     <option value="bank">{{ t('ব্যাংক ট্রান্সফার', 'Bank Transfer') }}</option>
                                     <option value="mobile">{{ t('মোবাইল ব্যাংকিং', 'Mobile') }}</option>
@@ -297,28 +304,31 @@
                             </div>
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('তারিখ *', 'Date *') }}</label>
-                                <input type="date" v-model="paymentForm.payment_date" required class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white" />
+                                <input type="date" v-model="paymentForm.payment_date" required class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base sm:text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[42px]" />
                             </div>
                         </div>
 
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{ t('রেফারেন্স / নোট', 'Reference / Note') }}</label>
-                            <input type="text" v-model="paymentForm.reference_no" :placeholder="t('চেক বা রসিদ নম্বর...', 'Check #, receipt #...')" class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white" />
+                            <input type="text" v-model="paymentForm.reference_no" :placeholder="t('চেক বা রসিদ নম্বর...', 'Check #, receipt #...')" class="w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-base sm:text-xs font-medium dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[42px]" />
                         </div>
+                    </div>
 
-                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <button type="button" @click="showPaymentModal = false" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ t('বাতিল', 'Cancel') }}</button>
-                            <button
-                                type="submit"
-                                :disabled="submittingPayment || isInsufficientBalance || !paymentForm.bank_account_id || paymentForm.amount <= 0"
-                                class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            >
-                                {{ t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <!-- Sticky Action Footer -->
+                    <div class="sticky bottom-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <button type="button" @click="showPaymentModal = false" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 transition">
+                            {{ t('বাতিল', 'Cancel') }}
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="submittingPayment || isInsufficientBalance || !paymentForm.bank_account_id || paymentForm.amount <= 0"
+                            class="rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition"
+                        >
+                            {{ submittingPayment ? t('প্রক্রিয়াধীন...', 'Processing...') : t('পরিশোধ নিশ্চিত করুন', 'Confirm Payment') }}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     </AdminLayout>
 </template>
@@ -327,6 +337,7 @@
 import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import Modal from '@/Components/Modal.vue'
 import {
     ArrowLeft as ArrowLeftIcon,
     DollarSign as DollarSignIcon,

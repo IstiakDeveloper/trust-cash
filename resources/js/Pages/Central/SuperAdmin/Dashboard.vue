@@ -240,7 +240,14 @@ const formatCurrency = (val) => {
                                     <td class="py-3">
                                         <div class="font-semibold text-white">{{ tenant.name }}</div>
                                         <div class="text-[11px] text-slate-400 flex items-center gap-1">
-                                            <span>{{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}</span>
+                                            <a
+                                                :href="tenant.shop_url || ('https://' + (tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id))"
+                                                target="_blank"
+                                                title="Live shop"
+                                                class="hover:text-emerald-400 hover:underline"
+                                            >
+                                                {{ tenant.shop_host || tenant.domains?.[0]?.domain || tenant.id }}
+                                            </a>
                                         </div>
                                     </td>
                                     <td class="py-3">
@@ -263,11 +270,10 @@ const formatCurrency = (val) => {
                                     <td class="py-3 text-right">
                                         <a
                                             :href="route('super-admin.tenants.impersonate', tenant.id)"
-                                            target="_blank"
-                                            title="1-Click Login As Shop Admin"
+                                            title="Open shop admin on the main domain"
                                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-medium transition"
                                         >
-                                            Login
+                                            Admin
                                             <ArrowUpRight class="w-3 h-3" />
                                         </a>
                                     </td>

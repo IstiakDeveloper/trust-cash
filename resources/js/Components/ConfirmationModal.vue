@@ -12,35 +12,39 @@
             </TransitionChild>
 
             <div class="fixed inset-0 overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4 text-center">
+                <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center">
                     <TransitionChild as="template"
                         enter="duration-300 ease-out"
-                        enter-from="opacity-0 scale-95"
-                        enter-to="opacity-100 scale-100"
+                        enter-from="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
+                        enter-to="opacity-100 translate-y-0 sm:scale-100"
                         leave="duration-200 ease-in"
-                        leave-from="opacity-100 scale-100"
-                        leave-to="opacity-0 scale-95">
-                        <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                            <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+                        leave-from="opacity-100 translate-y-0 sm:scale-100"
+                        leave-to="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95">
+                        <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-t-3xl sm:rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 text-left align-middle shadow-2xl transition-all border border-slate-200 dark:border-slate-800 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                            <div class="sm:hidden flex justify-center pb-3">
+                                <span class="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                            </div>
+
+                            <DialogTitle as="h3" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                                 {{ title }}
                             </DialogTitle>
 
                             <div class="mt-2">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                                     {{ message }}
                                 </p>
                             </div>
 
-                            <div class="mt-4 flex justify-end space-x-3">
+                            <div class="mt-5 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
                                 <button type="button"
-                                    class="inline-flex justify-center rounded-md border border-transparent bg-red-100 dark:bg-red-900 px-4 py-2 text-sm font-medium text-red-900 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-800 focus:outline-none"
-                                    @click="$emit('confirm')">
-                                    {{ confirmText }}
-                                </button>
-                                <button type="button"
-                                    class="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+                                    class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                                     @click="$emit('close')">
                                     Cancel
+                                </button>
+                                <button type="button"
+                                    class="w-full sm:w-auto inline-flex justify-center items-center rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-rose-500 shadow-xs transition"
+                                    @click="$emit('confirm')">
+                                    {{ confirmText }}
                                 </button>
                             </div>
                         </DialogPanel>

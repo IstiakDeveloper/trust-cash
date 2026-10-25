@@ -178,6 +178,11 @@
                             </td>
                         </tr>
                         <tr>
+                            <td>{{ ($isBn ?? false) ? 'প্রারম্ভিক মূলধন' : 'Opening Capital' }}</td>
+                            <td class="text-right">{{ format_amount($fund_and_liabilities['opening_capital']['period'] ?? 0, true, $isBn ?? false) }}
+                            </td>
+                        </tr>
+                        <tr>
                             <td>{{ ($isBn ?? false) ? 'নিট লাভ' : 'Net Profit' }}</td>
                             <td class="text-right">
                                 {{ format_amount($fund_and_liabilities['net_profit']['period'], true, $isBn ?? false) }}

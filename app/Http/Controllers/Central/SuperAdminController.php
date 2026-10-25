@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers\Central;
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\Tenant;
 use App\Models\TenantPayment;
 use App\Models\TenantSubscription;
+use App\Models\User;
 use App\Services\TenantDatabaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Stancl\Tenancy\Features\UserImpersonation;
 
 class SuperAdminController extends Controller
 {
@@ -126,7 +128,7 @@ class SuperAdminController extends Controller
         ];
 
         try {
-            $tenant->run(function () use (&$resourceStats) {
+            $tenant->run(function () use (&$resourceStats, $tenant) {
                 if (\Illuminate\Support\Facades\Schema::hasTable('products')) {
                     $resourceStats['products_count'] = \Illuminate\Support\Facades\DB::table('products')->count();
                 }
@@ -135,6 +137,12 @@ class SuperAdminController extends Controller
                 }
                 if (\Illuminate\Support\Facades\Schema::hasTable('sales')) {
                     $resourceStats['sales_count'] = \Illuminate\Support\Facades\DB::table('sales')->count();
+                }
+                if (empty($tenant->address) && \Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    $settingAddress = \App\Models\Setting::get('business_address');
+                    if (!empty($settingAddress)) {
+                        $tenant->address = $settingAddress;
+                    }
                 }
             });
         } catch (\Throwable $e) {
@@ -186,90 +194,90 @@ class SuperAdminController extends Controller
 
         try {
             $tenant = Tenant::create([
-            'id'             => $subdomain,
-            'name'           => $validated['business_name'],
-            'email'          => $validated['email'],
-            'phone'          => $validated['phone'] ?? null,
-            'plan_id'        => $plan->id,
-            'status'         => $initialStatus,
-            'discount_type'  => $discountType,
-            'discount_value' => $discountValue,
-            'discount_note'  => $discountNote,
-            'trial_ends_at'  => $trialEndsAt,
-        ]);
+                'id'             => $subdomain,
+                'name'           => $validated['business_name'],
+                'email'          => $validated['email'],
+                'phone'          => $validated['phone'] ?? null,
+                'plan_id'        => $plan->id,
+                'status'         => $initialStatus,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountValue,
+                'discount_note'  => $discountNote,
+                'trial_ends_at'  => $trialEndsAt,
+            ]);
 
-        // Attach domain dynamically
-        $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
-        $fullDomain = TenantRegistrationController::tenantFqdn($subdomain);
+            // Attach domain dynamically
+            $baseDomain = \App\Http\Controllers\Central\TenantRegistrationController::resolveBaseDomain();
+            $fullDomain = TenantRegistrationController::tenantFqdn($subdomain);
 
-        $tenant->domains()->create(['domain' => $fullDomain]);
-        if ($baseDomain === 'localhost') {
-            $tenant->domains()->create(['domain' => "{$subdomain}.127.0.0.1"]);
-        }
+            $tenant->domains()->create(['domain' => $fullDomain]);
+            if ($baseDomain === 'localhost') {
+                $tenant->domains()->create(['domain' => "{$subdomain}.127.0.0.1"]);
+            }
 
-        // Seed initial tenant admin user & default database
-        try {
-            $tenant->run(function () use ($validated, $subdomain) {
-                $adminRole = \App\Models\Role::firstOrCreate(
-                    ['slug' => 'admin'],
-                    [
-                        'name'        => 'Admin',
-                        'permissions' => null,
-                    ]
-                );
-                \App\Models\Role::firstOrCreate(
-                    ['slug' => 'manager'],
-                    [
-                        'name'        => 'Manager',
-                        'permissions' => null,
-                    ]
-                );
-                \App\Models\Role::firstOrCreate(
-                    ['slug' => 'staff'],
-                    [
-                        'name'        => 'Staff',
-                        'permissions' => null,
-                    ]
-                );
+            // Seed initial tenant admin user & default database
+            try {
+                $tenant->run(function () use ($validated, $subdomain) {
+                    $adminRole = \App\Models\Role::firstOrCreate(
+                        ['slug' => 'admin'],
+                        [
+                            'name'        => 'Admin',
+                            'permissions' => null,
+                        ]
+                    );
+                    \App\Models\Role::firstOrCreate(
+                        ['slug' => 'manager'],
+                        [
+                            'name'        => 'Manager',
+                            'permissions' => null,
+                        ]
+                    );
+                    \App\Models\Role::firstOrCreate(
+                        ['slug' => 'staff'],
+                        [
+                            'name'        => 'Staff',
+                            'permissions' => null,
+                        ]
+                    );
 
-                \App\Models\User::create([
-                    'name'     => $validated['owner_name'],
-                    'username' => $subdomain,
-                    'email'    => $validated['email'],
-                    'phone'    => $validated['phone'] ?? null,
-                    'password' => Hash::make($validated['password']),
-                    'role_id'  => $adminRole->id,
-                    'status'   => 1,
-                ]);
+                    \App\Models\User::create([
+                        'name'     => $validated['owner_name'],
+                        'username' => $subdomain,
+                        'email'    => $validated['email'],
+                        'phone'    => $validated['phone'] ?? null,
+                        'password' => Hash::make($validated['password']),
+                        'role_id'  => $adminRole->id,
+                        'status'   => 1,
+                    ]);
 
-                // Ensure default units and roles are seeded for this new shop owner
-                (new \Database\Seeders\TenantDatabaseSeeder())->run();
-            });
-        } catch (\Throwable $e) {
-            // Log tenant seeding warning
-        }
+                    // Ensure default units and roles are seeded for this new shop owner
+                    (new \Database\Seeders\TenantDatabaseSeeder())->run();
+                });
+            } catch (\Throwable $e) {
+                // Log tenant seeding warning
+            }
 
-        // Create subscription record
-        $subStatus = $initialStatus === 'trial' ? 'trialing' : ($initialStatus === 'pending' ? 'pending' : 'active');
-        $endsAt = $initialStatus === 'trial'
-            ? now()->addDays($trialDays)
-            : ($billingCycle === 'yearly' ? now()->addYear() : now()->addMonth());
+            // Create subscription record
+            $subStatus = $initialStatus === 'trial' ? 'trialing' : ($initialStatus === 'pending' ? 'pending' : 'active');
+            $endsAt = $initialStatus === 'trial'
+                ? now()->addDays($trialDays)
+                : ($billingCycle === 'yearly' ? now()->addYear() : now()->addMonth());
 
-        TenantSubscription::create([
-            'tenant_id'      => $tenant->id,
-            'plan_id'        => $plan->id,
-            'status'         => $subStatus,
-            'billing_cycle'  => $billingCycle,
-            'discount_type'  => $discountType,
-            'discount_value' => $discountValue,
-            'discount_note'  => $discountNote,
-            'custom_price'   => $customPrice,
-            'starts_at'      => now(),
-            'ends_at'        => $endsAt,
-            'auto_renew'     => true,
-        ]);
+            TenantSubscription::create([
+                'tenant_id'      => $tenant->id,
+                'plan_id'        => $plan->id,
+                'status'         => $subStatus,
+                'billing_cycle'  => $billingCycle,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountValue,
+                'discount_note'  => $discountNote,
+                'custom_price'   => $customPrice,
+                'starts_at'      => now(),
+                'ends_at'        => $endsAt,
+                'auto_renew'     => true,
+            ]);
 
-        return redirect()->route('super-admin.tenants.index')->with('success', "Store \"{$validated['business_name']}\" ({$fullDomain}) created successfully!");
+            return redirect()->route('super-admin.tenants.index')->with('success', "Store \"{$validated['business_name']}\" ({$fullDomain}) created successfully!");
         } catch (\Throwable $e) {
             app(TenantDatabaseService::class)->rollbackFailedProvision($subdomain, $tenant ?? null);
 
@@ -277,6 +285,101 @@ class SuperAdminController extends Controller
                 'error' => 'Store could not be created: '.$e->getMessage(),
             ])->withInput();
         }
+    }
+
+    /**
+     * Update Store / Shop Information from Super Admin
+     */
+    public function updateTenant(Request $request, Tenant $tenant)
+    {
+        $validated = $request->validate([
+            'name'           => 'required|string|max:255',
+            'email'          => 'required|email|max:255',
+            'phone'          => 'nullable|string|max:50',
+            'address'        => 'nullable|string|max:500',
+            'plan_id'        => 'nullable|exists:plans,id',
+            'status'         => 'nullable|in:active,trial,suspended,pending,cancelled',
+            'trial_ends_at'  => 'nullable|date',
+        ]);
+
+        $updateData = [
+            'name'    => $validated['name'],
+            'email'   => $validated['email'],
+            'phone'   => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+        ];
+
+        if (!empty($validated['plan_id'])) {
+            $updateData['plan_id'] = $validated['plan_id'];
+        }
+
+        if (!empty($validated['status'])) {
+            $updateData['status'] = $validated['status'];
+        }
+
+        if (array_key_exists('trial_ends_at', $validated)) {
+            $updateData['trial_ends_at'] = !empty($validated['trial_ends_at']) ? \Carbon\Carbon::parse($validated['trial_ends_at']) : null;
+        }
+
+        $tenant->update($updateData);
+
+        // Sync subscription if plan_id or status changed
+        if (!empty($validated['plan_id']) || !empty($validated['status'])) {
+            $sub = $tenant->subscriptions()->latest()->first();
+            if ($sub) {
+                $subUpdate = [];
+                if (!empty($validated['plan_id'])) {
+                    $subUpdate['plan_id'] = $validated['plan_id'];
+                }
+                if (!empty($validated['status'])) {
+                    $subUpdate['status'] = $validated['status'] === 'suspended' ? 'cancelled' : ($validated['status'] === 'trial' ? 'trialing' : 'active');
+                }
+                $sub->update($subUpdate);
+            }
+        }
+
+        // Sync updates to tenant database (Settings & Owner User)
+        try {
+            $tenant->run(function () use ($validated) {
+                if (class_exists(\App\Models\Setting::class)) {
+                    \App\Models\Setting::set('business_name', $validated['name']);
+                    if (!empty($validated['email'])) {
+                        \App\Models\Setting::set('business_email', $validated['email']);
+                    }
+                    if (array_key_exists('phone', $validated)) {
+                        \App\Models\Setting::set('business_phone', $validated['phone'] ?? '');
+                    }
+                    if (array_key_exists('address', $validated)) {
+                        \App\Models\Setting::set('business_address', $validated['address'] ?? '');
+                    }
+                }
+
+                // Sync with primary admin/owner user in tenant DB
+                $owner = \App\Models\User::whereHas('role', function ($q) {
+                    $q->where('slug', 'admin');
+                })->first() ?? \App\Models\User::first();
+
+                if ($owner) {
+                    $ownerUpdate = [];
+                    if (!empty($validated['email'])) {
+                        $ownerUpdate['email'] = $validated['email'];
+                    }
+                    if (array_key_exists('phone', $validated)) {
+                        $ownerUpdate['phone'] = $validated['phone'];
+                    }
+                    if (array_key_exists('address', $validated) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'address')) {
+                        $ownerUpdate['address'] = $validated['address'];
+                    }
+                    if (!empty($ownerUpdate)) {
+                        $owner->update($ownerUpdate);
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Could not sync shop updates to tenant database for {$tenant->id}: " . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', "দোকানের তথ্য সফলভাবে আপডেট করা হয়েছে (Store \"{$tenant->name}\" information updated successfully)!");
     }
 
     /**
@@ -461,38 +564,63 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * 1-Click Impersonation (Login as Shop Owner)
+     * Open this shop's admin on the main domain.
      */
-    public function impersonate(Tenant $tenant)
+    public function impersonate(Request $request, Tenant $tenant)
     {
-        $domainModel = $tenant->domains->first();
-        if (!$domainModel) {
-            // Auto-heal: generate and attach domain if missing for this tenant
-            $baseDomain = TenantRegistrationController::resolveBaseDomain();
-            $fullDomain = TenantRegistrationController::tenantFqdn($tenant->id);
-            $domainModel = $tenant->domains()->create(['domain' => $fullDomain]);
-            if ($baseDomain === 'localhost') {
-                $tenant->domains()->create(['domain' => "{$tenant->id}.127.0.0.1"]);
-            }
+        if (!in_array($tenant->status, ['active', 'trial'], true)) {
+            return redirect()->back()->with('error', 'এই শপের অ্যাডমিন এখন খোলা যাবে না। আগে শপটি সক্রিয় করুন।');
         }
 
-        $correctHost = TenantRegistrationController::tenantFqdn($tenant->id);
-        if ($domainModel->domain !== $correctHost) {
-            $domainModel->update(['domain' => $correctHost]);
-        }
-        $domain = $correctHost;
-
-        $portSuffix = TenantRegistrationController::resolvePortSuffix();
-        $scheme = str_starts_with((string) config('app.url'), 'https://') || request()->isSecure() ? 'https://' : 'http://';
-        $hostWithPort = "{$domain}{$portSuffix}";
+        $impersonatorId = $request->user()->id;
+        $shopUserId = null;
 
         try {
-            $token = tenancy()->impersonate($tenant, 1, '/admin/dashboard');
-            return redirect("{$scheme}{$hostWithPort}/impersonate/{$token->token}");
+            $tenant->run(function () use (&$shopUserId) {
+                $shopUserId = User::query()->orderBy('id')->value('id');
+            });
         } catch (\Throwable $e) {
-            // Fallback direct redirect to login
-            return redirect("{$scheme}{$hostWithPort}/login")->with('info', "Direct link to store login: {$hostWithPort}");
+            return redirect()->back()->with('error', 'শপের অ্যাডমিন অ্যাকাউন্ট খোলা যায়নি।');
         }
+
+        if (!$shopUserId) {
+            return redirect()->back()->with('error', 'এই শপে কোনো অ্যাডমিন ইউজার নেই।');
+        }
+
+        return app(AuthenticatedSessionController::class)->loginShopUser(
+            $request,
+            $tenant,
+            (int) $shopUserId,
+            (int) $impersonatorId
+        );
+    }
+
+    /**
+     * Leave a shop admin session and return to the super-admin tenant list.
+     */
+    public function leaveShop(Request $request)
+    {
+        $impersonatorId = $request->session()->pull('impersonator_id');
+        $request->session()->forget('active_tenant_id');
+
+        if (tenancy()->initialized) {
+            tenancy()->end();
+        }
+
+        $admin = $impersonatorId ? User::query()->find($impersonatorId) : null;
+        if (!$admin) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login');
+        }
+
+        Auth::login($admin);
+        $request->session()->regenerate();
+        $request->session()->forget(['active_tenant_id', 'impersonator_id']);
+
+        return redirect()->route('super-admin.tenants.index');
     }
 
     /**

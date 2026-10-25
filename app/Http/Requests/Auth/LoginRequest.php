@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
@@ -65,18 +64,6 @@ class LoginRequest extends FormRequest
 
         if (! $attempted) {
             RateLimiter::hit($this->throttleKey());
-
-            // If attempting central login with an email or username belonging to a tenant shop
-            if (!tenancy()->initialized) {
-                $tenant = Tenant::where('email', $login)->orWhere('id', $login)->first();
-                if ($tenant) {
-                    $tenantUrl = \App\Http\Controllers\Central\TenantRegistrationController::tenantUrl($tenant->id).'/login';
-
-                    throw ValidationException::withMessages([
-                        'email' => "আপনার অ্যাকাউন্টটি '{$tenant->name}' শপের সাথে যুক্ত। আপনার শপের লগইন লিঙ্ক: {$tenantUrl}",
-                    ]);
-                }
-            }
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),

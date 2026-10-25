@@ -180,6 +180,20 @@
 
         <!-- Main Content Area -->
         <div :class="['lg:pl-64 min-h-screen flex flex-col flex-1', isOpen && 'overflow-hidden']">
+            <div
+                v-if="page.props.impersonation"
+                class="bg-amber-500 text-amber-950 px-3 sm:px-6 py-2 flex items-center justify-between gap-3 text-xs font-semibold"
+            >
+                <span>{{ t('আপনি সুপার অ্যাডমিন থেকে এই শপের প্যানেল দেখছেন।', 'You are viewing this shop admin as super admin.') }}</span>
+                <Link
+                    href="/admin/leave-shop"
+                    method="post"
+                    as="button"
+                    class="shrink-0 px-3 py-1 rounded-lg bg-amber-950 text-amber-50"
+                >
+                    {{ t('সুপার অ্যাডমিনে ফিরুন', 'Back to super admin') }}
+                </Link>
+            </div>
             <!-- Sleek Top Bar (Touch-friendly on mobile, zero clutter) -->
             <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 px-3 sm:px-6">
                 <div class="flex items-center justify-between h-full gap-2 sm:gap-3">
@@ -201,6 +215,27 @@
 
                     <!-- Right: Search, Language Toggle, Theme, Notification -->
                     <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                        <Link
+                            href="/admin/help"
+                            class="inline-flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                            :class="isUrlMatch('/admin/help')
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-950'"
+                            :title="t('সাহায্য', 'Help')"
+                        >
+                            <i class="fas fa-circle-question text-sm"></i>
+                            <span class="hidden md:inline">{{ t('সাহায্য', 'Help') }}</span>
+                        </Link>
+                        <a
+                            v-if="page.props.shop_url"
+                            :href="page.props.shop_url"
+                            target="_blank"
+                            rel="noopener"
+                            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950 text-xs font-semibold"
+                        >
+                            <i class="fas fa-store text-[11px]"></i>
+                            {{ t('লাইভ শপ', 'Live shop') }}
+                        </a>
                         <!-- Quick Search Trigger -->
                         <button
                             @click="isCommandPaletteOpen = true"

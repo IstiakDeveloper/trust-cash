@@ -8,7 +8,7 @@
 
         <!-- Filters -->
         <div class="mb-4 sm:mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4 no-print">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <!-- Customer Select -->
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -92,27 +92,53 @@
                             @change="handleNativeDate('to', $event)">
                     </div>
                 </div>
+            </div>
 
-                <!-- Actions -->
-                <div class="sm:col-span-2 lg:col-span-1 flex items-end">
-                    <div class="grid grid-cols-3 gap-1.5 w-full">
-                        <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
-                            type="button"
-                            class="inline-flex justify-center items-center px-2 py-2 border border-gray-300 rounded-lg shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 min-h-[36px]">
-                            <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড', 'Word') }}</span>
-                            <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dash') }}</span>
-                        </button>
-                        <button @click="downloadReport"
-                            class="inline-flex justify-center items-center px-2 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 min-h-[36px]">
-                            <DocumentArrowDownIcon class="h-4 w-4 mr-0.5 shrink-0" />
-                            <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
-                        </button>
-                        <button @click="printReport"
-                            class="inline-flex justify-center items-center px-2 py-2 border border-transparent rounded-lg shadow-sm text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 min-h-[36px]">
-                            <PrinterIcon class="h-4 w-4 mr-0.5 shrink-0" />
-                            <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
-                        </button>
-                    </div>
+            <!-- Actions Row: Responsive & Never Truncated -->
+            <div class="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                <div class="flex items-center gap-2">
+                    <button v-if="filters.customer_id || filters.bank_account_id || filters.payment_status"
+                        @click="resetFilters"
+                        type="button"
+                        class="inline-flex items-center text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 font-medium transition-colors">
+                        <i class="fas fa-undo mr-1 text-[11px]"></i> {{ t('ফিল্টার মুছুন', 'Reset Filters') }}
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                    <!-- Word / Dashboard Toggle -->
+                    <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
+                        type="button"
+                        class="inline-flex justify-center items-center px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors whitespace-nowrap min-h-[38px]">
+                        <span v-if="viewMode === 'dashboard'" class="whitespace-nowrap">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                        <span v-else class="whitespace-nowrap">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                    </button>
+
+                    <!-- PDF Download -->
+                    <button @click="downloadReport"
+                        type="button"
+                        class="inline-flex justify-center items-center px-3.5 py-2 border border-transparent rounded-lg shadow-sm text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors whitespace-nowrap min-h-[38px]">
+                        <DocumentArrowDownIcon class="h-4 w-4 mr-1.5 shrink-0" />
+                        <span class="whitespace-nowrap">{{ t('পিডিএফ', 'PDF') }}</span>
+                    </button>
+
+                    <!-- Excel Download -->
+                    <button @click="downloadExcel"
+                        type="button"
+                        class="inline-flex justify-center items-center px-3.5 py-2 border border-transparent rounded-lg shadow-sm text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors whitespace-nowrap min-h-[38px]">
+                        <svg class="h-4 w-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span class="whitespace-nowrap">{{ t('এক্সেল', 'Excel') }}</span>
+                    </button>
+
+                    <!-- Print -->
+                    <button @click="printReport"
+                        type="button"
+                        class="inline-flex justify-center items-center px-3.5 py-2 border border-transparent rounded-lg shadow-sm text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors whitespace-nowrap min-h-[38px]">
+                        <PrinterIcon class="h-4 w-4 mr-1.5 shrink-0" />
+                        <span class="whitespace-nowrap">{{ t('প্রিন্ট', 'Print') }}</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -319,6 +345,7 @@
                 :date-range="`${filters.from_date || '-'} ${t('হতে', 'to')} ${filters.to_date || '-'}`"
                 orientation="portrait"
                 file-name="sales-report.pdf"
+                @download-excel="downloadExcel"
             >
                 <!-- Summary Table -->
                 <div class="mb-5">
@@ -606,6 +633,16 @@ const printReport = () => {
         window.print();
         viewMode.value = prev;
     }, 150);
+}
+
+const downloadExcel = () => {
+    const params = new URLSearchParams();
+    if (filters.value.customer_id) params.append('customer_id', filters.value.customer_id);
+    if (filters.value.bank_account_id) params.append('bank_account_id', filters.value.bank_account_id);
+    if (filters.value.payment_status) params.append('payment_status', filters.value.payment_status);
+    if (filters.value.from_date) params.append('from_date', filters.value.from_date);
+    if (filters.value.to_date) params.append('to_date', filters.value.to_date);
+    window.location.href = route('admin.reports.sales.excel') + '?' + params.toString();
 }
 
 const getPaymentMethodIcon = (method) => {

@@ -494,4 +494,93 @@ class BankTransactionReportController extends Controller
 
         return $pdf->download($filename);
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $selectedMonth = (int) $request->input('month', Carbon::now()->month);
+        $selectedYear = (int) $request->input('year', Carbon::now()->year);
+
+        $bankAccounts = BankAccount::active()
+            ->select('id', 'account_name', 'bank_name', 'opening_balance', 'current_balance')
+            ->get();
+
+        $selectedBankAccount = null;
+        if ($request->filled('bank_account_id') && $request->bank_account_id !== 'all' && $request->bank_account_id !== '') {
+            $found = $bankAccounts->firstWhere('id', (int) $request->bank_account_id);
+            if ($found) {
+                $selectedBankAccount = $found->id;
+            }
+        }
+
+        $selectedAccount = $selectedBankAccount ? $bankAccounts->firstWhere('id', $selectedBankAccount) : null;
+        $activeAccountIds = $bankAccounts->pluck('id');
+
+        $previousMonthEnd = Carbon::create($selectedYear, $selectedMonth, 1)->subDay()->format('Y-m-d');
+        $initialOpening = $selectedBankAccount
+            ? (float) $selectedAccount->opening_balance
+            : (float) $bankAccounts->sum('opening_balance');
+
+        $prevTxsSum = DB::table('bank_transactions')
+            ->when($selectedBankAccount, fn($q) => $q->where('bank_account_id', $selectedBankAccount), fn($q) => $q->whereIn('bank_account_id', $activeAccountIds))
+            ->where('date', '<=', $previousMonthEnd)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('description')
+                    ->orWhere('description', 'NOT LIKE', '%Rounding Adjustment%');
+            })
+            ->sum(DB::raw('CASE WHEN transaction_type = "in" THEN amount ELSE -amount END'));
+
+        $previousMonthBalance = round($initialOpening + (float) $prevTxsSum, 2);
+
+        $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1);
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+
+        $dailyTransactions = DB::table('bank_transactions')
+            ->select('date')
+            ->selectRaw('
+                COALESCE(SUM(CASE WHEN transaction_type = "in" AND description LIKE "Fund in%" AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as fund_in,
+                COALESCE(SUM(CASE WHEN transaction_type = "in" AND (description LIKE "Payment received%" OR description LIKE "%invoice%" OR description LIKE "%customer%" OR description LIKE "Sale%") AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as payment_receive,
+                COALESCE(SUM(CASE WHEN transaction_type = "in" AND (description LIKE "Extra Income%" OR description LIKE "Other Income%") AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as extra_income,
+                COALESCE(SUM(CASE WHEN transaction_type = "in" AND deleted_at IS NULL AND (description LIKE "%Refund%" OR description LIKE "%cancelled%" OR description LIKE "%deleted%") THEN amount ELSE 0 END), 0) as refund,
+                COALESCE(SUM(CASE WHEN transaction_type = "out" AND (description LIKE "Payment to supplier%" OR description LIKE "Purchase%") AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as supplier_payment,
+                COALESCE(SUM(CASE WHEN transaction_type = "out" AND description LIKE "Expense payment%" AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as expense,
+                COALESCE(SUM(CASE WHEN transaction_type = "out" AND (description LIKE "Fixed Asset Purchase%" OR description LIKE "%Fixed Asset%") AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as fixed_asset_purchase,
+                COALESCE(SUM(CASE WHEN transaction_type = "out" AND description LIKE "Fund refund%" AND deleted_at IS NULL THEN amount ELSE 0 END), 0) as fund_refund,
+                COALESCE(SUM(CASE WHEN transaction_type = "out" AND deleted_at IS NULL AND (description LIKE "%Refund%" OR description LIKE "%cancelled%" OR description LIKE "%deleted%") THEN amount ELSE 0 END), 0) as refund_out
+            ')
+            ->when($selectedBankAccount, fn($q) => $q->where('bank_account_id', $selectedBankAccount), fn($q) => $q->whereIn('bank_account_id', $activeAccountIds))
+            ->whereBetween('date', [$startOfMonth->format('Y-m-d'), $endOfMonth->format('Y-m-d')])
+            ->whereNull('deleted_at')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        $allDates = [];
+        $currentDate = $startOfMonth->copy();
+        while ($currentDate <= $endOfMonth) {
+            $dateStr = $currentDate->format('Y-m-d');
+            $tx = $dailyTransactions->get($dateStr);
+            $allDates[] = [
+                'date' => $currentDate->format('d M, Y'),
+                'fund_in' => (float) ($tx?->fund_in ?? 0),
+                'payment_receive' => (float) ($tx?->payment_receive ?? 0),
+                'extra_income' => (float) ($tx?->extra_income ?? 0),
+                'refund' => (float) ($tx?->refund ?? 0),
+                'supplier_payment' => (float) ($tx?->supplier_payment ?? 0),
+                'expense' => (float) ($tx?->expense ?? 0),
+                'fixed_asset_purchase' => (float) ($tx?->fixed_asset_purchase ?? 0),
+                'fund_refund' => (float) ($tx?->fund_refund ?? 0),
+                'refund_out' => (float) ($tx?->refund_out ?? 0),
+            ];
+            $currentDate->addDay();
+        }
+
+        $accountNameLabel = $selectedAccount ? $selectedAccount->bank_name : 'all-accounts';
+        $filename = sprintf('bank-transaction-report-%s-%s-%s.xlsx', $accountNameLabel, $selectedMonth, $selectedYear);
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BankTransactionReportExport($allDates, $previousMonthBalance),
+            $filename
+        );
+    }
 }

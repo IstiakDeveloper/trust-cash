@@ -252,4 +252,29 @@ class IncomeExpenditureController extends Controller
         // Download PDF
         return $pdf->download($filename);
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth();
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $incomeData = $this->calculateIncome($startDate, $endDate);
+        $expenditureData = $this->calculateExpenditure($startDate, $endDate);
+
+        $filename = 'income-expenditure-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\IncomeExpenditureExport(
+                $incomeData,
+                $expenditureData,
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d')
+            ),
+            $filename
+        );
+    }
 }

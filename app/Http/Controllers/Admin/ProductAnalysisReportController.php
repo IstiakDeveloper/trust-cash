@@ -229,4 +229,26 @@ class ProductAnalysisReportController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
+
+    public function downloadExcel(Request $request)
+    {
+        $timezone = config('app.timezone', 'Asia/Dhaka');
+        $startDate = $request->start_date
+            ? Carbon::parse($request->start_date, $timezone)->startOfDay()
+            : Carbon::now($timezone)->startOfMonth();
+        $endDate = $request->end_date
+            ? Carbon::parse($request->end_date, $timezone)->endOfDay()
+            : Carbon::now($timezone)->endOfDay();
+
+        $analysis = Product::getProductAnalysis($startDate, $endDate);
+        $products = is_array($analysis['products']) ? $analysis['products'] : $analysis['products']->toArray();
+        $totals = $analysis['totals'] ?? [];
+
+        $filename = 'product-analysis-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ProductAnalysisExport($products, $totals),
+            $filename
+        );
+    }
 }

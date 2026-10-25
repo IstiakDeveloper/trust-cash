@@ -38,6 +38,10 @@ const props = defineProps({
         type: [String, Number],
         default: null
     },
+    inputmode: {
+        type: String,
+        default: null
+    },
     class: {
         type: String,
         default: ''
@@ -56,8 +60,8 @@ const inputValue = computed({
     }
 });
 
-// Base classes for the input
-const baseClasses = 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm';
+// Base classes for the input: text-base on mobile prevents iOS safari auto-zoom, sm:text-xs on desktop
+const baseClasses = 'block w-full min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-base sm:text-xs transition';
 
 // Combine base classes with custom classes
 const inputClasses = computed(() => {
@@ -68,6 +72,7 @@ const inputClasses = computed(() => {
 <template>
     <input
         :type="type"
+        :inputmode="inputmode || (type === 'number' ? 'decimal' : (type === 'tel' ? 'tel' : null))"
         :value="inputValue"
         @input="inputValue = $event.target.value"
         :placeholder="placeholder"

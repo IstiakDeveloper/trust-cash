@@ -589,4 +589,54 @@ class ReceiptPaymentController extends Controller
             return response()->json(['error' => 'Failed to generate PDF', 'details' => $e->getMessage()], 500);
         }
     }
+
+    public function downloadExcel(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date',
+                'year' => 'nullable|integer',
+                'month' => 'nullable|integer|between:1,12',
+                'bank_account_id' => 'nullable|string',
+            ]);
+
+            $bankAccounts = BankAccount::active()
+                ->select('id', 'account_name', 'bank_name', 'opening_balance')
+                ->get();
+
+            $selectedAccount = null;
+            if (!empty($validatedData['bank_account_id']) && $validatedData['bank_account_id'] !== 'all') {
+                $selectedAccount = $bankAccounts->firstWhere('id', (int) $validatedData['bank_account_id']);
+            }
+            $selectedBankAccountId = $selectedAccount?->id;
+
+            if (!empty($validatedData['start_date']) && !empty($validatedData['end_date'])) {
+                $startDate = Carbon::parse($validatedData['start_date'])->format('Y-m-d');
+                $endDate = Carbon::parse($validatedData['end_date'])->format('Y-m-d');
+            } elseif (!empty($validatedData['year']) && !empty($validatedData['month'])) {
+                $date = Carbon::create($validatedData['year'], $validatedData['month'], 1);
+                $startDate = $date->copy()->startOfMonth()->format('Y-m-d');
+                $endDate = $date->copy()->endOfMonth()->format('Y-m-d');
+            } else {
+                $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+                $endDate = Carbon::now()->format('Y-m-d');
+            }
+
+            $receiptData = $this->getReceiptData($startDate, $endDate, $selectedBankAccountId);
+            $paymentData = $this->getPaymentData($startDate, $endDate, $selectedBankAccountId);
+
+            $accountLabel = $selectedAccount ? "{$selectedAccount->account_name} ({$selectedAccount->bank_name})" : 'All Bank Accounts (Consolidated)';
+            $accSlug = $selectedAccount ? "account-{$selectedAccount->id}" : 'all-accounts';
+            $fileName = "receipt-payment-{$startDate}-to-{$endDate}-{$accSlug}.xlsx";
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\ReceiptPaymentExport($receiptData, $paymentData, $accountLabel, $startDate, $endDate),
+                $fileName
+            );
+        } catch (\Exception $e) {
+            \Log::error('Excel Download Failed:', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to generate Excel', 'details' => $e->getMessage()], 500);
+        }
+    }
 }

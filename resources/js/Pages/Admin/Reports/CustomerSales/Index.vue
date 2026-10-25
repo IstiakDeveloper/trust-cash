@@ -83,6 +83,16 @@ const printReport = () => {
     window.print();
 };
 
+const downloadExcel = () => {
+    if (!filters.value.customer_id) return;
+    const params = new URLSearchParams({
+        customer_id: filters.value.customer_id,
+        year: filters.value.year,
+        month: filters.value.month,
+    });
+    window.location.href = route('admin.reports.customer-sales.excel') + '?' + params.toString();
+};
+
 // Load report if customer is pre-selected
 onMounted(() => {
     if (filters.value.customer_id) {
@@ -102,11 +112,20 @@ const calculateTotal = (items) => {
                 <h2 class="font-bold text-xl text-gray-800 dark:text-white leading-tight">
                     {{ t('গ্রাহক বিক্রয় রিপোর্ট', 'Customer Sales Report') }}
                 </h2>
-                <button v-if="reportData" @click="printReport"
-                    class="inline-flex justify-center items-center px-4 py-2 text-xs sm:text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg shadow-sm min-h-[38px]">
-                    <Printer class="w-4 h-4 mr-2" />
-                    {{ t('প্রিন্ট রিপোর্ট', 'Print Report') }}
-                </button>
+                <div v-if="reportData" class="flex items-center gap-2">
+                    <button @click="downloadExcel"
+                        class="inline-flex justify-center items-center px-3.5 py-2 text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm min-h-[38px]">
+                        <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        {{ t('এক্সেল ডাউনলোড', 'Excel Download') }}
+                    </button>
+                    <button @click="printReport"
+                        class="inline-flex justify-center items-center px-3.5 py-2 text-xs sm:text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg shadow-sm min-h-[38px]">
+                        <Printer class="w-4 h-4 mr-1.5 shrink-0" />
+                        {{ t('প্রিন্ট রিপোর্ট', 'Print Report') }}
+                    </button>
+                </div>
             </div>
         </template>
 

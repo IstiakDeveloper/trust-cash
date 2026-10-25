@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,11 +37,10 @@ class AuthenticatedSessionController extends Controller
         $password = $request->input('password');
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        // 1. If on central domain (root login)
+        // 1. Central domain: super admin stays central, shop staff stay on this same host.
         if (!tenancy()->initialized) {
-            // Check if Super Admin
-            $superAdmin = $isEmail 
-                ? User::where('email', $loginInput)->first() 
+            $superAdmin = $isEmail
+                ? User::where('email', $loginInput)->first()
                 : User::where('username', $loginInput)->orWhere('email', 'like', "{$loginInput}@%")->first();
 
             if ($superAdmin && Hash::check($password, $superAdmin->password)) {
@@ -48,16 +48,16 @@ class AuthenticatedSessionController extends Controller
                 if (in_array($roleSlug, ['super-admin', 'superadmin'])) {
                     $request->authenticate();
                     $request->session()->regenerate();
+                    $request->session()->forget(['active_tenant_id', 'impersonator_id']);
+
                     return redirect()->intended(route('super-admin.dashboard', absolute: false));
                 }
             }
 
-            // Not super-admin: Check if email or username/id belongs to a registered Tenant store
-            $tenant = $isEmail 
-                ? Tenant::where('email', $loginInput)->first() 
+            $tenant = $isEmail
+                ? Tenant::where('email', $loginInput)->first()
                 : Tenant::find($loginInput);
 
-            // Fallback: search across all active/trial tenant databases for this user email or username!
             if (!$tenant) {
                 foreach (Tenant::whereIn('status', ['active', 'trial'])->get() as $t) {
                     $userExists = false;
@@ -76,48 +76,40 @@ class AuthenticatedSessionController extends Controller
             }
 
             if ($tenant) {
-                $tenantUser = null;
-                $passwordMatches = false;
+                $tenantUserId = null;
 
                 try {
-                    $tenant->run(function () use ($loginInput, $password, &$tenantUser, &$passwordMatches) {
+                    $tenant->run(function () use ($loginInput, $password, &$tenantUserId) {
                         $user = User::where('email', $loginInput)
                             ->orWhere('username', $loginInput)
                             ->orWhere('email', 'like', "{$loginInput}@%")
                             ->first();
 
                         if ($user && Hash::check($password, $user->password)) {
-                            $tenantUser = $user;
-                            $passwordMatches = true;
+                            $tenantUserId = $user->id;
                         }
                     });
                 } catch (\Throwable $e) {}
 
-                if ($passwordMatches && $tenantUser) {
+                if ($tenantUserId) {
                     if ($tenant->status === 'pending') {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             'email' => "আপনার শপটি '{$tenant->name}' এখনও অনুমোদনের অপেক্ষায় রয়েছে (Pending Approval)। অ্যাডমিনের অনুমোদনের পর আপনি লগইন করতে পারবেন।",
                         ]);
                     }
 
                     if ($tenant->status === 'suspended') {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             'email' => "আপনার শপটি '{$tenant->name}' সাময়িকভাবে স্থগিত করা হয়েছে। সহায়তার জন্য সুপার অ্যাডমিনের সাথে যোগাযোগ করুন।",
                         ]);
                     }
 
-                    // Generate single-use impersonation token for auto-login
-                    $token = tenancy()->impersonate($tenant, $tenantUser->id, '/admin/dashboard');
-
-                    $targetUrl = \App\Http\Controllers\Central\TenantRegistrationController::tenantUrl($tenant->id)."/impersonate/{$token->token}";
-
-                    // Inertia location redirect seamlessly navigates to the tenant store and logs in!
-                    return Inertia::location($targetUrl);
-                } else {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'password' => 'পাসওয়ার্ড ভুল হয়েছে। সঠিক পাসওয়ার্ড দিয়ে আবার চেষ্টা করুন।',
-                    ]);
+                    return $this->loginShopUser($request, $tenant, (int) $tenantUserId);
                 }
+
+                throw ValidationException::withMessages([
+                    'password' => 'পাসওয়ার্ড ভুল হয়েছে। সঠিক পাসওয়ার্ড দিয়ে আবার চেষ্টা করুন।',
+                ]);
             }
         }
 
@@ -134,17 +126,51 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+     * Log a shop user into the main domain and point later requests at that shop database.
+     */
+    public function loginShopUser(Request $request, Tenant $tenant, int $userId, ?int $impersonatorId = null): RedirectResponse
+    {
+        if (!tenancy()->initialized) {
+            tenancy()->initialize($tenant);
+        }
+
+        $shopUser = User::query()->find($userId);
+        if (!$shopUser) {
+            if (tenancy()->initialized) {
+                tenancy()->end();
+            }
+
+            throw ValidationException::withMessages([
+                'email' => 'এই শপের অ্যাডমিন অ্যাকাউন্ট পাওয়া যায়নি।',
+            ]);
+        }
+
+        Auth::login($shopUser, $request->boolean('remember'));
+        $request->session()->regenerate();
+        $request->session()->put('active_tenant_id', $tenant->getTenantKey());
+
+        if ($impersonatorId) {
+            $request->session()->put('impersonator_id', $impersonatorId);
+
+            return redirect('/admin/dashboard');
+        }
+
+        $request->session()->forget('impersonator_id');
+
+        return redirect()->intended('/admin/dashboard');
+    }
+
+    /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
 
+        $request->session()->forget(['active_tenant_id', 'impersonator_id']);
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
-        // Redirect to login page of current domain
         return redirect()->route('login');
     }
 }

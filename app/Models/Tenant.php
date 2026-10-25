@@ -23,6 +23,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'discount_value',
         'discount_note',
         'trial_ends_at',
+        'address',
     ];
 
     protected $casts = [
@@ -33,7 +34,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     protected $appends = [
         'shop_host',
         'shop_url',
+        'address',
     ];
+
+    public function getAddressAttribute(): ?string
+    {
+        return $this->attributes['address'] ?? null;
+    }
+
+    public function setAddressAttribute(?string $value): void
+    {
+        $this->attributes['address'] = $value;
+    }
 
     public function getShopHostAttribute(): string
     {

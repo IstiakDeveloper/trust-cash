@@ -12,9 +12,45 @@
                     </p>
                 </div>
 
-                <!-- Filter Controls -->
+                <!-- Mobile Filter Toggle & Quick Actions Row (< sm) -->
+                <div class="sm:hidden flex items-center justify-between w-full gap-2">
+                    <button
+                        type="button"
+                        @click="showMobileFilters = !showMobileFilters"
+                        class="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between shadow-xs transition"
+                    >
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                            <span>{{ t('ফিল্টার নিয়ন্ত্রণ', 'Filter Controls') }}</span>
+                        </span>
+                        <span class="text-[11px] text-indigo-600 dark:text-indigo-400">
+                            {{ showMobileFilters ? t('লুকান ▲', 'Hide ▲') : t('দেখান ▼', 'Show ▼') }}
+                        </span>
+                    </button>
+
+                    <!-- Mobile Quick Action Buttons -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button @click="downloadPDF" :disabled="isDownloading"
+                            class="py-2 px-2.5 bg-rose-600 text-white rounded-xl shadow-xs text-xs font-bold">
+                            PDF
+                        </button>
+                        <button @click="downloadExcel" :disabled="isDownloadingExcel"
+                            class="py-2 px-2.5 bg-emerald-600 text-white rounded-xl shadow-xs text-xs font-bold">
+                            XLS
+                        </button>
+                        <button @click="printReport"
+                            class="py-2 px-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl shadow-xs text-xs font-bold">
+                            🖨️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Controls (Collapsible on mobile) -->
                 <div
-                    class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+                    :class="[
+                        showMobileFilters ? 'flex' : 'hidden sm:flex',
+                        'flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto transition-all'
+                    ]">
                     <!-- Bank Account Select (Default: All Accounts) -->
                     <div class="flex items-center space-x-1.5 w-full sm:w-auto">
                         <label
@@ -74,7 +110,7 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="grid grid-cols-3 gap-2 w-full sm:flex sm:w-auto">
+                    <div class="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
                         <!-- View Mode Toggle -->
                         <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'" type="button"
                             class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-600 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 shadow-sm transition text-center">
@@ -84,7 +120,7 @@
 
                         <!-- PDF Download Button -->
                         <button @click="downloadPDF" :disabled="isDownloading"
-                            class="inline-flex items-center justify-center px-3 py-1.5 bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 shadow-sm transition text-center">
+                            class="inline-flex items-center justify-center px-3 py-1.5 bg-rose-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 shadow-sm transition text-center">
                             <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -96,6 +132,18 @@
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                             <span>{{ isDownloading ? '...' : 'PDF' }}</span>
+                        </button>
+
+                        <!-- Excel Download Button -->
+                        <button @click="downloadExcel" :disabled="isDownloadingExcel"
+                            class="inline-flex items-center justify-center px-3 py-1.5 bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 shadow-sm transition text-center">
+                            <svg v-if="!isDownloadingExcel" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>{{ isDownloadingExcel ? '...' : 'Excel' }}</span>
                         </button>
 
                         <!-- Print Button -->
@@ -635,7 +683,8 @@
                 :title="t('রিসিপ্ট ও পেমেন্ট বিবরণী', 'Statement of Receipts & Payments')"
                 :date-range="formattedDateRange"
                 :account-info="selectedAccountName ? `${t('অ্যাকাউন্ট:', 'Account:')} ${selectedAccountName}` : `${t('সকল ব্যাংক অ্যাকাউন্ট (Consolidated)', 'All Bank Accounts (Consolidated)')}`"
-                orientation="portrait" file-name="receipt-payment.pdf">
+                orientation="portrait" file-name="receipt-payment.pdf"
+                @download-excel="downloadExcel">
                 <table class="word-table" style="margin-top: 0;">
                     <thead>
                         <tr>
@@ -768,6 +817,7 @@ const selectedBankAccountId = ref(props.selectedBankAccountId ? String(props.sel
 const isDownloading = ref(false);
 const activePreset = ref('');
 const viewMode = ref('dashboard'); // 'dashboard' | 'document'
+const showMobileFilters = ref(false);
 const wordReportRef = ref(null);
 
 const selectedAccountName = computed(() => {
@@ -970,6 +1020,21 @@ const downloadPDF = async () => {
         }
         isDownloading.value = false;
     }
+};
+
+const isDownloadingExcel = ref(false);
+
+const downloadExcel = () => {
+    isDownloadingExcel.value = true;
+    const params = new URLSearchParams();
+    if (startDate.value) params.append('start_date', startDate.value);
+    if (endDate.value) params.append('end_date', endDate.value);
+    if (selectedBankAccountId.value) params.append('bank_account_id', selectedBankAccountId.value);
+
+    window.location.href = route('admin.reports.receipt-payment.excel') + '?' + params.toString();
+    setTimeout(() => {
+        isDownloadingExcel.value = false;
+    }, 2000);
 };
 
 const printReport = async () => {

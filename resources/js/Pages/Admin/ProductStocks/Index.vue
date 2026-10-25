@@ -273,156 +273,167 @@
                 </div>
             </div>
 
-            <!-- Stock History Modal -->
-            <Teleport to="body">
-                <Transition
-                    enter-active-class="transition ease-out duration-300"
-                    enter-from-class="opacity-0"
-                    enter-to-class="opacity-100"
-                    leave-active-class="transition ease-in duration-200"
-                    leave-from-class="opacity-100"
-                    leave-to-class="opacity-0">
-                    <div v-if="showHistoryModal"
-                        class="fixed inset-0 z-[100] overflow-y-auto"
-                        @click.self="closeHistoryModal">
+            <!-- Stock History Modal (Responsive Bottom-Sheet with Mobile Cards & Desktop Table) -->
+            <Modal :show="showHistoryModal" @close="closeHistoryModal" maxWidth="4xl">
+                <div class="flex flex-col flex-1 min-h-0">
+                    <!-- Sticky Header -->
+                    <div class="sticky top-0 z-10 bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex items-center justify-between shrink-0">
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold">
+                                {{ t('স্টক মুভমেন্ট ও হিস্ট্রি', 'Stock History') }}
+                            </h3>
+                            <p class="text-xs text-slate-300 mt-0.5 truncate max-w-xs sm:max-w-md">
+                                {{ selectedProduct?.name }}
+                            </p>
+                        </div>
+                        <button
+                            @click="closeHistoryModal"
+                            class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                            <XMarkIcon class="w-5 h-5" />
+                        </button>
+                    </div>
 
-                        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+                    <!-- Scrollable Body -->
+                    <div class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 min-h-0">
+                        <div v-if="stockHistory.length === 0" class="py-12 text-center text-slate-400 text-xs">
+                            {{ t('কোনো হিস্ট্রি রেকর্ড পাওয়া যায়নি।', 'No history records found') }}
+                        </div>
 
-                        <div class="flex min-h-screen items-center justify-center p-4">
-                            <div class="relative w-full max-w-5xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
-                                @click.stop>
-                                <!-- Modal Header -->
-                                <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                        <!-- Mobile Cards (< md) -->
+                        <div v-else class="md:hidden space-y-3">
+                            <div
+                                v-for="entry in stockHistory"
+                                :key="entry.id"
+                                class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2 text-xs"
+                            >
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
+                                        :class="{
+                                            'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': entry.type === 'purchase',
+                                            'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': entry.type === 'adjustment',
+                                            'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': entry.type === 'sale'
+                                        }">
+                                        {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment')) }}
+                                    </span>
+                                    <span class="text-[11px] text-slate-400 font-mono">{{ entry.created_at }}</span>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                                     <div>
-                                        <h3 class="text-base font-bold">
-                                            {{ t('স্টক মুভমেন্ট ও হিস্ট্রি', 'Stock History') }}
-                                        </h3>
-                                        <p class="text-xs text-slate-300 mt-0.5">
-                                            {{ selectedProduct?.name }}
-                                        </p>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('পরিমাণ', 'Qty') }}</span>
+                                        <span class="font-bold font-mono text-slate-900 dark:text-white">{{ formatNumber(entry.quantity) }}</span>
                                     </div>
-                                    <button
-                                        @click="closeHistoryModal"
-                                        class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
-                                        <XMarkIcon class="w-5 h-5" />
-                                    </button>
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('একক দর', 'Rate') }}</span>
+                                        <span class="font-mono text-slate-600 dark:text-slate-300">৳{{ formatNumber(entry.unit_cost) }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('মোট টাকা', 'Total') }}</span>
+                                        <span class="font-bold font-mono text-indigo-600 dark:text-indigo-400">৳{{ formatNumber(entry.total_cost) }}</span>
+                                    </div>
                                 </div>
 
-                                <!-- Table Content -->
-                                <div class="p-6 overflow-x-auto max-h-[500px]">
-                                    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                                        <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300 sticky top-0">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left">{{ t('তারিখ ও সময়', 'Date & Time') }}</th>
-                                                <th class="px-4 py-3 text-left">{{ t('লেনদেনের ধরন', 'Type') }}</th>
-                                                <th class="px-4 py-3 text-right">{{ t('পরিমাণ', 'Quantity') }}</th>
-                                                <th class="px-4 py-3 text-right">{{ t('একক দর', 'Unit Cost') }}</th>
-                                                <th class="px-4 py-3 text-right">{{ t('মোট টাকা', 'Total Cost') }}</th>
-                                                <th class="px-4 py-3 text-right">{{ t('বর্তমান স্থিতি', 'Balance') }}</th>
-                                                <th class="px-4 py-3 text-left">{{ t('মন্তব্য', 'Note') }}</th>
-                                                <th class="px-4 py-3 text-left">{{ t('প্রক্রিয়াকারী', 'Created By') }}</th>
-                                                <th class="px-4 py-3 text-center">{{ t('অ্যাকশন', 'Action') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                            <tr v-if="stockHistory.length === 0">
-                                                <td colspan="9" class="px-6 py-12 text-center text-slate-400">
-                                                    {{ t('কোনো হিস্ট্রি রেকর্ড পাওয়া যায়নি।', 'No history records found') }}
-                                                </td>
-                                            </tr>
-                                            <tr v-for="entry in stockHistory" :key="entry.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ entry.created_at }}</td>
-                                                <td class="px-4 py-3">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
-                                                        :class="{
-                                                            'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': entry.type === 'purchase',
-                                                            'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': entry.type === 'adjustment',
-                                                            'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': entry.type === 'sale'
-                                                        }">
-                                                        {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment')) }}
-                                                    </span>
-                                                </td>
-                                                <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(entry.quantity) }}</td>
-                                                <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-300">৳{{ formatNumber(entry.unit_cost) }}</td>
-                                                <td class="px-4 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400">৳{{ formatNumber(entry.total_cost) }}</td>
-                                                <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(entry.available_quantity) }}</td>
-                                                <td class="px-4 py-3 text-slate-500">{{ entry.note || '—' }}</td>
-                                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ entry.created_by }}</td>
-                                                <td class="px-4 py-3 text-center">
-                                                    <button
-                                                        v-if="entry.type === 'purchase' && userIsAdmin"
-                                                        @click="openDeleteConfirmation(entry)"
-                                                        class="text-rose-600 hover:text-rose-800 font-bold text-xs">
-                                                        {{ t('মুছুন', 'Delete') }}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                                    <span>{{ t('স্থির ব্যালেন্স:', 'Balance:') }} <strong class="text-slate-900 dark:text-white">{{ formatNumber(entry.available_quantity) }}</strong></span>
+                                    <span class="truncate max-w-[140px]">{{ entry.created_by }}</span>
                                 </div>
 
-                                <!-- Footer -->
-                                <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
-                                    <span class="text-slate-500">{{ t('মোট রেকর্ড:', 'Total Entries:') }} {{ stockHistory.length }}</span>
+                                <div v-if="entry.note" class="text-[11px] text-slate-400 italic">
+                                    "{{ entry.note }}"
+                                </div>
+
+                                <div v-if="entry.type === 'purchase' && userIsAdmin" class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-end">
                                     <button
-                                        @click="closeHistoryModal"
-                                        class="rounded-xl border border-slate-200 bg-white px-4 py-1.5 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                                        {{ t('বন্ধ করুন', 'Close') }}
+                                        @click="openDeleteConfirmation(entry)"
+                                        class="text-rose-600 hover:text-rose-800 font-bold text-xs py-1 px-2.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
+                                        {{ t('রেকর্ড মুছুন', 'Delete Entry') }}
                                     </button>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Desktop Table (hidden md:block) -->
+                        <div v-if="stockHistory.length > 0" class="hidden md:block overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                                <thead class="bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-600 dark:text-slate-300 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">{{ t('তারিখ ও সময়', 'Date & Time') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ t('লেনদেনের ধরন', 'Type') }}</th>
+                                        <th class="px-4 py-3 text-right">{{ t('পরিমাণ', 'Quantity') }}</th>
+                                        <th class="px-4 py-3 text-right">{{ t('একক দর', 'Unit Cost') }}</th>
+                                        <th class="px-4 py-3 text-right">{{ t('মোট টাকা', 'Total Cost') }}</th>
+                                        <th class="px-4 py-3 text-right">{{ t('বর্তমান স্থিতি', 'Balance') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ t('মন্তব্য', 'Note') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ t('প্রক্রিয়াকারী', 'Created By') }}</th>
+                                        <th class="px-4 py-3 text-center">{{ t('অ্যাকশন', 'Action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr v-for="entry in stockHistory" :key="entry.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ entry.created_at }}</td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
+                                                :class="{
+                                                    'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': entry.type === 'purchase',
+                                                    'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': entry.type === 'adjustment',
+                                                    'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': entry.type === 'sale'
+                                                }">
+                                                {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment')) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(entry.quantity) }}</td>
+                                        <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-300">৳{{ formatNumber(entry.unit_cost) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400">৳{{ formatNumber(entry.total_cost) }}</td>
+                                        <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(entry.available_quantity) }}</td>
+                                        <td class="px-4 py-3 text-slate-500">{{ entry.note || '—' }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ entry.created_by }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button
+                                                v-if="entry.type === 'purchase' && userIsAdmin"
+                                                @click="openDeleteConfirmation(entry)"
+                                                class="text-rose-600 hover:text-rose-800 font-bold text-xs py-1 px-2 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
+                                                {{ t('মুছুন', 'Delete') }}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </Transition>
-            </Teleport>
+
+                    <!-- Sticky Footer -->
+                    <div class="sticky bottom-0 z-10 bg-slate-50 dark:bg-slate-850 px-4 sm:px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <span class="text-slate-500 dark:text-slate-400">{{ t('মোট রেকর্ড:', 'Total Entries:') }} {{ stockHistory.length }}</span>
+                        <button
+                            @click="closeHistoryModal"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition">
+                            {{ t('বন্ধ করুন', 'Close') }}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             <!-- Delete Confirmation Modal -->
-            <Teleport to="body">
-                <Transition
-                    enter-active-class="transition ease-out duration-300"
-                    enter-from-class="opacity-0"
-                    enter-to-class="opacity-100"
-                    leave-active-class="transition ease-in duration-200"
-                    leave-from-class="opacity-100"
-                    leave-to-class="opacity-0">
-                    <div v-if="showDeleteConfirmation"
-                        class="fixed inset-0 z-[200] overflow-y-auto"
-                        @click.self="closeDeleteConfirmation">
-
-                        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
-
-                        <div class="fixed inset-0 flex items-center justify-center p-4">
-                            <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center"
-                                @click.stop>
-                                <div class="mx-auto w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4 dark:bg-rose-950/50">
-                                    <ExclamationTriangleIcon class="w-6 h-6" />
-                                </div>
-
-                                <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2">
-                                    {{ t('স্টক এন্ট্রি মুছে ফেলতে চান?', 'Delete Stock Entry?') }}
-                                </h3>
-
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">
-                                    {{ t('এটি স্থায়ীভাবে স্টক রেকর্ড থেকে মুছে যাবে এবং ব্যাংক ব্যালেন্স ও পণ্যের গড় দাম পুনঃহিসাব হবে।', 'This stock entry will be permanently removed and stock records/balance will be recalculated.') }}
-                                </p>
-
-                                <div class="flex gap-2">
-                                    <button
-                                        @click="closeDeleteConfirmation"
-                                        class="flex-1 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                        {{ t('বাতিল', 'Cancel') }}
-                                    </button>
-                                    <button
-                                        @click="deleteStock"
-                                        class="flex-1 rounded-xl bg-rose-600 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-xs">
-                                        {{ t('হ্যাঁ, মুছে ফেলুন', 'Yes, Delete Entry') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Transition>
-            </Teleport>
+            <ConfirmationModal :show="showDeleteConfirmation" @close="closeDeleteConfirmation">
+                <template #title>
+                    {{ t('স্টক এন্ট্রি মুছে ফেলতে চান?', 'Delete Stock Entry?') }}
+                </template>
+                <template #content>
+                    {{ t('এটি স্থায়ীভাবে স্টক রেকর্ড থেকে মুছে যাবে এবং ব্যাংক ব্যালেন্স ও পণ্যের গড় দাম পুনঃহিসাব হবে।', 'This stock entry will be permanently removed and stock records/balance will be recalculated.') }}
+                </template>
+                <template #footer>
+                    <button
+                        @click="closeDeleteConfirmation"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        {{ t('বাতিল', 'Cancel') }}
+                    </button>
+                    <button
+                        @click="deleteStock"
+                        class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-xs">
+                        {{ t('হ্যাঁ, মুছে ফেলুন', 'Yes, Delete Entry') }}
+                    </button>
+                </template>
+            </ConfirmationModal>
         </div>
     </AdminLayout>
 </template>
@@ -431,6 +442,8 @@
 import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import axios from 'axios';
 import { useLanguage } from '@/composables/useLanguage';
 

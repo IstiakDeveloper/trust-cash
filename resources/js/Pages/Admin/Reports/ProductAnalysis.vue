@@ -50,39 +50,53 @@
                     </div>
 
                     <!-- Actions Row Grid -->
-                    <div class="grid grid-cols-5 sm:flex sm:items-center gap-1.5">
+                    <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
                         <!-- View Mode Toggle -->
                         <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
                             type="button"
-                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 shadow-sm min-h-[34px]">
-                            <span v-if="viewMode === 'dashboard'">📄</span>
-                            <span v-else>📊</span>
+                            class="inline-flex justify-center items-center px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 shadow-sm whitespace-nowrap min-h-[38px] transition-colors">
+                            <span v-if="viewMode === 'dashboard'" class="whitespace-nowrap">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                            <span v-else class="whitespace-nowrap">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
                         </button>
 
-                        <!-- Export Buttons -->
+                        <!-- Export to Excel -->
                         <button @click="exportToExcel" :disabled="isExporting"
-                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 min-h-[34px]"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap min-h-[38px] transition-colors shadow-sm"
                             :title="t('এক্সেল', 'Excel')">
-                            <span class="truncate">{{ t('এক্সেল', 'XLS') }}</span>
+                            <svg class="h-4 w-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="whitespace-nowrap">{{ t('এক্সেল', 'Excel') }}</span>
                         </button>
 
+                        <!-- Download PDF -->
                         <button @click="downloadPDF" :disabled="isDownloading"
-                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 min-h-[34px]"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap min-h-[38px] transition-colors shadow-sm"
                             :title="t('পিডিএফ', 'PDF')">
-                            <span class="truncate">{{ t('পিডিএফ', 'PDF') }}</span>
+                            <svg class="h-4 w-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="whitespace-nowrap">{{ t('পিডিএফ', 'PDF') }}</span>
                         </button>
 
                         <!-- Print Button -->
                         <button @click="printReport"
-                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 min-h-[34px]"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900 disabled:opacity-50 whitespace-nowrap min-h-[38px] transition-colors shadow-sm"
                             :title="t('প্রিন্ট', 'Print')">
-                            <span class="truncate">{{ t('প্রিন্ট', 'Print') }}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span class="whitespace-nowrap">{{ t('প্রিন্ট', 'Print') }}</span>
                         </button>
 
                         <!-- Refresh Button -->
                         <button @click="refreshData" :disabled="isRefreshing"
-                            class="inline-flex justify-center items-center px-2 py-1.5 text-xs text-white bg-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 min-h-[34px]">
-                            <svg :class="['w-4 h-4', { 'animate-spin': isRefreshing }]" fill="none" stroke="currentColor"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 disabled:opacity-50 whitespace-nowrap min-h-[38px] transition-colors shadow-sm">
+                            <svg :class="['w-4 h-4 mr-1.5', { 'animate-spin': isRefreshing }]" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -415,6 +429,7 @@
                 :date-range="`${startDateText || filters.start_date || '-'} ${t('হতে', 'to')} ${endDateText || filters.end_date || '-'}`"
                 orientation="landscape"
                 file-name="product-analysis-report.pdf"
+                @download-excel="exportToExcel"
             >
                 <!-- Quick Summary Bar / Table -->
                 <div class="mb-3 avoid-break">
@@ -787,40 +802,11 @@ export default defineComponent({
             }, 150)
         }
 
-        const exportToExcel = async () => {
-            isExporting.value = true
-            error.value = null
-
-            try {
-                // Check if we have an excel export route
-                const excelRoute = route('admin.reports.product-analysis.excel')
-                if (excelRoute) {
-                    const response = await axios.get(excelRoute, {
-                        params: {
-                            start_date: props.filters.start_date,
-                            end_date: props.filters.end_date,
-                        },
-                        responseType: 'blob'
-                    })
-
-                    const url = window.URL.createObjectURL(new Blob([response.data]))
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.setAttribute('download', `product-analysis-${props.filters.start_date}-to-${props.filters.end_date}.xlsx`)
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                    window.URL.revokeObjectURL(url)
-                } else {
-                    // Fallback to CSV if excel route not available
-                    exportToCSV()
-                }
-            } catch (err) {
-                // Fallback to CSV on error
-                exportToCSV()
-            } finally {
-                isExporting.value = false
-            }
+        const exportToExcel = () => {
+            const params = new URLSearchParams()
+            if (props.filters.start_date) params.append('start_date', props.filters.start_date)
+            if (props.filters.end_date) params.append('end_date', props.filters.end_date)
+            window.location.href = route('admin.reports.product-analysis.excel') + '?' + params.toString()
         }
 
         const exportToCSV = () => {

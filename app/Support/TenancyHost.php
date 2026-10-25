@@ -97,6 +97,58 @@ class TenancyHost
         return $sub.'.'.$base;
     }
 
+    public static function isCentralRequest(?Request $request = null): bool
+    {
+        $request = $request ?: (function_exists('request') ? request() : null);
+        if (!$request) {
+            return false;
+        }
+
+        $host = strtolower($request->getHost());
+        $centralDomains = array_map('strtolower', config('tenancy.central_domains', ['127.0.0.1', 'localhost']));
+        if (in_array($host, $centralDomains, true)) {
+            return true;
+        }
+
+        $configured = self::from((string) config('tenancy.base_domain'))
+            ?: self::from((string) config('app.url'));
+
+        if ($configured && $host === strtolower($configured)) {
+            return true;
+        }
+
+        return $configured && self::isLocalHost($configured) && self::isLocalHost($host);
+    }
+
+    /**
+     * Absolute origin of the main app, without a trailing slash.
+     * Shop admin and login always live here.
+     */
+    public static function centralOrigin(?Request $request = null): string
+    {
+        $request = $request ?: (function_exists('request') ? request() : null);
+        $appUrl = (string) config('app.url');
+        $configuredHost = self::from((string) config('tenancy.base_domain'))
+            ?: self::from($appUrl);
+
+        $scheme = str_starts_with($appUrl, 'https://') ? 'https' : 'http';
+        $host = $configuredHost ?: 'localhost';
+
+        $port = parse_url($appUrl, PHP_URL_PORT);
+        if (!$port && $request) {
+            $headerPort = null;
+            $hostHeader = (string) $request->header('Host', '');
+            if (str_contains($hostHeader, ':')) {
+                $headerPort = explode(':', $hostHeader)[1];
+            }
+            $port = $headerPort ?: $request->getPort();
+        }
+
+        $portSuffix = ($port && !in_array((int) $port, [80, 443], true)) ? ':'.$port : '';
+
+        return $scheme.'://'.$host.$portSuffix;
+    }
+
     public static function shopUrl(string $subdomain, ?string $baseDomain = null, ?Request $request = null): string
     {
         $request = $request ?: (function_exists('request') ? request() : null);

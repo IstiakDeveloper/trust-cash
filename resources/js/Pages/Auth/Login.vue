@@ -14,6 +14,7 @@ import {
     ShieldCheck
 } from 'lucide-vue-next';
 import { switchTheme } from '@/theme';
+import { useLanguage } from '@/composables/useLanguage';
 
 defineProps({
     canResetPassword: {
@@ -27,6 +28,7 @@ defineProps({
 });
 
 const page = usePage();
+const { t, isBangla, setLanguage } = useLanguage();
 
 const form = useForm({
     email: '',
@@ -48,9 +50,10 @@ const toggleTheme = () => {
 
 const formatErrorMessage = (msg) => {
     if (!msg) return '';
+    const clickText = t('এখানে ক্লিক করে আপনার শপে প্রবেশ করুন', 'Click here to access your shop');
     return msg.replace(
         /(https?:\/\/[^\s]+)/g,
-        '<a href="$1" class="block mt-2 font-bold text-emerald-600 dark:text-emerald-400 hover:underline bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-emerald-500/40 shadow-sm text-center">👉 এখানে ক্লিক করে আপনার শপে প্রবেশ করুন ($1)</a>'
+        `<a href="$1" class="block mt-2 font-bold text-emerald-600 dark:text-emerald-400 hover:underline bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-emerald-500/40 shadow-sm text-center">👉 ${clickText} ($1)</a>`
     );
 };
 
@@ -62,12 +65,12 @@ const submit = () => {
 </script>
 
 <template>
-    <Head :title="($page.props.business_name || $page.props.platform?.name || 'TrustCash') + ' - লগইন'">
+    <Head :title="($page.props.business_name || $page.props.platform?.name || 'TrustCash') + ' - ' + t('লগইন', 'Login')">
         <link v-if="$page.props.platform?.favicon" rel="icon" :href="$page.props.platform.favicon" />
         <link v-if="$page.props.platform?.favicon" rel="shortcut icon" :href="$page.props.platform.favicon" />
     </Head>
 
-    <div class="min-h-screen w-full flex flex-col justify-between bg-slate-50 dark:bg-slate-950 font-bengali text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div :class="['min-h-screen w-full flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200', isBangla ? 'font-bengali' : 'font-sans']">
         <!-- Top Navigation -->
         <header class="w-full max-w-6xl mx-auto px-4 py-4 flex items-center justify-between z-10">
             <Link href="/" class="flex items-center gap-2.5 group">
@@ -92,13 +95,41 @@ const submit = () => {
                 </div>
             </Link>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Language Switcher Pill (বাং | EN) -->
+                <div class="flex items-center p-0.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold shadow-sm">
+                    <button
+                        type="button"
+                        @click="setLanguage('bn')"
+                        :class="[
+                            'px-2.5 py-1 rounded-lg transition-all',
+                            isBangla
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        ]"
+                    >
+                        বাং
+                    </button>
+                    <button
+                        type="button"
+                        @click="setLanguage('en')"
+                        :class="[
+                            'px-2.5 py-1 rounded-lg transition-all',
+                            !isBangla
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        ]"
+                    >
+                        EN
+                    </button>
+                </div>
+
                 <!-- Theme Switcher Button -->
                 <button
                     type="button"
                     @click="toggleTheme"
                     class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-300 transition shadow-sm"
-                    :title="isDark ? 'লাইট থিমে পরিবর্তন করুন' : 'ডার্ক থিমে পরিবর্তন করুন'"
+                    :title="isDark ? t('লাইট থিমে পরিবর্তন করুন', 'Switch to Light Mode') : t('ডার্ক থিমে পরিবর্তন করুন', 'Switch to Dark Mode')"
                 >
                     <Sun v-if="isDark" class="w-4 h-4 text-amber-400" />
                     <Moon v-else class="w-4 h-4 text-slate-600" />
@@ -112,10 +143,10 @@ const submit = () => {
                 <!-- Header Text -->
                 <div class="text-center space-y-1">
                     <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        স্বাগতম! লগইন করুন
+                        {{ t('স্বাগতম! লগইন করুন', 'Welcome! Please Sign In') }}
                     </h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ $page.props.business_name || 'TrustCash' }} POS & ইনভেন্টরি ম্যানেজমেন্ট
+                        {{ $page.props.business_name || 'TrustCash' }} {{ t('POS & ইনভেন্টরি ম্যানেজমেন্ট', 'POS & Inventory Management') }}
                     </p>
                 </div>
 
@@ -130,7 +161,7 @@ const submit = () => {
                     <!-- Email or Username Field -->
                     <div>
                         <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5" for="email">
-                            ইমেইল বা ইউজারনেম (Email or Username) *
+                            {{ t('ইমেইল বা ইউজারনেম', 'Email or Username') }} *
                         </label>
                         <div class="relative">
                             <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -141,7 +172,7 @@ const submit = () => {
                                 required
                                 autofocus
                                 autocomplete="username"
-                                placeholder="name@store.com বা username"
+                                :placeholder="t('name@store.com বা username', 'name@store.com or username')"
                                 class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 text-xs transition"
                             />
                         </div>
@@ -154,14 +185,14 @@ const submit = () => {
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="font-semibold text-slate-700 dark:text-slate-300" for="password">
-                                পাসওয়ার্ড (Password - কমপক্ষে ৪ সংখ্যা) *
+                                {{ t('পাসওয়ার্ড (কমপক্ষে ৪ সংখ্যা)', 'Password (Min 4 chars)') }} *
                             </label>
                             <Link
                                 v-if="canResetPassword"
                                 :href="route('password.request')"
                                 class="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline"
                             >
-                                পাসওয়ার্ড ভুলে গেছেন?
+                                {{ t('পাসওয়ার্ড ভুলে গেছেন?', 'Forgot Password?') }}
                             </Link>
                         </div>
                         <div class="relative">
@@ -173,13 +204,14 @@ const submit = () => {
                                 required
                                 minlength="4"
                                 autocomplete="current-password"
-                                placeholder="কমপক্ষে ৪ ডিজিটের পাসওয়ার্ড"
+                                :placeholder="t('কমপক্ষে ৪ ডিজিটের পাসওয়ার্ড', 'At least 4 characters')"
                                 class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 text-xs transition"
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                                :aria-label="t('পাসওয়ার্ড দেখান বা লুকান', 'Toggle password visibility')"
                             >
                                 <EyeOff v-if="showPassword" class="w-4 h-4" />
                                 <Eye v-else class="w-4 h-4" />
@@ -198,7 +230,7 @@ const submit = () => {
                                 v-model="form.remember"
                                 class="rounded bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-emerald-500 focus:ring-0"
                             />
-                            <span class="text-slate-600 dark:text-slate-400 text-xs">লগইন মনে রাখুন (Remember me)</span>
+                            <span class="text-slate-600 dark:text-slate-400 text-xs">{{ t('লগইন মনে রাখুন', 'Remember me') }}</span>
                         </label>
                     </div>
 
@@ -208,7 +240,7 @@ const submit = () => {
                         :disabled="form.processing"
                         class="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition disabled:opacity-50"
                     >
-                        <span>{{ form.processing ? 'লগইন হচ্ছে...' : 'লগইন করুন' }}</span>
+                        <span>{{ form.processing ? t('লগইন হচ্ছে...', 'Signing in...') : t('লগইন করুন', 'Sign In') }}</span>
                         <ArrowRight class="w-4 h-4" />
                     </button>
                 </form>
@@ -216,9 +248,9 @@ const submit = () => {
                 <!-- Help / Support -->
                 <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 text-center">
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                        নতুন শপ তৈরি করতে চান?
+                        {{ t('নতুন শপ তৈরি করতে চান?', 'Want to create a new shop?') }}
                         <Link href="/register-business" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline ml-1">
-                            রেজিস্টার করুন
+                            {{ t('রেজিস্টার করুন', 'Register Now') }}
                         </Link>
                     </p>
                 </div>
@@ -227,7 +259,7 @@ const submit = () => {
 
         <!-- Footer -->
         <footer class="w-full max-w-6xl mx-auto py-3 text-center text-[11px] text-slate-400 dark:text-slate-500 z-10">
-            © {{ new Date().getFullYear() }} {{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}. সর্বস্বত্ব সংরক্ষিত।
+            © {{ new Date().getFullYear() }} {{ $page.props.business_name || $page.props.app_name || 'TrustCash' }}. {{ t('সর্বস্বত্ব সংরক্ষিত।', 'All rights reserved.') }}
         </footer>
     </div>
 </template>

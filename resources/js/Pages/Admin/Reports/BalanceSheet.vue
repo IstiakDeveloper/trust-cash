@@ -42,39 +42,51 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons 3-Column Grid on Mobile -->
-                    <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-2">
+                    <!-- Action Buttons: Responsive & Never Truncated -->
+                    <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
                         <!-- View Mode Toggle -->
                         <button @click="viewMode = viewMode === 'dashboard' ? 'document' : 'dashboard'"
                             type="button"
-                            class="inline-flex justify-center items-center px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-all min-h-[38px]">
-                            <span v-if="viewMode === 'dashboard'" class="truncate">📄 {{ t('ওয়ার্ড ভিউ', 'Word') }}</span>
-                            <span v-else class="truncate">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
+                            class="inline-flex justify-center items-center px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-all whitespace-nowrap min-h-[38px]">
+                            <span v-if="viewMode === 'dashboard'" class="whitespace-nowrap">📄 {{ t('ওয়ার্ড ভিউ', 'Word View') }}</span>
+                            <span v-else class="whitespace-nowrap">📊 {{ t('ড্যাশবোর্ড', 'Dashboard') }}</span>
                         </button>
 
                         <!-- Download PDF Button -->
                         <button @click="downloadPDF" :disabled="isDownloading"
-                            class="inline-flex justify-center items-center px-2.5 sm:px-3.5 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 transition-all min-h-[38px]">
-                            <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5" fill="none"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 transition-all whitespace-nowrap min-h-[38px]">
+                            <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 mr-1.5" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5 animate-spin" fill="none"
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 mr-1.5 animate-spin" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            <span class="truncate ml-1">{{ isDownloading ? t('...', '...') : t('পিডিএফ', 'PDF') }}</span>
+                            <span class="whitespace-nowrap">{{ isDownloading ? t('...', '...') : t('পিডিএফ', 'PDF') }}</span>
+                        </button>
+
+                        <!-- Download Excel Button -->
+                        <button @click="downloadExcel"
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-all whitespace-nowrap min-h-[38px]">
+                            <svg class="w-4 h-4 shrink-0 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="whitespace-nowrap">{{ t('এক্সেল', 'Excel') }}</span>
                         </button>
 
                         <!-- Print Button -->
                         <button @click="printReport"
-                            class="inline-flex justify-center items-center px-2.5 sm:px-3.5 py-2 text-xs font-medium text-white bg-black hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all min-h-[38px]">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 sm:mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            type="button"
+                            class="inline-flex justify-center items-center px-3.5 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all whitespace-nowrap min-h-[38px]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                             </svg>
-                            <span class="truncate ml-1">{{ t('প্রিন্ট', 'Print') }}</span>
+                            <span class="whitespace-nowrap">{{ t('প্রিন্ট', 'Print') }}</span>
                         </button>
                     </div>
                 </div>
@@ -134,6 +146,19 @@
                                         </td>
                                         <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
                                             {{ formatCurrency(fund_and_liabilities.fund?.period ?? fund_and_liabilities.fund ?? 0) }}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Opening capital: bank balance typed when the account was created -->
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 border-r border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            <div>{{ t('প্রারম্ভিক মূলধন', 'Opening Capital') }}</div>
+                                            <div class="text-[10px] sm:text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {{ t('অ্যাকাউন্ট খোলার সময়ের ব্যালেন্স', 'Balance entered when the account was opened') }}
+                                            </div>
+                                        </td>
+                                        <td class="px-3 sm:px-5 py-2.5 sm:py-3 text-right text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                            {{ formatCurrency(fund_and_liabilities.opening_capital?.period ?? 0) }}
                                         </td>
                                     </tr>
 
@@ -280,6 +305,7 @@
                 :date-range="`${formattedStartDate} ${t('হতে', 'to')} ${formattedEndDate}`"
                 orientation="portrait"
                 file-name="balance-sheet.pdf"
+                @download-excel="downloadExcel"
             >
                 <!-- Statement Difference Warning if any -->
                 <div v-if="!isBalanced" style="margin-bottom: 8px; font-weight: bold; border: 1px dashed #000; padding: 4px 8px; font-size: 8pt; text-align: center;">
@@ -399,6 +425,10 @@ const balanceSheetRows = computed(() => {
     left.push({
         name: t('ফান্ড (মূলধন)', 'Fund (Capital)'),
         amount: props.fund_and_liabilities?.fund?.period ?? props.fund_and_liabilities?.fund ?? 0
+    })
+    left.push({
+        name: t('প্রারম্ভিক মূলধন', 'Opening Capital'),
+        amount: props.fund_and_liabilities?.opening_capital?.period ?? 0
     })
     // 2. Net Profit
     left.push({
@@ -541,5 +571,23 @@ const printReport = async () => {
             viewMode.value = previousMode
         }, 1000)
     }
+}
+
+const downloadExcel = () => {
+    const year = selectedYear.value
+    const month = selectedMonth.value
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0)
+    const formatDate = (date) => {
+        const y = date.getFullYear()
+        const m = String(date.getMonth() + 1).padStart(2, '0')
+        const d = String(date.getDate()).padStart(2, '0')
+        return `${y}-${m}-${d}`
+    }
+    const params = new URLSearchParams({
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+    })
+    window.location.href = route('admin.reports.balance-sheet.excel') + '?' + params.toString()
 }
 </script>

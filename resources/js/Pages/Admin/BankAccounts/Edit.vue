@@ -52,14 +52,20 @@
                                 <input type="number" id="opening_balance" v-model="form.opening_balance"
                                     class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md"
                                     required>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Changing this shifts the current balance by the same amount. It stays capital on the balance sheet.
+                                </p>
                             </div>
                             <div class="mb-4">
                                 <label for="current_balance"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-200">Current
                                     Balance</label>
-                                <input type="number" id="current_balance" v-model="form.current_balance"
-                                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 rounded-md"
-                                    required>
+                                <input type="number" id="current_balance" :value="form.current_balance"
+                                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 text-gray-700 dark:text-gray-200 rounded-md"
+                                    readonly>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Updated by sales, purchases, expenses, and fund entries.
+                                </p>
                             </div>
                             <div class="mb-4">
                                 <label for="status"
