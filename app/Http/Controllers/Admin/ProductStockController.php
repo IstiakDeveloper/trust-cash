@@ -426,6 +426,7 @@ class ProductStockController extends Controller
         $history = ProductStock::with(['createdBy'])
             ->where('product_id', $productId)
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get()
             ->map(function ($stock) {
                 return [

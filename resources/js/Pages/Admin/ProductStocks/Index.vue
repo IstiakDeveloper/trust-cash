@@ -310,10 +310,11 @@
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
                                         :class="{
                                             'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': entry.type === 'purchase',
+                                            'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300': entry.type === 'sale_reversal',
                                             'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': entry.type === 'adjustment',
                                             'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': entry.type === 'sale'
                                         }">
-                                        {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment')) }}
+                                        {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale_reversal' ? t('বিক্রয় সমন্বয়', 'Sale Reversal') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment'))) }}
                                     </span>
                                     <span class="text-[11px] text-slate-400 font-mono">{{ entry.created_at }}</span>
                                 </div>
@@ -375,10 +376,11 @@
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
                                                 :class="{
                                                     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300': entry.type === 'purchase',
+                                                    'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300': entry.type === 'sale_reversal',
                                                     'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300': entry.type === 'adjustment',
                                                     'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300': entry.type === 'sale'
                                                 }">
-                                                {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment')) }}
+                                                {{ entry.type === 'purchase' ? t('ক্রয়', 'Purchase') : (entry.type === 'sale_reversal' ? t('বিক্রয় সমন্বয়', 'Sale Reversal') : (entry.type === 'sale' ? t('বিক্রয়', 'Sale') : t('সমন্বয়', 'Adjustment'))) }}
                                             </span>
                                         </td>
                                         <td class="px-4 py-3 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(entry.quantity) }}</td>

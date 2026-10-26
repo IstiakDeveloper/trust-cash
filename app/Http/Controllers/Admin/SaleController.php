@@ -444,12 +444,41 @@ class SaleController extends Controller
                 ], 403);
             }
 
-            // Restore product stock
+            // Restore product stock via proper sale_reversal records
             foreach ($sale->saleItems as $item) {
-                $stock = ProductStock::firstOrCreate([
+                // Get current stock with row lock to prevent race conditions
+                $currentStock = ProductStock::where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $beforeQuantity = $currentStock ? (float) $currentStock->available_quantity : 0;
+                $afterQuantity = $beforeQuantity + (float) $item->quantity;
+
+                // Create new stock record to reverse the sale
+                ProductStock::create([
                     'product_id' => $item->product_id,
+                    'quantity' => $item->quantity, // positive for reversal
+                    'available_quantity' => $afterQuantity,
+                    'type' => 'sale_reversal',
+                    'date' => now()->toDateString(),
+                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item->quantity) : 0,
+                    'note' => "সেল ইনভয়েস #{$sale->invoice_no} মুছে ফেলার কারণে স্টক সমন্বয়",
+                    'created_by' => auth()->id() ?? $sale->created_by,
                 ]);
-                $stock->increment('quantity', $item->quantity);
+
+                // Record stock movement for reversal
+                StockMovement::create([
+                    'product_id' => $item->product_id,
+                    'reference_type' => 'sale_delete',
+                    'reference_id' => $sale->id,
+                    'quantity' => $item->quantity,
+                    'before_quantity' => $beforeQuantity,
+                    'after_quantity' => $afterQuantity,
+                    'type' => 'in',
+                    'created_by' => auth()->id() ?? $sale->created_by,
+                ]);
             }
 
             // Update customer balance if there was due amount
