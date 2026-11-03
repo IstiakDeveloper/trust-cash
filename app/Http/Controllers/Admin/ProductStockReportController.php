@@ -28,6 +28,9 @@ class ProductStockReportController extends Controller
         $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
 
         $query = Product::with(['category', 'unit'])
+            ->where(function($q) {
+                $q->whereNull('type')->orWhere('type', '!=', 'service');
+            })
             ->when($request->product_id, function ($q) use ($request) {
                 return $q->where('id', $request->product_id);
             })
@@ -40,7 +43,9 @@ class ProductStockReportController extends Controller
         $reportData = $this->generateReports($products, $fromDate, $toDate);
 
         return Inertia::render('Admin/Reports/StockReport', [
-            'products' => Product::select('id', 'name', 'sku')->get(),
+            'products' => Product::where(function($q) {
+                $q->whereNull('type')->orWhere('type', '!=', 'service');
+            })->select('id', 'name', 'sku')->get(),
             'categories' => Category::select('id', 'name')->get(),
             'filters' => [
                 'product_id' => $request->product_id,

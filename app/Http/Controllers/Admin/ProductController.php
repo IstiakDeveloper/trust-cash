@@ -70,6 +70,7 @@ class ProductController extends Controller
                 AND ps.deleted_at IS NULL
             ) as total_purchase_value')
             ->selectRaw('CASE
+                WHEN products.type = "service" THEN "service"
                 WHEN COALESCE((
                     SELECT available_quantity
                     FROM product_stocks
@@ -88,6 +89,9 @@ class ProductController extends Controller
                 ), 0) <= alert_quantity THEN "low"
                 ELSE "in"
             END as stock_status')
+            ->when($request->type, function ($query, $type) {
+                $query->where('products.type', $type);
+            })
             ->when($request->search, function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
@@ -110,7 +114,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => Category::select('id', 'name')->orderBy('name')->get(),
             'brands' => Brand::select('id', 'name')->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'category_id', 'brand_id', 'status']),
+            'filters' => $request->only(['search', 'category_id', 'brand_id', 'status', 'type']),
         ]);
     }
 
@@ -140,13 +144,15 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'nullable|string|in:product,service',
             'sku' => 'required|string|unique:products',
             'barcode' => 'nullable|string|unique:products',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
+            'cost_price' => 'nullable|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
-            'alert_quantity' => 'required|integer|min:0',
+            'alert_quantity' => ($request->input('type') === 'service') ? 'nullable|integer|min:0' : 'required|integer|min:0',
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
             'status' => 'boolean',
@@ -177,6 +183,10 @@ class ProductController extends Controller
         ]);
 
         $validated['slug'] = $this->generateUniqueSlug($request->name);
+        $validated['type'] = $validated['type'] ?? 'product';
+        if ($validated['type'] === 'service') {
+            $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+        }
 
         $product = Product::create($validated);
 
@@ -224,13 +234,15 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'nullable|string|in:product,service',
             'sku' => 'required|string|unique:products,sku,'.$product->id,
             'barcode' => 'nullable|string|unique:products,barcode,'.$product->id,
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
+            'cost_price' => 'nullable|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
-            'alert_quantity' => 'required|integer|min:0',
+            'alert_quantity' => ($request->input('type') === 'service') ? 'nullable|integer|min:0' : 'required|integer|min:0',
             'description' => 'nullable|string',
             'specifications' => 'nullable|array',
             'status' => 'boolean',
@@ -263,6 +275,10 @@ class ProductController extends Controller
 
         // Add unique slug
         $validated['slug'] = $this->generateUniqueSlug($request->name, $product->id);
+        $validated['type'] = $validated['type'] ?? $product->type ?? 'product';
+        if ($validated['type'] === 'service') {
+            $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+        }
 
         // Perform the update with the validated data
         $product->update($validated);

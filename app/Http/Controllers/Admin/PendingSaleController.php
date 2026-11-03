@@ -279,6 +279,11 @@ class PendingSaleController extends Controller
 
     private function getAvailableStock(int $productId): int
     {
+        $product = Product::find($productId);
+        if ($product && $product->isService()) {
+            return 999999;
+        }
+
         $value = DB::table('product_stocks')
             ->where('product_id', $productId)
             ->orderByDesc('id')

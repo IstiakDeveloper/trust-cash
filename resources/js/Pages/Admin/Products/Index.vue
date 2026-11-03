@@ -90,7 +90,7 @@
 
             <!-- Filters Bar -->
             <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs dark:border-slate-700 dark:bg-slate-900">
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <!-- Search -->
                     <div class="relative">
                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -101,6 +101,15 @@
                             class="block w-full rounded-xl border-slate-200 bg-white py-2 pl-9 pr-3 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                             @input="handleSearchInput">
                     </div>
+
+                    <!-- Type Filter -->
+                    <select v-model="filters.type"
+                        class="block w-full rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                        @change="filterChanged">
+                        <option value="">{{ t('সকল ধরণ (সব)', 'All Types') }}</option>
+                        <option value="product">{{ t('মজুদ পণ্য (Physical)', 'Physical Goods') }}</option>
+                        <option value="service">{{ t('সেবা (Service)', 'Services') }}</option>
+                    </select>
 
                     <!-- Category Filter -->
                     <select v-model="filters.category_id"
@@ -204,7 +213,8 @@ const search = ref(props.filters?.search || '');
 const filters = ref({
     category_id: props.filters?.category_id || '',
     brand_id: props.filters?.brand_id || '',
-    status: props.filters?.status || ''
+    status: props.filters?.status || '',
+    type: props.filters?.type || ''
 });
 
 const showConfirmDialog = ref(false);
@@ -218,7 +228,7 @@ const activeProducts = computed(() =>
 );
 
 const lowStockProducts = computed(() =>
-    props.products.data.filter(p => p.available_quantity <= p.alert_quantity && p.available_quantity > 0).length
+    props.products.data.filter(p => p.type !== 'service' && p.available_quantity <= p.alert_quantity && p.available_quantity > 0).length
 );
 
 const totalStockRawValue = computed(() => {

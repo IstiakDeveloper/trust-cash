@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\Customer;
+use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -187,7 +188,7 @@ class SaleController extends Controller
                         'unit_price' => (string) $item->unit_price,
                         'subtotal' => (string) $item->subtotal,
                         // Add current available stock for validation
-                        'available_stock' => $this->getCurrentStock($item->product_id) + $item->quantity, // Current stock + what was sold
+                        'available_stock' => $item->product?->isService() ? 999999 : ($this->getCurrentStock($item->product_id) + $item->quantity), // Current stock + what was sold
                     ]),
                     'subtotal' => (string) $sale->subtotal,
                     'discount' => (string) $sale->discount,
@@ -225,7 +226,7 @@ class SaleController extends Controller
 
             DB::beginTransaction();
 
-            $sale = Sale::with(['saleItems', 'customer', 'bankAccount'])->findOrFail($id);
+            $sale = Sale::with(['saleItems.product', 'customer', 'bankAccount'])->findOrFail($id);
 
             // Store original values for reversal
             $originalCustomerId = $sale->customer_id;
@@ -233,8 +234,12 @@ class SaleController extends Controller
             $originalDue = $sale->due;
             $originalBankAccountId = $sale->bank_account_id;
 
-            // Step 1: Reverse all original stock movements
+            // Step 1: Reverse all original stock movements (for physical products only)
             foreach ($sale->saleItems as $item) {
+                if ($item->product?->isService()) {
+                    continue; // Skip stock reversal for services
+                }
+
                 // Get current stock with row lock to prevent race conditions
                 $currentStock = ProductStock::where('product_id', $item->product_id)
                     ->lockForUpdate()
@@ -300,52 +305,64 @@ class SaleController extends Controller
 
             // Step 6: Process new items and check stock
             foreach ($request->items as $item) {
-                // Check stock availability for new quantity with row lock
-                $currentStock = ProductStock::where('product_id', $item['product_id'])
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
+                $product = Product::findOrFail($item['product_id']);
 
-                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
-                $afterQuantity = $beforeQuantity - $item['quantity'];
+                if ($product->isService()) {
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
+                } else {
+                    // Check stock availability for new quantity with row lock
+                    $currentStock = ProductStock::where('product_id', $item['product_id'])
+                        ->lockForUpdate()
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                // Check if stock is available
-                if ($afterQuantity < 0) {
-                    throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                    $afterQuantity = $beforeQuantity - $item['quantity'];
+
+                    // Check if stock is available
+                    if ($afterQuantity < 0) {
+                        throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    }
+
+                    // Create new sale item
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
+
+                    // Create new stock record
+                    ProductStock::create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => -$item['quantity'], // negative for sales
+                        'available_quantity' => $afterQuantity,
+                        'type' => 'sale',
+                        'date' => now()->toDateString(),
+                        'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                        'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Record stock movement
+                    StockMovement::create([
+                        'product_id' => $item['product_id'],
+                        'reference_type' => 'sale',
+                        'reference_id' => $sale->id,
+                        'quantity' => $item['quantity'],
+                        'before_quantity' => $beforeQuantity,
+                        'after_quantity' => $afterQuantity,
+                        'type' => 'out',
+                        'created_by' => auth()->id(),
+                    ]);
                 }
-
-                // Create new sale item
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'subtotal' => $item['quantity'] * $item['unit_price'],
-                ]);
-
-                // Create new stock record
-                ProductStock::create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => -$item['quantity'], // negative for sales
-                    'available_quantity' => $afterQuantity,
-                    'type' => 'sale',
-                    'date' => now()->toDateString(),
-                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
-                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
-                    'created_by' => auth()->id(),
-                ]);
-
-                // Record stock movement
-                StockMovement::create([
-                    'product_id' => $item['product_id'],
-                    'reference_type' => 'sale',
-                    'reference_id' => $sale->id,
-                    'quantity' => $item['quantity'],
-                    'before_quantity' => $beforeQuantity,
-                    'after_quantity' => $afterQuantity,
-                    'type' => 'out',
-                    'created_by' => auth()->id(),
-                ]);
             }
 
             // Step 7: Update customer balance with new due amount
@@ -434,7 +451,7 @@ class SaleController extends Controller
         try {
             DB::beginTransaction();
 
-            $sale = Sale::with(['saleItems', 'customer'])->findOrFail($id);
+            $sale = Sale::with(['saleItems.product', 'customer'])->findOrFail($id);
 
             // Check if sale is within 7 days
             if ($sale->created_at->diffInDays(now()) > 7) {
@@ -444,8 +461,12 @@ class SaleController extends Controller
                 ], 403);
             }
 
-            // Restore product stock via proper sale_reversal records
+            // Restore product stock via proper sale_reversal records (physical products only)
             foreach ($sale->saleItems as $item) {
+                if ($item->product?->isService()) {
+                    continue; // Skip stock reversal for services
+                }
+
                 // Get current stock with row lock to prevent race conditions
                 $currentStock = ProductStock::where('product_id', $item->product_id)
                     ->lockForUpdate()
@@ -565,6 +586,11 @@ class SaleController extends Controller
      */
     private function getCurrentStock($productId)
     {
+        $product = Product::find($productId);
+        if ($product && $product->isService()) {
+            return 999999;
+        }
+
         $stock = ProductStock::where('product_id', $productId)
             ->orderBy('id', 'desc')
             ->first();

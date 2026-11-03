@@ -49,8 +49,11 @@
                                     </span>
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-200">
-                                        {{ item.name }}
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center gap-1.5">
+                                        <span>{{ item.name }}</span>
+                                        <span v-if="item.is_service || item.type === 'service'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                                            {{ t('সেবা', 'Service') }}
+                                        </span>
                                     </div>
                                     <div class="text-sm text-gray-500 dark:text-gray-400">
                                         {{ item.sku }}

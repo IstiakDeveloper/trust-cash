@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Customer;
+use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sale;
 use App\Models\SaleReturn;
@@ -126,6 +127,11 @@ class SaleReturnController extends Controller
                     'unit_price' => $item['unit_price'],
                     'subtotal' => $subtotal,
                 ]);
+
+                $product = Product::find($item['product_id']);
+                if ($product && $product->isService()) {
+                    continue; // Skip increasing physical stock for services
+                }
 
                 // Increase stock
                 $stock = ProductStock::create([

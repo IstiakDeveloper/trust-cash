@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BankAccount;
 use App\Models\Customer;
+use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -38,47 +39,59 @@ class SaleCreator
             ]);
 
             foreach ($items as $item) {
-                $currentStock = ProductStock::where('product_id', $item['product_id'])
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
+                $product = Product::findOrFail($item['product_id']);
 
-                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
-                $afterQuantity = $beforeQuantity - $item['quantity'];
+                if ($product->isService()) {
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
+                } else {
+                    $currentStock = ProductStock::where('product_id', $item['product_id'])
+                        ->lockForUpdate()
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                if ($afterQuantity < 0) {
-                    throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                    $afterQuantity = $beforeQuantity - $item['quantity'];
+
+                    if ($afterQuantity < 0) {
+                        throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    }
+
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
+
+                    ProductStock::create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => -$item['quantity'],
+                        'available_quantity' => $afterQuantity,
+                        'type' => 'sale',
+                        'date' => $date,
+                        'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                        'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
+                        'created_by' => $createdBy,
+                    ]);
+
+                    StockMovement::create([
+                        'product_id' => $item['product_id'],
+                        'reference_type' => 'sale',
+                        'reference_id' => $sale->id,
+                        'quantity' => $item['quantity'],
+                        'before_quantity' => $beforeQuantity,
+                        'after_quantity' => $afterQuantity,
+                        'type' => 'out',
+                        'created_by' => $createdBy,
+                    ]);
                 }
-
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'subtotal' => $item['quantity'] * $item['unit_price'],
-                ]);
-
-                ProductStock::create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => -$item['quantity'],
-                    'available_quantity' => $afterQuantity,
-                    'type' => 'sale',
-                    'date' => $date,
-                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
-                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
-                    'created_by' => $createdBy,
-                ]);
-
-                StockMovement::create([
-                    'product_id' => $item['product_id'],
-                    'reference_type' => 'sale',
-                    'reference_id' => $sale->id,
-                    'quantity' => $item['quantity'],
-                    'before_quantity' => $beforeQuantity,
-                    'after_quantity' => $afterQuantity,
-                    'type' => 'out',
-                    'created_by' => $createdBy,
-                ]);
             }
 
             if ($customerId && $sale->due > 0) {

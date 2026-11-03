@@ -13,6 +13,7 @@ class Product extends Model
 
     protected $fillable = [
         'name',
+        'type',
         'slug',
         'sku',
         'barcode',
@@ -26,6 +27,26 @@ class Product extends Model
         'specifications',
         'status',
     ];
+
+    public function isService(): bool
+    {
+        return $this->type === 'service';
+    }
+
+    public function isPhysical(): bool
+    {
+        return $this->type !== 'service';
+    }
+
+    public function scopeServices($query)
+    {
+        return $query->where('type', 'service');
+    }
+
+    public function scopePhysical($query)
+    {
+        return $query->where('type', '!=', 'service');
+    }
 
     protected $casts = [
         'specifications' => 'array',

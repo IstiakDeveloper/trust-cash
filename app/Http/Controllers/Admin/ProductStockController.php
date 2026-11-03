@@ -55,6 +55,9 @@ class ProductStockController extends Controller
                 ) as total_purchase_cost')
             )
             ->join('products', 'products.id', '=', 'product_stocks.product_id')
+            ->where(function($q) {
+                $q->whereNull('products.type')->orWhere('products.type', '!=', 'service');
+            })
             ->whereNull('product_stocks.deleted_at')
             ->whereIn('product_stocks.id', function ($query) {
                 $query->select(DB::raw('MAX(id)'))

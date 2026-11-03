@@ -160,8 +160,11 @@
                                                                      class="object-cover w-full h-full" />
                                                             </div>
                                                             <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                                                                    {{ item.name }}
+                                                                <div class="text-xs font-bold text-slate-900 truncate dark:text-slate-100 flex items-center gap-1.5">
+                                                                    <span>{{ item.name }}</span>
+                                                                    <span v-if="item.is_service || item.type === 'service'" class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300">
+                                                                        {{ t('সেবা', 'Service') }}
+                                                                    </span>
                                                                 </div>
                                                                 <div class="text-[11px] text-slate-400 font-mono">
                                                                     {{ item.sku }}
@@ -686,8 +689,9 @@ const handleCategoryFilter = async (categoryId) => {
 };
 
 const addToCart = (product) => {
-    // Check if product has stock
-    if (!product.stock || product.stock <= 0) {
+    const isService = Boolean(product.is_service || product.type === 'service')
+    // Check if product has stock (only for physical products)
+    if (!isService && (!product.stock || product.stock <= 0)) {
         const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
         errorSound.play()
         alert(`❌ ${product.name} is out of stock!`)
@@ -699,23 +703,26 @@ const addToCart = (product) => {
 
     if (existingItem) {
         // Check if we can increment quantity
-        if (existingItem.quantity >= product.stock) {
+        if (!isService && existingItem.quantity >= product.stock) {
             const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
             errorSound.play()
             alert(`⚠️ Only ${product.stock} units available for ${product.name}`)
             return
         }
         existingItem.quantity++
-        existingItem.max_stock = product.stock // Track max available
+        existingItem.max_stock = isService ? 999999 : product.stock // Track max available
+        existingItem.is_service = isService
         existingItem.image = imageUrl
     } else {
         cartItems.value.push({
             product_id: product.id,
             name: product.name,
             sku: product.sku,
+            type: product.type || (isService ? 'service' : 'product'),
+            is_service: isService,
             unit_price: Number(product.selling_price),
             quantity: 1,
-            max_stock: product.stock, // Track max available
+            max_stock: isService ? 999999 : product.stock, // Track max available
             image: imageUrl,
         })
     }
@@ -737,7 +744,7 @@ const updateCartItemQuantity = (index, quantity) => {
         return
     }
 
-    if (quantity > item.max_stock) {
+    if (!item.is_service && item.max_stock && quantity > item.max_stock) {
         alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
         item.quantity = item.max_stock
         return
@@ -749,7 +756,7 @@ const updateCartItemQuantity = (index, quantity) => {
 const incrementQuantity = (index) => {
     const item = cartItems.value[index]
 
-    if (item.quantity >= item.max_stock) {
+    if (!item.is_service && item.max_stock && item.quantity >= item.max_stock) {
         const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
         errorSound.play()
         alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)

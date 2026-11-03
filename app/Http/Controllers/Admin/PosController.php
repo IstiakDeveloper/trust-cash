@@ -52,9 +52,11 @@ class PosController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'type' => $product->type ?? 'product',
+                    'is_service' => $product->isService(),
                     'sku' => $product->sku,
                     'selling_price' => $product->selling_price,
-                    'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
+                    'stock' => $product->isService() ? 999999 : ($latestStock ? round($latestStock->available_quantity) : 0),
                     'image' => $img ? $img->image : null,
                     'image_url' => $img
                         ? ('/storage/'.ltrim($img->image, '/'))
@@ -83,9 +85,11 @@ class PosController extends Controller
             return [
                 'id' => $product->id,
                 'name' => $product->name,
+                'type' => $product->type ?? 'product',
+                'is_service' => $product->isService(),
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
-                'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
+                'stock' => $product->isService() ? 999999 : ($latestStock ? round($latestStock->available_quantity) : 0),
                 'image' => $img ? $img->image : null,
                 'image_url' => $img
                     ? ('/storage/'.ltrim($img->image, '/'))
@@ -119,9 +123,11 @@ class PosController extends Controller
             return [
                 'id' => $product->id,
                 'name' => $product->name,
+                'type' => $product->type ?? 'product',
+                'is_service' => $product->isService(),
                 'sku' => $product->sku,
                 'selling_price' => $product->selling_price,
-                'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
+                'stock' => $product->isService() ? 999999 : ($latestStock ? round($latestStock->available_quantity) : 0),
                 'image' => $img ? $img->image : null,
                 'image_url' => $img
                     ? ('/storage/'.ltrim($img->image, '/'))
@@ -154,9 +160,11 @@ class PosController extends Controller
         return response()->json([[
             'id' => $product->id,
             'name' => $product->name,
+            'type' => $product->type ?? 'product',
+            'is_service' => $product->isService(),
             'sku' => $product->sku,
             'selling_price' => $product->selling_price,
-            'stock' => $latestStock ? round($latestStock->available_quantity) : 0,
+            'stock' => $product->isService() ? 999999 : ($latestStock ? round($latestStock->available_quantity) : 0),
             'image' => $img ? $img->image : null,
             'image_url' => $img
                 ? ('/storage/'.ltrim($img->image, '/'))
@@ -252,61 +260,75 @@ class PosController extends Controller
             foreach ($request->items as $index => $item) {
                 Log::info("Processing item {$index}: ".json_encode($item));
 
-                // Check stock before attempting to create the sale item
-                // Use lockForUpdate to prevent race conditions
-                $currentStock = ProductStock::where('product_id', $item['product_id'])
-                    ->lockForUpdate()
-                    ->orderBy('id', 'desc')
-                    ->first();
+                $product = Product::findOrFail($item['product_id']);
 
-                $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
-                $afterQuantity = $beforeQuantity - $item['quantity'];
+                if ($product->isService()) {
+                    // Service product: no physical stock checks or movements
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
 
-                Log::info("Stock check: before={$beforeQuantity}, after={$afterQuantity}");
+                    Log::info("Service sale item created for product ID: {$item['product_id']}");
+                } else {
+                    // Physical product: check stock with lock
+                    $currentStock = ProductStock::where('product_id', $item['product_id'])
+                        ->lockForUpdate()
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                // Check if stock is available
-                if ($afterQuantity < 0) {
-                    throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    $beforeQuantity = $currentStock ? $currentStock->available_quantity : 0;
+                    $afterQuantity = $beforeQuantity - $item['quantity'];
+
+                    Log::info("Stock check: before={$beforeQuantity}, after={$afterQuantity}");
+
+                    // Check if stock is available
+                    if ($afterQuantity < 0) {
+                        throw new \Exception("Insufficient stock for product ID: {$item['product_id']}, Available: {$beforeQuantity}, Requested: {$item['quantity']}");
+                    }
+
+                    // Create sale item
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                    ]);
+
+                    Log::info("Sale item created for product ID: {$item['product_id']}");
+
+                    // Create new stock record
+                    ProductStock::create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => -$item['quantity'], // negative for sales
+                        'available_quantity' => $afterQuantity,
+                        'type' => 'sale',
+                        'date' => $saleDate,
+                        'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
+                        'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
+                        'created_by' => $createdBy,
+                    ]);
+
+                    Log::info("Product stock updated for product ID: {$item['product_id']}");
+
+                    // Record stock movement
+                    StockMovement::create([
+                        'product_id' => $item['product_id'],
+                        'reference_type' => 'sale',
+                        'reference_id' => $sale->id,
+                        'quantity' => $item['quantity'],
+                        'before_quantity' => $beforeQuantity,
+                        'after_quantity' => $afterQuantity,
+                        'type' => 'out',
+                        'created_by' => $createdBy,
+                    ]);
+
+                    Log::info("Stock movement recorded for product ID: {$item['product_id']}");
                 }
-
-                // Create sale item
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'subtotal' => $item['quantity'] * $item['unit_price'],
-                ]);
-
-                Log::info("Sale item created for product ID: {$item['product_id']}");
-
-                // Create new stock record
-                ProductStock::create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => -$item['quantity'], // negative for sales
-                    'available_quantity' => $afterQuantity,
-                    'type' => 'sale',
-                    'date' => $saleDate,
-                    'unit_cost' => $currentStock ? $currentStock->unit_cost : 0,
-                    'total_cost' => $currentStock ? ($currentStock->unit_cost * $item['quantity']) : 0,
-                    'created_by' => $createdBy,
-                ]);
-
-                Log::info("Product stock updated for product ID: {$item['product_id']}");
-
-                // Record stock movement
-                StockMovement::create([
-                    'product_id' => $item['product_id'],
-                    'reference_type' => 'sale',
-                    'reference_id' => $sale->id,
-                    'quantity' => $item['quantity'],
-                    'before_quantity' => $beforeQuantity,
-                    'after_quantity' => $afterQuantity,
-                    'type' => 'out',
-                    'created_by' => $createdBy,
-                ]);
-
-                Log::info("Stock movement recorded for product ID: {$item['product_id']}");
             }
 
             // Update customer balance if needed

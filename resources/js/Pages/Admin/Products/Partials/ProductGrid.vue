@@ -40,7 +40,10 @@
                             </div>
                             <div>
                                 <p class="text-[11px] font-medium text-slate-400">{{ t('মজুদ স্টক', 'Stock') }}</p>
-                                <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                <p v-if="product.type === 'service'" class="text-sm font-bold text-purple-600 dark:text-purple-400 mt-0.5">
+                                    ∞
+                                </p>
+                                <p v-else class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
                                     {{ formatNumber(product.available_quantity) }}
                                 </p>
                             </div>
@@ -135,6 +138,7 @@ const getProductImage = (product) => {
 
 const getStockStatusText = (status) => {
     switch (status) {
+        case 'service': return t('সেবা (সীমাহীন)', 'Service (Unlimited)');
         case 'out': return t('স্টক নেই', 'Out of Stock');
         case 'low': return t('সীমিত স্টক', 'Low Stock');
         default: return t('মজুদ আছে', 'In Stock');
@@ -143,6 +147,8 @@ const getStockStatusText = (status) => {
 
 const getStockStatusClass = (status) => {
     switch (status) {
+        case 'service':
+            return 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/50';
         case 'out':
             return 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300';
         case 'low':

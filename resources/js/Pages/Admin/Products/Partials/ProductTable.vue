@@ -82,7 +82,8 @@
                     <div>
                         <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{{ t('মজুদ', 'Stock') }}</span>
                         <div class="flex items-center gap-1 mt-0.5">
-                            <span class="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{{ formatNumber(product.available_quantity) }}</span>
+                            <span v-if="product.type === 'service'" class="font-bold text-purple-600 dark:text-purple-400">∞</span>
+                            <span v-else class="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{{ formatNumber(product.available_quantity) }}</span>
                             <span :class="['text-[9px] px-1 py-0.2 rounded font-bold', getStockStatusClass(product.stock_status)]">
                                 {{ getStockStatusText(product.stock_status) }}
                             </span>
@@ -190,7 +191,10 @@
                             <div class="text-[11px] text-slate-400">{{ t('কেনা:', 'Cost:') }} {{ formatCurrency(product.cost_price) }}</div>
                         </td>
                         <td class="whitespace-nowrap px-3 py-3.5">
-                            <div class="font-bold text-slate-900 dark:text-white">
+                            <div v-if="product.type === 'service'" class="font-bold text-purple-600 dark:text-purple-400">
+                                ∞
+                            </div>
+                            <div v-else class="font-bold text-slate-900 dark:text-white">
                                 {{ formatNumber(product.available_quantity) }}
                             </div>
                             <span :class="[
@@ -337,6 +341,7 @@ const getProductImage = (product) => {
 
 const getStockStatusText = (status) => {
     switch (status) {
+        case 'service': return t('সেবা (সীমাহীন)', 'Service (Unlimited)');
         case 'out': return t('স্টক নেই', 'Out of Stock');
         case 'low': return t('সীমিত স্টক', 'Low Stock');
         default: return t('মজুদ আছে', 'In Stock');
@@ -345,6 +350,8 @@ const getStockStatusText = (status) => {
 
 const getStockStatusClass = (status) => {
     switch (status) {
+        case 'service':
+            return 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/50';
         case 'out':
             return 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300';
         case 'low':

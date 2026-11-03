@@ -28,6 +28,56 @@
                         {{ t('মৌলিক তথ্য', 'Basic Information') }}
                     </h3>
 
+                    <!-- Item Type Selector -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                            {{ t('আইটেমের ধরণ *', 'Item Type *') }}
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Physical Product Option -->
+                            <button type="button"
+                                @click="form.type = 'product'"
+                                :class="[
+                                    'p-3 rounded-xl border-2 text-left transition-all flex items-start gap-3 cursor-pointer',
+                                    form.type === 'product'
+                                        ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 shadow-xs'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-400'
+                                ]">
+                                <div :class="[
+                                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold',
+                                    form.type === 'product' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                ]">
+                                    <i class="fas fa-box text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-black">{{ t('মজুদ পণ্য (Physical Product)', 'Physical Product') }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{ t('মজুদ ও ইনভেন্টরি ট্র্যাক হবে, স্টক প্রয়োজন', 'Track inventory & stock quantities') }}</p>
+                                </div>
+                            </button>
+
+                            <!-- Service Option -->
+                            <button type="button"
+                                @click="form.type = 'service'"
+                                :class="[
+                                    'p-3 rounded-xl border-2 text-left transition-all flex items-start gap-3 cursor-pointer',
+                                    form.type === 'service'
+                                        ? 'border-purple-600 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 shadow-xs'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-400'
+                                ]">
+                                <div :class="[
+                                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold',
+                                    form.type === 'service' ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                ]">
+                                    <i class="fas fa-tools text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-black">{{ t('সেবা (Service)', 'Service Item') }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{ t('কোনো স্টক লাগবে না, সরাসরি আনলিমিটেড সেল', 'No stock needed, sell unlimited times') }}</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
                         <div class="sm:col-span-4">
                             <InputLabel for="name" :value="t('পণ্যের নাম *', 'Product Name *')" class="text-xs font-bold" />
@@ -129,11 +179,20 @@
                             <InputError :message="form.errors.selling_price" class="mt-1" />
                         </div>
 
-                        <div>
+                        <div v-if="form.type !== 'service'">
                             <InputLabel for="alert_quantity" :value="t('সীমিত স্টক সতর্কতা সীমা *', 'Alert Quantity *')" class="text-xs font-bold" />
                             <TextInput id="alert_quantity" v-model="form.alert_quantity"
                                 type="number" min="0" class="mt-1 block w-full text-xs rounded-xl" required />
                             <InputError :message="form.errors.alert_quantity" class="mt-1" />
+                        </div>
+                        <div v-else class="flex flex-col justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 p-3">
+                            <p class="text-xs font-bold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
+                                <i class="fas fa-infinity text-sm"></i>
+                                <span>{{ t('সীমাহীন স্টক (Unlimited)', 'Unlimited Stock') }}</span>
+                            </p>
+                            <p class="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">
+                                {{ t('সেবার ক্ষেত্রে কোনো স্টক ট্র্যাকিং প্রয়োজন নেই।', 'Service items do not require stock tracking.') }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -302,6 +361,7 @@ const props = defineProps({
 
 const form = useForm({
     name: props.product?.name || '',
+    type: props.product?.type || 'product',
     sku: props.product?.sku || '',
     barcode: props.product?.barcode || '',
     category_id: props.product?.category_id || '',

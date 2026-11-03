@@ -11,10 +11,10 @@
              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4">
             <div v-for="product in products"
                 :key="product.id"
-                @click="product.stock > 0 ? $emit('add-to-cart', product) : showOutOfStockAlert(product)"
+                @click="isAvailable(product) ? $emit('add-to-cart', product) : showOutOfStockAlert(product)"
                 :class="[
                     'group transform transition-all duration-200',
-                    product.stock <= 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-102'
+                    !isAvailable(product) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:scale-102'
                 ]"
             >
                 <div class="bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden
@@ -36,13 +36,17 @@
                         </div>
 
                         <!-- Stock Badge -->
-                        <div class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold"
+                        <div class="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-xs"
                              :class="[
-                                 product.stock > 0
-                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                     : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                 (product.is_service || product.type === 'service')
+                                     ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/50'
+                                     : (product.stock > 0
+                                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                         : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300')
                              ]">
-                            {{ product.stock > 0 ? (t('স্টক: ', 'Stock: ') + formatNumber(product.stock)) : t('স্টক শেষ', 'Out of stock') }}
+                            <span v-if="product.is_service || product.type === 'service'">🛠️ {{ t('সেবা', 'Service') }}</span>
+                            <span v-else-if="product.stock > 0">{{ t('স্টক: ', 'Stock: ') + formatNumber(product.stock) }}</span>
+                            <span v-else>{{ t('স্টক শেষ', 'Out of stock') }}</span>
                         </div>
                     </div>
 
@@ -57,7 +61,7 @@
                             <span class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
                                 {{ formatCurrency(product.selling_price) }}
                             </span>
-                            <button v-if="product.stock > 0"
+                            <button v-if="isAvailable(product)"
                                     class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white dark:bg-slate-600 dark:text-slate-200 transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -101,6 +105,11 @@ const props = defineProps({
 })
 
 defineEmits(['add-to-cart'])
+
+const isAvailable = (product) => {
+    if (product.is_service || product.type === 'service') return true
+    return Number(product.stock) > 0
+}
 
 const showOutOfStockAlert = (product) => {
     alert(`❌ ${product.name} ${t('স্টকে নেই!', 'is out of stock!')}`)

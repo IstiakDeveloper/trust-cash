@@ -56,11 +56,13 @@ class StorefrontController extends Controller
             return [
                 'id' => $p->id,
                 'name' => $p->name,
+                'type' => $p->type ?? 'product',
+                'is_service' => $p->isService(),
                 'sku' => $p->sku,
                 'selling_price' => (float) $p->selling_price,
                 'image' => $img?->image,
                 'image_url' => $img ? asset('storage/'.$img->image) : null,
-                'available_quantity' => (int) round((float) ($p->available_quantity ?? 0)),
+                'available_quantity' => $p->isService() ? 999999 : (int) round((float) ($p->available_quantity ?? 0)),
             ];
         });
 
@@ -96,16 +98,18 @@ class StorefrontController extends Controller
             'quantity' => 'nullable|integer|min:1|max:999',
         ]);
 
+        $product = Product::findOrFail($data['product_id']);
+        $isService = $product->isService();
         $qty = (int) ($data['quantity'] ?? 1);
-        $available = $this->getAvailableStock((int) $data['product_id']);
-        if ($available <= 0) {
+        $available = $isService ? 999999 : $this->getAvailableStock((int) $data['product_id']);
+        if (! $isService && $available <= 0) {
             return back()->with('error', 'Out of stock.');
         }
 
         $cart = $this->getCart($request);
         $id = (string) $data['product_id'];
         $desired = min(999, ((int) ($cart[$id] ?? 0)) + $qty);
-        if ($desired > $available) {
+        if (! $isService && $desired > $available) {
             return back()->with('error', "Only {$available} available in stock.");
         }
         $cart[$id] = $desired;
@@ -124,11 +128,13 @@ class StorefrontController extends Controller
 
         $cart = [];
         foreach ($data['items'] as $item) {
-            $available = $this->getAvailableStock((int) $item['product_id']);
-            if ($available <= 0) {
+            $product = Product::find($item['product_id']);
+            $isService = $product?->isService();
+            $available = $isService ? 999999 : $this->getAvailableStock((int) $item['product_id']);
+            if (! $isService && $available <= 0) {
                 return back()->with('error', 'Some items are out of stock.');
             }
-            if ((int) $item['quantity'] > $available) {
+            if (! $isService && (int) $item['quantity'] > $available) {
                 return back()->with('error', "Quantity exceeds stock for a product (available: {$available}).");
             }
             $cart[(string) $item['product_id']] = (int) $item['quantity'];
@@ -310,6 +316,11 @@ class StorefrontController extends Controller
 
     private function getAvailableStock(int $productId): int
     {
+        $product = Product::find($productId);
+        if ($product && $product->isService()) {
+            return 999999;
+        }
+
         $value = DB::table('product_stocks')
             ->where('product_id', $productId)
             ->orderByDesc('id')
