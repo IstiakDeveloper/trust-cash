@@ -5789,3 +5789,39 @@ Did you mean one of these?
 #15 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
 #16 {main}
 "} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
+[2026-11-04 18:50:50] local.ERROR: Method Illuminate\Http\Request::getFirstArgument does not exist. {"userId":1,"exception":"[object] (BadMethodCallException(code: 0): Method Illuminate\\Http\\Request::getFirstArgument does not exist. at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Macroable/Traits/Macroable.php:115)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(192): Illuminate/Http/Request->__call('getFirstArgumen...', Array)
+#1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
+#2 {main}
+"} 
