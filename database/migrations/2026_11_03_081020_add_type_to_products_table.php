@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('type', 20)->default('product')->after('name')->index();
+            if (!Schema::hasColumn('products', 'type')) {
+                $table->string('type', 20)->default('product')->after('name')->index();
+            }
         });
     }
 
@@ -22,8 +24,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropIndex(['type']);
-            $table->dropColumn('type');
+            if (Schema::hasColumn('products', 'type')) {
+                $table->dropIndex(['type']);
+                $table->dropColumn('type');
+            }
         });
     }
 };
