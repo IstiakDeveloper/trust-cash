@@ -624,6 +624,20 @@ class SuperAdminController extends Controller
     }
 
     /**
+     * Run all pending migrations across all tenant databases.
+     */
+    public function migrateTenants(Request $request)
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('tenants:migrate', ['--force' => true]);
+
+            return redirect()->back()->with('success', 'সকল টেন্যান্ট ডাটাবেজ সফলভাবে মাইগ্রেট ও আপডেট হয়েছে।');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'টেন্যান্ট মাইগ্রেশন ব্যর্থ: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Delete Tenant permanently and wipe all related databases and records.
      * Requires Super Admin password confirmation.
      */

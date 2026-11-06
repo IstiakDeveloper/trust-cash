@@ -14,11 +14,13 @@ use App\Models\StockMovement;
 use App\Models\Unit;
 use App\Jobs\OptimizeProductImagesJob;
 use App\Services\ProductImageProcessor;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -34,6 +36,12 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+        $hasType = $this->ensureProductTypeColumn();
+
+        $stockStatusCase = $hasType
+            ? 'WHEN products.type = "service" THEN "service"'
+            : '';
+
         $products = Product::query()
             ->with(['category', 'brand', 'unit', 'images'])
             ->select('products.*')
@@ -69,8 +77,8 @@ class ProductController extends Controller
                 AND ps.type = "purchase"
                 AND ps.deleted_at IS NULL
             ) as total_purchase_value')
-            ->selectRaw('CASE
-                WHEN products.type = "service" THEN "service"
+            ->selectRaw("CASE
+                {$stockStatusCase}
                 WHEN COALESCE((
                     SELECT available_quantity
                     FROM product_stocks
@@ -78,7 +86,7 @@ class ProductController extends Controller
                     AND deleted_at IS NULL
                     ORDER BY id DESC
                     LIMIT 1
-                ), 0) <= 0 THEN "out"
+                ), 0) <= 0 THEN 'out'
                 WHEN COALESCE((
                     SELECT available_quantity
                     FROM product_stocks
@@ -86,16 +94,18 @@ class ProductController extends Controller
                     AND deleted_at IS NULL
                     ORDER BY id DESC
                     LIMIT 1
-                ), 0) <= alert_quantity THEN "low"
-                ELSE "in"
-            END as stock_status')
-            ->when($request->type, function ($query, $type) {
+                ), 0) <= alert_quantity THEN 'low'
+                ELSE 'in'
+            END as stock_status")
+            ->when($hasType && $request->type, function ($query, $type) {
                 $query->where('products.type', $type);
             })
             ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%");
+                });
             })
             ->when($request->category_id, function ($query, $category_id) {
                 $query->where('category_id', $category_id);
@@ -183,9 +193,14 @@ class ProductController extends Controller
         ]);
 
         $validated['slug'] = $this->generateUniqueSlug($request->name);
-        $validated['type'] = $validated['type'] ?? 'product';
-        if ($validated['type'] === 'service') {
-            $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+        $hasType = $this->ensureProductTypeColumn();
+        if ($hasType) {
+            $validated['type'] = $validated['type'] ?? 'product';
+            if ($validated['type'] === 'service') {
+                $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+            }
+        } else {
+            unset($validated['type']);
         }
 
         $product = Product::create($validated);
@@ -275,9 +290,14 @@ class ProductController extends Controller
 
         // Add unique slug
         $validated['slug'] = $this->generateUniqueSlug($request->name, $product->id);
-        $validated['type'] = $validated['type'] ?? $product->type ?? 'product';
-        if ($validated['type'] === 'service') {
-            $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+        $hasType = $this->ensureProductTypeColumn();
+        if ($hasType) {
+            $validated['type'] = $validated['type'] ?? $product->type ?? 'product';
+            if ($validated['type'] === 'service') {
+                $validated['alert_quantity'] = (int) ($validated['alert_quantity'] ?? 0);
+            }
+        } else {
+            unset($validated['type']);
         }
 
         // Perform the update with the validated data
@@ -434,6 +454,26 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Report', [
             'products' => $products,
         ]);
+    }
+
+    /**
+     * Ensure the `type` column exists in the current tenant's products table.
+     */
+    private function ensureProductTypeColumn(): bool
+    {
+        try {
+            if (!Schema::hasColumn('products', 'type')) {
+                Schema::table('products', function (Blueprint $table) {
+                    if (!Schema::hasColumn('products', 'type')) {
+                        $table->string('type', 20)->default('product')->after('name')->index();
+                    }
+                });
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Could not auto-add type column to products table: " . $e->getMessage());
+        }
+
+        return Schema::hasColumn('products', 'type');
     }
 
     /**

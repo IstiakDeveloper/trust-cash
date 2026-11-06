@@ -30,12 +30,12 @@ class Product extends Model
 
     public function isService(): bool
     {
-        return $this->type === 'service';
+        return ($this->type ?? 'product') === 'service';
     }
 
     public function isPhysical(): bool
     {
-        return $this->type !== 'service';
+        return ($this->type ?? 'product') !== 'service';
     }
 
     public function scopeServices($query)

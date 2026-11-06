@@ -21,7 +21,9 @@ import {
     Check,
     AlertCircle,
     Trash2,
-    Pencil
+    Pencil,
+    RefreshCw,
+    Database
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -48,6 +50,19 @@ const showApproveModal = ref(false);
 const showExtendModal = ref(false);
 const showPasswordModal = ref(false);
 const showEditModal = ref(false);
+const migrating = ref(false);
+
+const runTenantMigrations = () => {
+    if (confirm('আপনি কি সকল স্টোরের ডাটাবেজ টেবিল ও মাইগ্রেশন আপডেট করতে চান?')) {
+        migrating.value = true;
+        router.post(route('super-admin.migrate-tenants'), {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                migrating.value = false;
+            }
+        });
+    }
+};
 const selectedTenant = ref(null);
 const selectedApproveTenant = ref(null);
 
@@ -372,13 +387,25 @@ const formatPrice = (amount) => {
                     </select>
                 </div>
 
-                <button
-                    @click="showCreateModal = true"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium text-xs shadow-md shadow-emerald-500/10 transition"
-                >
-                    <Plus class="w-4 h-4" />
-                    <span>Create Store Manually</span>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        @click="runTenantMigrations"
+                        :disabled="migrating"
+                        class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 font-medium text-xs shadow-sm transition disabled:opacity-50"
+                        title="Run migrations across all tenant databases"
+                    >
+                        <RefreshCw class="w-3.5 h-3.5 text-cyan-400" :class="{ 'animate-spin': migrating }" />
+                        <span>{{ migrating ? 'Updating...' : 'Update All DBs' }}</span>
+                    </button>
+
+                    <button
+                        @click="showCreateModal = true"
+                        class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium text-xs shadow-md shadow-emerald-500/10 transition"
+                    >
+                        <Plus class="w-4 h-4" />
+                        <span>Create Store Manually</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Stores Table -->

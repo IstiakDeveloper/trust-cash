@@ -126,10 +126,26 @@ Route::get('/storage-link', function () {
 
 // Route for running migrations
 Route::get('/migrate', function () {
-    Artisan::call('migrate');
+    Artisan::call('migrate', ['--force' => true]);
+    $centralOutput = Artisan::output();
 
-    return response()->json(['message' => 'Migrations run successfully.']);
+    Artisan::call('tenants:migrate', ['--force' => true]);
+    $tenantsOutput = Artisan::output();
+
+    return response()->json([
+        'message' => 'Central and tenant migrations run successfully.',
+        'central_output' => $centralOutput,
+        'tenants_output' => $tenantsOutput,
+    ]);
 })->name('migrate');
+
+Route::get('/tenants-migrate', function () {
+    Artisan::call('tenants:migrate', ['--force' => true]);
+    return response()->json([
+        'message' => 'Tenant migrations run successfully.',
+        'output' => Artisan::output(),
+    ]);
+})->name('tenants.migrate');
 
 Route::get('/run-backup', function () {
     try {
@@ -371,6 +387,7 @@ Route::middleware(['auth', 'superadmin'])->prefix('super-admin')->name('super-ad
     Route::post('/tenants/{tenant}/reset-password', [SuperAdminController::class, 'resetPassword'])->name('tenants.reset-password');
     Route::get('/tenants/{tenant}/impersonate', [SuperAdminController::class, 'impersonate'])->name('tenants.impersonate');
     Route::delete('/tenants/{tenant}', [SuperAdminController::class, 'deleteTenant'])->name('tenants.destroy');
+    Route::match(['get', 'post'], '/migrate-tenants', [SuperAdminController::class, 'migrateTenants'])->name('migrate-tenants');
 
     // Plans Management
     Route::get('/plans', [SuperAdminController::class, 'plans'])->name('plans.index');
