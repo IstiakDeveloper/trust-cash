@@ -111,41 +111,41 @@
                         <button
                             type="button"
                             @click="setRotation(0)"
-                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 0 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t(`স্বাভাবিক পেজ সাইজ: ${rawBaseWidth}×${rawBaseHeight} মিমি`, `Normal Page: ${rawBaseWidth}x${rawBaseHeight}mm`)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', Number(rotation) === 0 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t(`স্বাভাবিক সোজা প্রিন্ট: ${baseW}×${baseH} মিমি`, `Normal: ${baseW}x${baseH}mm`)"
                         >
-                            0° সোজা ({{ rawBaseWidth }}×{{ rawBaseHeight }} mm)
+                            0° সোজা ({{ baseW }}×{{ baseH }} mm)
                         </button>
 
-                        <!-- 90 Degree (Page Size Rotates: Width & Height swap physically in @page) -->
+                        <!-- 90 Degree (Page Size & Content Both Rotate 90°) -->
                         <button
                             type="button"
                             @click="setRotation(90)"
-                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5', rotation === 90 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t(`পেজ সাইজ সহ ৯০° রোটেট: ${rawBaseHeight}×${rawBaseWidth} মিমি`, `Rotate page size to ${rawBaseHeight}x${rawBaseWidth}mm`)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5', Number(rotation) === 90 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t(`বারকোড ও পেজ সহ ৯০° রোটেট: ${baseH}×${baseW} মিমি`, `Rotate content & page 90°: ${baseH}x${baseW}mm`)"
                         >
-                            <span>90° পেজ রোটেট ({{ rawBaseHeight }}×{{ rawBaseWidth }} mm)</span>
-                            <span v-if="rotation === 90" class="rounded bg-indigo-700 px-1 text-[9px] text-white">Active</span>
+                            <span>90° রোটেট ({{ baseH }}×{{ baseW }} mm)</span>
+                            <span v-if="Number(rotation) === 90" class="rounded bg-indigo-700 px-1 text-[9px] text-white">Active</span>
                         </button>
 
                         <!-- 180 Degree (Inverted 180) -->
                         <button
                             type="button"
                             @click="setRotation(180)"
-                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 180 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', Number(rotation) === 180 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
                             :title="t('১৮০° উল্টো প্রিন্ট', 'Inverted 180 degree rotation')"
                         >
                             180° উল্টো
                         </button>
 
-                        <!-- 270 Degree (Page Size Rotates Counter-Clockwise) -->
+                        <!-- 270 Degree (Page Size & Content Rotate 270°) -->
                         <button
                             type="button"
                             @click="setRotation(270)"
-                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 270 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t(`পেজ সাইজ সহ ২৭০° রোটেট: ${rawBaseHeight}×${rawBaseWidth} মিমি`, `Rotate page size to ${rawBaseHeight}x${rawBaseWidth}mm`)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', Number(rotation) === 270 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t(`বারকোড ও পেজ সহ ২৭০° রোটেট: ${baseH}×${baseW} মিমি`, `Rotate content & page 270°: ${baseH}x${baseW}mm`)"
                         >
-                            270° ({{ rawBaseHeight }}×{{ rawBaseWidth }} mm)
+                            270° ({{ baseH }}×{{ baseW }} mm)
                         </button>
                     </div>
                 </div>
@@ -205,9 +205,9 @@
             </div>
 
             <!-- Helpful Rotation Banner when 90° is active -->
-            <div v-if="rotation === 90" class="rounded-xl bg-indigo-50/90 p-2.5 border border-indigo-200/80 dark:bg-indigo-950/30 dark:border-indigo-900/40 flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
+            <div v-if="Number(rotation) === 90" class="rounded-xl bg-indigo-50/90 p-2.5 border border-indigo-200/80 dark:bg-indigo-950/30 dark:border-indigo-900/40 flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
                 <InformationCircleIcon class="h-4 w-4 text-indigo-600 shrink-0" />
-                <span>{{ t(`💡 পেজ সাইজ সহ ৯০° রোটেট সক্রিয়: প্রিন্টারের জন্য কাগজের সাইজ এখন সরাসরি ${effectiveWidth}×${effectiveHeight} মিমি হিসেবে পাঠানো হচ্ছে। ফলে স্টিকার একদম সোজা বের হবে!`, `💡 90° page rotation active: paper size is set to ${effectiveWidth}x${effectiveHeight}mm!`) }}</span>
+                <span>{{ t(`💡 ৯০° রোটেশন সক্রিয়: বারকোড ও পেজ সাইজ সহ ঘুরে ${effectiveWidth}×${effectiveHeight} মিমি হিসেবে রোটেট হয়েছে।`, `💡 90° rotation active: content and paper size are rotated to ${effectiveWidth}x${effectiveHeight}mm!`) }}</span>
             </div>
 
             <!-- Custom Size Inputs & Quick mm Presets (When selectedPaperSize === 'custom') -->
@@ -606,8 +606,8 @@ const setCustomPreset = (w, h) => {
 }
 
 const setRotation = (deg) => {
-    rotation.value = deg
-    localStorage.setItem('trustcash_barcode_rotation', deg)
+    rotation.value = Number(deg)
+    localStorage.setItem('trustcash_barcode_rotation', String(deg))
     updatePrintStyleTag()
 }
 
@@ -751,29 +751,34 @@ const rawBaseHeight = computed(() => {
     return currentConfig.value.baseHeight || 25
 })
 
+// Swapped base dimensions (if user explicitly toggled Swap W <-> H)
+const baseW = computed(() => {
+    return isSwapped.value ? rawBaseHeight.value : rawBaseWidth.value
+})
+
+const baseH = computed(() => {
+    return isSwapped.value ? rawBaseWidth.value : rawBaseHeight.value
+})
+
 // Whether 90° or 270° rotation is active
 const is90or270 = computed(() => {
-    return Number(rotation.value) === 90 || Number(rotation.value) === 270
+    const deg = Number(rotation.value) || 0
+    return deg === 90 || deg === 270
 })
 
-// Dimension swap: true when 90/270 rotated (or if user manually toggles swap)
-const isDimensionsSwapped = computed(() => {
-    return is90or270.value ? !isSwapped.value : isSwapped.value
-})
-
-// ACTUAL PHYSICAL PAGE DIMENSIONS (Sent directly to CSS @page size and physical label element)
+// ACTUAL PHYSICAL PAGE DIMENSIONS (Sent directly to CSS @page size and physical wrapper element)
 const effectiveWidth = computed(() => {
-    return isDimensionsSwapped.value ? rawBaseHeight.value : rawBaseWidth.value
+    return is90or270.value ? baseH.value : baseW.value
 })
 
 const effectiveHeight = computed(() => {
-    return isDimensionsSwapped.value ? rawBaseWidth.value : rawBaseHeight.value
+    return is90or270.value ? baseW.value : baseH.value
 })
 
 const currentSizeLabel = computed(() => {
     let base = `${effectiveWidth.value}×${effectiveHeight.value} mm`
-    if (rotation.value !== 0) {
-        base += ` (${rotation.value}° পেজ রোটেটেড)`
+    if (Number(rotation.value) !== 0) {
+        base += ` (${rotation.value}° রোটেটেড)`
     }
     return base
 })
@@ -787,14 +792,14 @@ const currentSizeClass = computed(() => {
 })
 
 const computedMaxNameLength = computed(() => {
-    return Math.max(12, Math.floor(effectiveWidth.value * 0.65))
+    return Math.max(12, Math.floor(baseW.value * 0.65))
 })
 
 const totalLabels = computed(() => {
     return props.products.reduce((acc, p) => acc + (Number(p.copies) || 1), 0)
 })
 
-// Wrapper style (The actual physical rotated card)
+// Wrapper style (The actual physical rotated card container)
 const computedWrapperStyle = computed(() => {
     const w = effectiveWidth.value
     const h = effectiveHeight.value
@@ -804,42 +809,54 @@ const computedWrapperStyle = computed(() => {
         maxWidth: `${w}mm`,
         maxHeight: `${h}mm`,
         minWidth: `${w}mm`,
-        minHeight: `${h}mm`
+        minHeight: `${h}mm`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
     }
 })
 
-// Content style (Fills the rotated wrapper with proper padding and 180° inversion if needed)
+// Content style (Lays out at base dimensions and ROTATES according to rotation)
 const computedContentStyle = computed(() => {
     const deg = Number(rotation.value) || 0
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
+    const w = baseW.value
+    const h = baseH.value
     const padX = Math.max(0.8, w * 0.04).toFixed(1)
     const padY = Math.max(0.8, h * 0.04).toFixed(1)
 
-    // At 180° or 270°, invert content 180 degrees
-    if (deg === 180 || deg === 270) {
-        return {
-            width: '100%',
-            height: '100%',
-            padding: `${padY}mm ${padX}mm`,
-            transform: 'rotate(180deg)',
-            transformOrigin: 'center center'
-        }
+    let transform = 'none'
+    if (deg === 90) {
+        transform = 'rotate(90deg)'
+    } else if (deg === 180) {
+        transform = 'rotate(180deg)'
+    } else if (deg === 270) {
+        transform = 'rotate(270deg)'
     }
 
     return {
-        width: '100%',
-        height: '100%',
+        width: `${w}mm`,
+        height: `${h}mm`,
+        minWidth: `${w}mm`,
+        minHeight: `${h}mm`,
+        maxWidth: `${w}mm`,
+        maxHeight: `${h}mm`,
         padding: `${padY}mm ${padX}mm`,
-        transform: 'none'
+        flexShrink: 0,
+        boxSizing: 'border-box',
+        transform: transform,
+        WebkitTransform: transform,
+        transformOrigin: 'center center',
+        WebkitTransformOrigin: 'center center'
     }
 })
 
-// Inner element styles dynamically scaled to the effective dimensions
+// Inner element styles dynamically scaled to base label dimensions
 const computedStoreStyle = computed(() => {
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
-    const sizeMm = Math.max(1.8, Math.min(3.2, (h < w ? h * 0.09 : w * 0.09))).toFixed(1)
+    const w = baseW.value
+    const h = baseH.value
+    const sizeMm = Math.max(1.8, Math.min(3.2, h * 0.11)).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`,
         maxWidth: `${w - 2.5}mm`
@@ -847,9 +864,9 @@ const computedStoreStyle = computed(() => {
 })
 
 const computedNameStyle = computed(() => {
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
-    const sizeMm = Math.max(2.1, Math.min(3.5, (h < w ? h * 0.11 : w * 0.11))).toFixed(1)
+    const w = baseW.value
+    const h = baseH.value
+    const sizeMm = Math.max(2.1, Math.min(3.5, h * 0.13)).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`,
         maxWidth: `${w - 2.5}mm`
@@ -857,11 +874,9 @@ const computedNameStyle = computed(() => {
 })
 
 const computedBarcodeStyle = computed(() => {
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
-    // If tall (like 25x38mm), barcode height is up to 14mm
-    // If wide (like 38x25mm), barcode height is up to 10mm
-    const maxH = (w < h ? Math.min(14, h * 0.38) : Math.min(10, h * 0.42)).toFixed(1)
+    const w = baseW.value
+    const h = baseH.value
+    const maxH = Math.min(10, Math.max(5, h * 0.38)).toFixed(1)
     const maxW = Math.max(10, w - 2.5).toFixed(1)
     return {
         maxHeight: `${maxH}mm`,
@@ -872,18 +887,16 @@ const computedBarcodeStyle = computed(() => {
 })
 
 const computedCodeStyle = computed(() => {
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
-    const sizeMm = Math.max(1.8, Math.min(2.8, (h < w ? h * 0.09 : w * 0.09))).toFixed(1)
+    const h = baseH.value
+    const sizeMm = Math.max(1.8, Math.min(2.8, h * 0.10)).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`
     }
 })
 
 const computedPriceStyle = computed(() => {
-    const w = effectiveWidth.value
-    const h = effectiveHeight.value
-    const sizeMm = Math.max(2.5, Math.min(4.2, (h < w ? h * 0.14 : w * 0.14))).toFixed(1)
+    const h = baseH.value
+    const sizeMm = Math.max(2.5, Math.min(4.2, h * 0.15)).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`
     }
