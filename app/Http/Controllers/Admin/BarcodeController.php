@@ -8,58 +8,49 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Picqer\Barcode\BarcodeGeneratorPNG;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class BarcodeController extends Controller
 {
     public function generate(Product $product)
     {
-        $generator = new BarcodeGeneratorPNG;
+        $pngGenerator = new BarcodeGeneratorPNG;
+        $svgGenerator = new BarcodeGeneratorSVG;
 
         if (! $product->barcode) {
             $product->barcode = $this->generateUniqueBarcode();
             $product->save();
         }
 
-        // Generate a compact barcode
-        $barcode = $generator->getBarcode(
+        try {
+            $svgBarcode = $svgGenerator->getBarcode(
+                $product->barcode,
+                $svgGenerator::TYPE_CODE_128,
+                1.5,
+                35
+            );
+            $svgDataUri = 'data:image/svg+xml;base64,'.base64_encode($svgBarcode);
+        } catch (\Throwable $e) {
+            $svgDataUri = null;
+        }
+
+        // Generate and store PNG
+        $barcode = $pngGenerator->getBarcode(
             $product->barcode,
-            $generator::TYPE_CODE_128,
-            1,     // Reduced bar width for more compact size
-            30,    // Reduced height
-            [0, 0, 0]  // Black color
+            $pngGenerator::TYPE_CODE_128,
+            2,
+            40,
+            [0, 0, 0]
         );
 
-        // Store barcode image
         $path = 'barcodes/'.$product->barcode.'.png';
         Storage::disk('public')->makeDirectory('barcodes');
-
-        // Add small white padding
-        $originalImage = imagecreatefromstring($barcode);
-        $width = imagesx($originalImage);
-        $height = imagesy($originalImage);
-
-        // Create new image with minimal padding
-        $paddedImage = imagecreatetruecolor($width + 10, $height + 10);
-        $white = imagecolorallocate($paddedImage, 255, 255, 255);
-        imagefill($paddedImage, 0, 0, $white);
-
-        // Copy original barcode to padded image
-        imagecopy($paddedImage, $originalImage, 5, 5, 0, 0, $width, $height);
-
-        // Save as PNG
-        ob_start();
-        imagepng($paddedImage, null, 0);
-        $barcodeData = ob_get_clean();
-
-        // Clean up
-        imagedestroy($originalImage);
-        imagedestroy($paddedImage);
-
-        Storage::disk('public')->put($path, $barcodeData);
+        Storage::disk('public')->put($path, $barcode);
 
         return response()->json([
             'barcode' => $product->barcode,
-            'image_url' => Storage::disk('public')->url($path),
+            'image_url' => $svgDataUri ?: Storage::disk('public')->url($path),
+            'png_url' => Storage::disk('public')->url($path),
             'product' => $product->only(['id', 'name', 'sku', 'selling_price']),
         ]);
     }
@@ -101,7 +92,7 @@ class BarcodeController extends Controller
                         'copies' => (int) ($request->copies ?? 1),
                     ],
                 ],
-                'paperSize' => $request->paperSize ?? 'A4',
+                'paperSize' => $request->paperSize ?? '38x25mm',
             ]);
         } elseif ($request->isMethod('get') && is_string($request->products)) {
             $decoded = json_decode($request->products, true);
@@ -114,15 +105,18 @@ class BarcodeController extends Controller
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
             'products.*.copies' => 'required|integer|min:1|max:100',
-            'paperSize' => 'nullable|in:A4,Letter,80mm',
+            'paperSize' => 'nullable|string|max:50',
+            'customWidth' => 'nullable|numeric|min:10|max:300',
+            'customHeight' => 'nullable|numeric|min:10|max:300',
         ]);
 
-        $generator = new BarcodeGeneratorPNG();
-        $paperSize = $request->paperSize ?? 'A4';
+        $svgGenerator = new BarcodeGeneratorSVG();
+        $pngGenerator = new BarcodeGeneratorPNG();
+        $paperSize = $request->paperSize ?? '38x25mm';
 
         $products = Product::whereIn('id', collect($request->products)->pluck('id'))
             ->get()
-            ->map(function ($product) use ($request, $generator) {
+            ->map(function ($product) use ($request, $svgGenerator, $pngGenerator) {
                 // Find the copies for this product
                 $productRequest = collect($request->products)
                     ->firstWhere('id', $product->id);
@@ -133,34 +127,31 @@ class BarcodeController extends Controller
                     $product->save();
                 }
 
-                $barcode = $generator->getBarcode(
+                // Generate vector SVG barcode for razor-sharp thermal & laser printing
+                try {
+                    $svgBarcode = $svgGenerator->getBarcode(
+                        $product->barcode,
+                        $svgGenerator::TYPE_CODE_128,
+                        1.5,
+                        36
+                    );
+                    $svgDataUri = 'data:image/svg+xml;base64,'.base64_encode($svgBarcode);
+                } catch (\Throwable $e) {
+                    $svgDataUri = null;
+                }
+
+                // Also generate PNG for storage & fallback
+                $pngBarcode = $pngGenerator->getBarcode(
                     $product->barcode,
-                    $generator::TYPE_CODE_128,
-                    1,
-                    30,
+                    $pngGenerator::TYPE_CODE_128,
+                    2,
+                    45,
                     [0, 0, 0]
                 );
 
                 $path = 'barcodes/'.$product->barcode.'.png';
                 Storage::disk('public')->makeDirectory('barcodes');
-
-                $originalImage = imagecreatefromstring($barcode);
-                $width = imagesx($originalImage);
-                $height = imagesy($originalImage);
-
-                $paddedImage = imagecreatetruecolor($width + 10, $height + 10);
-                $white = imagecolorallocate($paddedImage, 255, 255, 255);
-                imagefill($paddedImage, 0, 0, $white);
-                imagecopy($paddedImage, $originalImage, 5, 5, 0, 0, $width, $height);
-
-                ob_start();
-                imagepng($paddedImage, null, 0);
-                $barcodeData = ob_get_clean();
-
-                imagedestroy($originalImage);
-                imagedestroy($paddedImage);
-
-                Storage::disk('public')->put($path, $barcodeData);
+                Storage::disk('public')->put($path, $pngBarcode);
 
                 return [
                     'id' => $product->id,
@@ -169,7 +160,8 @@ class BarcodeController extends Controller
                     'sku' => $product->sku,
                     'price' => $product->selling_price,
                     'copies' => (int) ($productRequest['copies'] ?? 1),
-                    'image_url' => 'data:image/png;base64,'.base64_encode($barcodeData),
+                    'image_url' => $svgDataUri ?: ('data:image/png;base64,'.base64_encode($pngBarcode)),
+                    'png_url' => Storage::disk('public')->url($path),
                     'file_url' => Storage::disk('public')->url($path),
                 ];
             });
@@ -177,6 +169,8 @@ class BarcodeController extends Controller
         return Inertia::render('Admin/Products/BarcodePrint', [
             'products' => $products,
             'paperSize' => $paperSize,
+            'initialCustomWidth' => $request->customWidth ? (float) $request->customWidth : 38,
+            'initialCustomHeight' => $request->customHeight ? (float) $request->customHeight : 25,
         ]);
     }
 }

@@ -73,16 +73,61 @@
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
                     <div>
                       <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        {{ t('কাগজের সাইজ', 'Paper Size') }}
+                        {{ t('কাগজ / স্টিকার সাইজ', 'Paper / Sticker Size') }}
                       </label>
                       <select
                         v-model="paperSize"
                         class="block w-full rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       >
-                        <option value="A4">{{ t('A4 স্টিকার শিট', 'A4 Sheet') }}</option>
-                        <option value="80mm">{{ t('৮০ মিমি থার্মাল রোল (80mm Receipt/Label)', '80mm Roll') }}</option>
-                        <option value="Letter">{{ t('লেটার সাইজ (Letter)', 'Letter') }}</option>
+                        <option value="38x25mm">{{ t('৩৮ × ২৫ মিমি থার্মাল স্টিকার (৩x২.৫ সেমি - সবচেয়ে জনপ্রিয়)', '38mm x 25mm Thermal Label (Most Popular)') }}</option>
+                        <option value="38x25mm_2col">{{ t('৩৮ × ২৫ মিমি (২-কলাম রোল / Double Sticker Roll)', '38mm x 25mm (2-Column Roll)') }}</option>
+                        <option value="40x30mm">{{ t('৪০ × ৩০ মিমি থার্মাল স্টিকার (40mm x 30mm)', '40mm x 30mm Thermal Label') }}</option>
+                        <option value="50x25mm">{{ t('৫০ × ২৫ মিমি থার্মাল স্টিকার (2" x 1")', '50mm x 25mm Thermal Label') }}</option>
+                        <option value="50x30mm">{{ t('৫০ × ৩০ মিমি থার্মাল স্টিকার (50mm x 30mm)', '50mm x 30mm Thermal Label') }}</option>
+                        <option value="80mm">{{ t('৮০ মিমি থার্মাল রোল (80mm Continuous POS Roll)', '80mm Continuous POS Roll') }}</option>
+                        <option value="A4">{{ t('A4 স্টিকার শিট (A4 Multi-label Sheet)', 'A4 Sticker Sheet') }}</option>
+                        <option value="Letter">{{ t('লেটার সাইজ শিট (Letter Sheet)', 'Letter Sheet') }}</option>
+                        <option value="custom">{{ t('✨ কাস্টম সাইজ (Custom mm - নিজের সাইজ দিন)', '✨ Custom Size (Enter Custom mm)') }}</option>
                       </select>
+                      <p v-if="paperSize !== 'custom'" class="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        {{ t('💡 থার্মাল বারকোড প্রিন্টারের জন্য ৩৮x২৫ মিমি সিলেক্ট রাখুন', '💡 38x25mm is recommended for standard thermal barcode sticker rolls') }}
+                      </p>
+
+                      <!-- Custom mm Inputs -->
+                      <div v-if="paperSize === 'custom'" class="mt-2.5 p-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-2">
+                        <div class="flex-1">
+                          <label class="block text-[10px] font-bold text-indigo-950 dark:text-indigo-200 mb-0.5">
+                            {{ t('প্রস্থ (Width)', 'Width') }}
+                          </label>
+                          <div class="flex items-center gap-1">
+                            <input
+                              type="number"
+                              v-model.number="customWidth"
+                              min="15"
+                              max="300"
+                              placeholder="38"
+                              class="w-full rounded-lg border-indigo-200 bg-white py-1 px-1.5 text-center text-xs font-bold text-slate-900 focus:ring-1 focus:ring-indigo-600 dark:border-indigo-800 dark:bg-slate-800 dark:text-white"
+                            />
+                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-300">mm</span>
+                          </div>
+                        </div>
+                        <div class="flex-1">
+                          <label class="block text-[10px] font-bold text-indigo-950 dark:text-indigo-200 mb-0.5">
+                            {{ t('উচ্চতা (Height)', 'Height') }}
+                          </label>
+                          <div class="flex items-center gap-1">
+                            <input
+                              type="number"
+                              v-model.number="customHeight"
+                              min="10"
+                              max="300"
+                              placeholder="25"
+                              class="w-full rounded-lg border-indigo-200 bg-white py-1 px-1.5 text-center text-xs font-bold text-slate-900 focus:ring-1 focus:ring-indigo-600 dark:border-indigo-800 dark:bg-slate-800 dark:text-white"
+                            />
+                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-300">mm</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div>
@@ -218,8 +263,18 @@ const props = defineProps({
 const isOpen = ref(false)
 const isSubmitting = ref(false)
 const bulkCopies = ref(1)
-const paperSize = ref('A4')
+const paperSize = ref('38x25mm')
+const customWidth = ref(Number(localStorage.getItem('trustcash_barcode_custom_w')) || 38)
+const customHeight = ref(Number(localStorage.getItem('trustcash_barcode_custom_h')) || 25)
 const localProducts = ref([])
+
+watch(customWidth, (val) => {
+  if (val) localStorage.setItem('trustcash_barcode_custom_w', val)
+})
+
+watch(customHeight, (val) => {
+  if (val) localStorage.setItem('trustcash_barcode_custom_h', val)
+})
 
 const effectiveProducts = computed(() => {
   return localProducts.value.length > 0 ? localProducts.value : props.products
@@ -277,7 +332,9 @@ const confirmPrint = () => {
       id: p.id,
       copies: Math.max(1, Math.min(100, Number(p.copies) || 1))
     })),
-    paperSize: paperSize.value
+    paperSize: paperSize.value,
+    customWidth: paperSize.value === 'custom' ? Number(customWidth.value) || 38 : null,
+    customHeight: paperSize.value === 'custom' ? Number(customHeight.value) || 25 : null
   }, {
     onFinish: () => {
       isSubmitting.value = false

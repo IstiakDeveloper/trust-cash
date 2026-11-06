@@ -5825,3 +5825,158 @@ Did you mean one of these?
 #1 C:/Users/MIS Mousumi/.gemini/antigravity/brain/fd881098-89d7-416f-af89-2ebe68b28a56/scratch/test_http_product_index.php(47): Illuminate/Foundation/Console/Kernel->handle(Object(Illuminate/Http/Request))
 #2 {main}
 "} 
+[2026-11-06 08:56:16] local.ERROR: PHP Parse error: Syntax error, unexpected '=' on line 1 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected '=' on line 1 at C:/Code/TrustCash/vendor/psy/psysh/src/Exception/ParseErrorException.php:44)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/psy/psysh/src/CodeCleaner.php(657): Psy/Exception/ParseErrorException::fromParseError(Object(PhpParser/Error))
+#1 C:/Code/TrustCash/vendor/psy/psysh/src/CodeCleaner.php(273): Psy/CodeCleaner->parse('<?php  = new Pi...', false)
+#2 C:/Code/TrustCash/vendor/psy/psysh/src/Shell.php(1399): Psy/CodeCleaner->clean(Array, false)
+#3 C:/Code/TrustCash/vendor/psy/psysh/src/Shell.php(1506): Psy/Shell->appendCode(' = new Picqer//B...', true, false)
+#4 C:/Code/TrustCash/vendor/psy/psysh/src/Shell.php(2215): Psy/Shell->setCode(' = new Picqer//B...', true)
+#5 C:/Code/TrustCash/vendor/laravel/tinker/src/Console/TinkerCommand.php(77): Psy/Shell->execute(' = new Picqer//B...')
+#6 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Laravel/Tinker/Console/TinkerCommand->handle()
+#7 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#8 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#9 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#10 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#11 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(213): Illuminate/Container/Container->call(Array)
+#12 C:/Code/TrustCash/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#13 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(182): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#14 C:/Code/TrustCash/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#15 C:/Code/TrustCash/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Laravel/Tinker/Console/TinkerCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#16 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#17 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#18 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#19 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#20 {main}
+"} 
+[2026-11-06 09:12:32] local.ERROR: There are no commands defined in the "seed" namespace. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\NamespaceNotFoundException(code: 0): There are no commands defined in the \"seed\" namespace. at C:/Code/TrustCash/vendor/symfony/console/Application.php:694)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/symfony/console/Application.php(743): Symfony/Component/Console/Application->findNamespace('seed')
+#1 C:/Code/TrustCash/vendor/symfony/console/Application.php(298): Symfony/Component/Console/Application->find('seed:demo')
+#2 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#3 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#4 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#5 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#6 {main}
+"} 
+[2026-11-06 09:12:41] local.ERROR: Command "seed" is not defined.
+
+Did you mean one of these?
+    db:seed
+    make:seeder
+    tenants:seed
+    tenants:seed-demo {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"seed\" is not defined.
+
+Did you mean one of these?
+    db:seed
+    make:seeder
+    tenants:seed
+    tenants:seed-demo at C:/Code/TrustCash/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/symfony/console/Application.php(298): Symfony/Component/Console/Application->find('seed')
+#1 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#2 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#3 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#4 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#5 {main}
+"} 
+[2026-11-06 09:12:52] local.ERROR: The "--demo" option does not exist. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\RuntimeException(code: 0): The \"--demo\" option does not exist. at C:/Code/TrustCash/vendor/symfony/console/Input/ArgvInput.php:226)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/symfony/console/Input/ArgvInput.php(155): Symfony/Component/Console/Input/ArgvInput->addLongOption('demo', NULL)
+#1 C:/Code/TrustCash/vendor/symfony/console/Input/ArgvInput.php(88): Symfony/Component/Console/Input/ArgvInput->parseLongOption('--demo')
+#2 C:/Code/TrustCash/vendor/symfony/console/Input/ArgvInput.php(77): Symfony/Component/Console/Input/ArgvInput->parseToken('--demo', true)
+#3 C:/Code/TrustCash/vendor/symfony/console/Input/Input.php(53): Symfony/Component/Console/Input/ArgvInput->parse()
+#4 C:/Code/TrustCash/vendor/symfony/console/Command/Command.php(295): Symfony/Component/Console/Input/Input->bind(Object(Symfony/Component/Console/Input/InputDefinition))
+#5 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(182): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#6 C:/Code/TrustCash/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#7 C:/Code/TrustCash/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Illuminate/Database/Console/Seeds/SeedCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#8 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#9 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#10 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#11 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#12 {main}
+"} 
+[2026-11-06 09:12:58] local.ERROR: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'writing-instruments' for key 'categories.categories_slug_unique' (Connection: mysql, SQL: insert into `categories` (`description`, `image`, `name`, `parent_id`, `slug`, `status`) values (Includes pens, pencils, markers, and highlighters., ?, Writing Instruments, ?, writing-instruments, 1), (Includes notebooks, sticky notes, and printer paper., ?, Paper Products, ?, paper-products, 1), (Includes paints, brushes, and craft papers., ?, Art and Craft Supplies, ?, art-and-craft-supplies, 1), (Includes staplers, files, and punch machines., ?, Office Supplies, ?, office-supplies, 1), (Includes geometry sets, school bags, and erasers., ?, School Supplies, ?, school-supplies, 1)) {"exception":"[object] (Illuminate\\Database\\UniqueConstraintViolationException(code: 23000): SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'writing-instruments' for key 'categories.categories_slug_unique' (Connection: mysql, SQL: insert into `categories` (`description`, `image`, `name`, `parent_id`, `slug`, `status`) values (Includes pens, pencils, markers, and highlighters., ?, Writing Instruments, ?, writing-instruments, 1), (Includes notebooks, sticky notes, and printer paper., ?, Paper Products, ?, paper-products, 1), (Includes paints, brushes, and craft papers., ?, Art and Craft Supplies, ?, art-and-craft-supplies, 1), (Includes staplers, files, and punch machines., ?, Office Supplies, ?, office-supplies, 1), (Includes geometry sets, school bags, and erasers., ?, School Supplies, ?, school-supplies, 1)) at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Connection.php:820)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Connection.php(779): Illuminate/Database/Connection->runQueryCallback('insert into `ca...', Array, Object(Closure))
+#1 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php(42): Illuminate/Database/Connection->run('insert into `ca...', Array, Object(Closure))
+#2 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(3717): Illuminate/Database/MySqlConnection->insert('insert into `ca...', Array)
+#3 C:/Code/TrustCash/database/seeders/CategorySeeder.php(61): Illuminate/Database/Query/Builder->insert(Array)
+#4 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/CategorySeeder->run()
+#5 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#6 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#7 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#8 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#9 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(188): Illuminate/Container/Container->call(Array, Array)
+#10 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(197): Illuminate/Database/Seeder->{closure:Illuminate/Database/Seeder::__invoke():187}()
+#11 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(61): Illuminate/Database/Seeder->__invoke(Array)
+#12 C:/Code/TrustCash/database/seeders/DatabaseSeeder.php(39): Illuminate/Database/Seeder->call('Database//Seeder...')
+#13 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/DatabaseSeeder->run()
+#14 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#15 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#16 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#17 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#18 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(188): Illuminate/Container/Container->call(Array, Array)
+#19 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(197): Illuminate/Database/Seeder->{closure:Illuminate/Database/Seeder::__invoke():187}()
+#20 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(70): Illuminate/Database/Seeder->__invoke()
+#21 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/GuardsAttributes.php(155): Illuminate/Database/Console/Seeds/SeedCommand->{closure:Illuminate/Database/Console/Seeds/SeedCommand::handle():69}()
+#22 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(69): Illuminate/Database/Eloquent/Model::unguarded(Object(Closure))
+#23 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Illuminate/Database/Console/Seeds/SeedCommand->handle()
+#24 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#25 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#26 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#27 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#28 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(213): Illuminate/Container/Container->call(Array)
+#29 C:/Code/TrustCash/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#30 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(182): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#31 C:/Code/TrustCash/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#32 C:/Code/TrustCash/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Illuminate/Database/Console/Seeds/SeedCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#33 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#34 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#35 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#36 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#37 {main}
+
+[previous exception] [object] (PDOException(code: 23000): SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'writing-instruments' for key 'categories.categories_slug_unique' at C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php:53)
+[stacktrace]
+#0 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php(53): PDOStatement->execute()
+#1 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Connection.php(812): Illuminate/Database/MySqlConnection->{closure:Illuminate/Database/MySqlConnection::insert():42}('insert into `ca...', Array)
+#2 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Connection.php(779): Illuminate/Database/Connection->runQueryCallback('insert into `ca...', Array, Object(Closure))
+#3 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php(42): Illuminate/Database/Connection->run('insert into `ca...', Array, Object(Closure))
+#4 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(3717): Illuminate/Database/MySqlConnection->insert('insert into `ca...', Array)
+#5 C:/Code/TrustCash/database/seeders/CategorySeeder.php(61): Illuminate/Database/Query/Builder->insert(Array)
+#6 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/CategorySeeder->run()
+#7 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#8 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#9 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#10 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#11 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(188): Illuminate/Container/Container->call(Array, Array)
+#12 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(197): Illuminate/Database/Seeder->{closure:Illuminate/Database/Seeder::__invoke():187}()
+#13 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(61): Illuminate/Database/Seeder->__invoke(Array)
+#14 C:/Code/TrustCash/database/seeders/DatabaseSeeder.php(39): Illuminate/Database/Seeder->call('Database//Seeder...')
+#15 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/DatabaseSeeder->run()
+#16 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#17 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#18 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#19 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#20 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(188): Illuminate/Container/Container->call(Array, Array)
+#21 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(197): Illuminate/Database/Seeder->{closure:Illuminate/Database/Seeder::__invoke():187}()
+#22 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(70): Illuminate/Database/Seeder->__invoke()
+#23 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/GuardsAttributes.php(155): Illuminate/Database/Console/Seeds/SeedCommand->{closure:Illuminate/Database/Console/Seeds/SeedCommand::handle():69}()
+#24 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(69): Illuminate/Database/Eloquent/Model::unguarded(Object(Closure))
+#25 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Illuminate/Database/Console/Seeds/SeedCommand->handle()
+#26 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::{closure:Illuminate/Container/BoundMethod::call():35}()
+#27 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#28 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#29 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#30 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(213): Illuminate/Container/Container->call(Array)
+#31 C:/Code/TrustCash/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#32 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Console/Command.php(182): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#33 C:/Code/TrustCash/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#34 C:/Code/TrustCash/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Illuminate/Database/Console/Seeds/SeedCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#35 C:/Code/TrustCash/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#36 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#37 C:/Code/TrustCash/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#38 C:/Code/TrustCash/artisan(13): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#39 {main}
+"} 
