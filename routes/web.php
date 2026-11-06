@@ -85,6 +85,7 @@ Route::post('/cart/update', [StorefrontController::class, 'updateCart'])->name('
 Route::post('/cart/remove', [StorefrontController::class, 'removeFromCart'])->name('cart.remove');
 Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('checkout');
 Route::post('/checkout/submit', [StorefrontController::class, 'submitOrder'])->name('checkout.submit');
+Route::get('/order-success/{orderNo}', [StorefrontController::class, 'orderSuccess'])->name('order.success');
 Route::get('/about', fn() => Inertia::render('About'))->name('about');
 Route::get('/contact', fn() => Inertia::render('Contact'))->name('contact');
 Route::get('/privacy', fn() => Inertia::render('Privacy'))->name('privacy');

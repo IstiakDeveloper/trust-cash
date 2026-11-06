@@ -29,10 +29,10 @@ function toggleTheme() {
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <Link :href="route('home')" class="flex items-center gap-2.5">
-                            <div v-if="$page.props.platform?.logo || $page.props.business_logo" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                            <div v-if="$page.props.business_logo || $page.props.platform?.logo" class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
                                 <img :src="$page.props.business_logo || $page.props.platform?.logo" class="w-full h-full object-contain" alt="Logo" />
                             </div>
-                            <span class="text-xl font-semibold text-gray-900 dark:text-white">{{ $page.props.platform?.name || $page.props.business_name || $page.props.app_name || 'TrustCash' }}</span>
+                            <span class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ $page.props.business_name || $page.props.platform?.name || 'TrustCash' }}</span>
                         </Link>
                     </div>
 
@@ -101,17 +101,20 @@ function toggleTheme() {
                     <!-- Contact Info -->
                     <div>
                         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 tracking-wider uppercase">
-                            Contact Us
+                            Contact & Support
                         </h3>
                         <ul class="mt-2 space-y-2">
-                            <li class="text-sm text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Email:</span> mou.prokashon@gmail.com
+                            <li v-if="$page.props.business_phone" class="text-sm text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-slate-800 dark:text-slate-200">Phone:</span> {{ $page.props.business_phone }}
                             </li>
-                            <li class="text-sm text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Phone:</span> (+88) 01334766435
+                            <li v-if="$page.props.business_email" class="text-sm text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-slate-800 dark:text-slate-200">Email:</span> {{ $page.props.business_email }}
                             </li>
-                            <li class="text-sm text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Address:</span> Ukilpara, Naogaon Sadar, Naogaon.
+                            <li v-if="$page.props.business_address" class="text-sm text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-slate-800 dark:text-slate-200">Address:</span> {{ $page.props.business_address }}
+                            </li>
+                            <li v-if="!$page.props.business_phone && !$page.props.business_email && !$page.props.business_address" class="text-sm text-gray-500 dark:text-gray-400">
+                                Contact store owner for inquiries.
                             </li>
                         </ul>
                     </div>

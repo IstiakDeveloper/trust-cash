@@ -33,7 +33,7 @@ const { t, isBangla, setLanguage } = useLanguage();
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
+    remember: true,
 });
 
 const showPassword = ref(false);

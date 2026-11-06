@@ -68,6 +68,12 @@ class StorefrontController extends Controller
 
         [$cartItems, $cartSubtotal] = $this->buildCartView($request);
 
+        $shopPhone = business_phone();
+        $shopWhatsApp = preg_replace('/[^0-9]/', '', $shopPhone);
+        if (!empty($shopWhatsApp) && !str_starts_with($shopWhatsApp, '88')) {
+            $shopWhatsApp = '88' . ltrim($shopWhatsApp, '0');
+        }
+
         return Inertia::render('Public/Home', [
             'products' => $products,
             'categories' => $categories,
@@ -76,6 +82,13 @@ class StorefrontController extends Controller
             'cart' => [
                 'items' => $cartItems,
                 'subtotal' => $cartSubtotal,
+            ],
+            'shop' => [
+                'name' => business_name(),
+                'phone' => $shopPhone,
+                'whatsapp' => $shopWhatsApp,
+                'address' => business_address(),
+                'email' => business_email(),
             ],
         ]);
     }
@@ -161,26 +174,35 @@ class StorefrontController extends Controller
     {
         $cart = $this->getCart($request);
         if (count($cart) === 0) {
-            return to_route('cart')->with('error', 'Your cart is empty.');
+            return to_route('cart')->with('error', 'আপনার কার্ট খালি। অর্ডার করতে অনুগ্রহ করে পণ্য যুক্ত করুন।');
         }
 
-        $customers = Customer::active()
-            ->select('id', 'name', 'phone', 'balance', 'credit_limit', 'branch_code', 'branch_name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn ($c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'phone' => $c->phone,
-                'balance' => (string) $c->balance,
-                'credit_limit' => (string) $c->credit_limit,
-                'branch_code' => $c->branch_code,
-                'branch_name' => $c->branch_name,
-            ]);
+        [$cartItems, $cartSubtotal] = $this->buildCartView($request);
+        if (count($cartItems) === 0) {
+            return to_route('cart')->with('error', 'আপনার কার্ট খালি।');
+        }
+
+        $shopPhone = business_phone();
+        $shopWhatsApp = preg_replace('/[^0-9]/', '', $shopPhone);
+        if (!empty($shopWhatsApp) && !str_starts_with($shopWhatsApp, '88')) {
+            $shopWhatsApp = '88' . ltrim($shopWhatsApp, '0');
+        }
 
         return Inertia::render('Public/Checkout', [
-            'customers' => $customers,
+            'cartItems' => $cartItems,
+            'subtotal' => $cartSubtotal,
             'cartCount' => $this->cartCount($request),
+            'deliveryCharges' => [
+                'inside_dhaka' => 70,
+                'outside_dhaka' => 130,
+            ],
+            'shop' => [
+                'name' => business_name(),
+                'phone' => $shopPhone,
+                'whatsapp' => $shopWhatsApp,
+                'address' => business_address(),
+                'email' => business_email(),
+            ],
         ]);
     }
 
@@ -188,18 +210,31 @@ class StorefrontController extends Controller
     {
         $cart = $this->getCart($request);
         if (count($cart) === 0) {
-            return to_route('cart')->with('error', 'Your cart is empty.');
+            return to_route('cart')->with('error', 'আপনার কার্ট খালি।');
         }
 
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'note' => 'nullable|string|max:2000',
+            'name' => 'required|string|min:2|max:100',
+            'phone' => ['required', 'string', 'regex:/^01[3-9]\d{8}$/'],
+            'address' => 'required|string|min:5|max:500',
+            'delivery_area' => 'required|string|in:inside_dhaka,outside_dhaka',
+            'payment_method' => 'required|string|in:cod,bkash,nagad',
+            'payment_trx' => 'nullable|string|max:100',
+            'note' => 'nullable|string|max:1000',
+        ], [
+            'name.required' => 'আপনার নাম প্রদান করুন।',
+            'phone.required' => 'মোবাইল নম্বর প্রদান করুন।',
+            'phone.regex' => 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017xxxxxxxx)।',
+            'address.required' => 'ডেলিভারির পূর্ণ ঠিকানা প্রদান করুন।',
+            'address.min' => 'অনুগ্রহ করে বিস্তারিত ঠিকানা লিখুন।',
+            'delivery_area.required' => 'ডেলিভারি এরিয়া সিলেক্ট করুন।',
+            'payment_method.required' => 'পেমেন্ট মাধ্যম সিলেক্ট করুন।',
         ]);
 
         $productIds = array_keys($cart);
         $products = Product::query()
             ->whereIn('id', $productIds)
-            ->select('id', 'selling_price')
+            ->select('id', 'name', 'selling_price')
             ->get()
             ->keyBy('id');
 
@@ -224,22 +259,69 @@ class StorefrontController extends Controller
             }
 
             if (count($itemsPayload) === 0) {
-                throw new \Exception('No valid items found in cart.');
+                throw new \Exception('কার্টে কোনো সঠিক পণ্য পাওয়া যায়নি।');
             }
 
-            $discount = 0;
-            $total = $subtotal - $discount;
+            // Customer find or create by phone
+            $phone = trim($data['phone']);
+            $customer = Customer::where('phone', $phone)->first();
+            if (!$customer) {
+                $customer = Customer::create([
+                    'name' => trim($data['name']),
+                    'phone' => $phone,
+                    'address' => trim($data['address']),
+                    'status' => true,
+                    'balance' => 0,
+                    'credit_limit' => 0,
+                ]);
+            } else {
+                $updates = [];
+                if (empty($customer->address)) {
+                    $updates['address'] = trim($data['address']);
+                }
+                if ($customer->name === 'Walk-in Customer' || empty($customer->name)) {
+                    $updates['name'] = trim($data['name']);
+                }
+                if (!empty($updates)) {
+                    $customer->update($updates);
+                }
+            }
 
-            $orderNo = 'PUB-'.date('Ymd').'-'.Str::upper(Str::random(6));
+            $deliveryCharge = $data['delivery_area'] === 'outside_dhaka' ? 130 : 70;
+            $discount = 0;
+            $total = $subtotal + $deliveryCharge - $discount;
+
+            $orderNo = 'ORD-' . date('Ymd') . '-' . Str::upper(Str::random(5));
+
+            $areaLabel = $data['delivery_area'] === 'outside_dhaka' ? 'ঢাকার বাইরে (৳১৩০)' : 'ঢাকার ভেতরে (৳৭০)';
+            $methodLabel = match($data['payment_method']) {
+                'bkash' => 'বিকাশ (bKash)',
+                'nagad' => 'নগদ (Nagad)',
+                default => 'ক্যাশ অন ডেলিভারি (Cash on Delivery)',
+            };
+
+            $noteLines = [
+                "ডেলিভারি এরিয়া: {$areaLabel}",
+                "ডেলিভারি চার্জ: ৳{$deliveryCharge}",
+                "ডেলিভারি ঠিকানা: {$data['address']}",
+                "পেমেন্ট মেথড: {$methodLabel}",
+            ];
+            if (!empty($data['payment_trx'])) {
+                $noteLines[] = "TrxID: {$data['payment_trx']}";
+            }
+            if (!empty($data['note'])) {
+                $noteLines[] = "কাস্টমার নোট: {$data['note']}";
+            }
+            $fullNote = implode("\n", $noteLines);
 
             $pending = PendingSale::create([
                 'public_order_no' => $orderNo,
-                'customer_id' => $data['customer_id'],
+                'customer_id' => $customer->id,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'total' => $total,
                 'status' => 'pending',
-                'note' => $data['note'] ?? null,
+                'note' => $fullNote,
             ]);
 
             foreach ($itemsPayload as $i) {
@@ -250,11 +332,70 @@ class StorefrontController extends Controller
 
             $request->session()->forget('public_cart');
 
-            return to_route('home')->with('success', "Order submitted. Order no: {$orderNo}. Waiting for approval.");
+            $successRoute = route('order.success', ['orderNo' => $orderNo], false);
+            return redirect($successRoute)->with('success', "আপনার অর্ডারটি সফলভাবে সম্পন্ন হয়েছে!");
         } catch (\Throwable $e) {
             DB::rollBack();
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function orderSuccess(string $orderNo)
+    {
+        $order = PendingSale::where('public_order_no', $orderNo)
+            ->with([
+                'customer',
+                'items.product.primaryImage',
+                'items.product.images',
+            ])
+            ->firstOrFail();
+
+        $items = $order->items->map(function ($it) {
+            $p = $it->product;
+            $img = $p?->primaryImage ?: $p?->images?->first();
+            return [
+                'id' => $it->id,
+                'product_name' => $p?->name ?? 'পণ্য',
+                'sku' => $p?->sku,
+                'image_url' => $img ? asset('storage/'.$img->image) : null,
+                'quantity' => (int) $it->quantity,
+                'unit_price' => (float) $it->unit_price,
+                'subtotal' => (float) $it->subtotal,
+            ];
+        });
+
+        $deliveryCharge = max(0, (float) $order->total - (float) $order->subtotal + (float) $order->discount);
+
+        $shopPhone = business_phone();
+        $shopWhatsApp = preg_replace('/[^0-9]/', '', $shopPhone);
+        if (!empty($shopWhatsApp) && !str_starts_with($shopWhatsApp, '88')) {
+            $shopWhatsApp = '88' . ltrim($shopWhatsApp, '0');
+        }
+
+        return Inertia::render('Public/OrderSuccess', [
+            'order' => [
+                'order_no' => $order->public_order_no,
+                'date' => $order->created_at->format('d M, Y h:i A'),
+                'subtotal' => (float) $order->subtotal,
+                'delivery_charge' => (float) $deliveryCharge,
+                'total' => (float) $order->total,
+                'status' => $order->status,
+                'note' => $order->note,
+                'customer' => [
+                    'name' => $order->customer?->name,
+                    'phone' => $order->customer?->phone,
+                    'address' => $order->customer?->address,
+                ],
+                'items' => $items,
+            ],
+            'shop' => [
+                'name' => business_name(),
+                'phone' => $shopPhone,
+                'whatsapp' => $shopWhatsApp,
+                'address' => business_address(),
+                'email' => business_email(),
+            ],
+        ]);
     }
 
     private function getCart(Request $request): array

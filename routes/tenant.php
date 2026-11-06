@@ -54,4 +54,11 @@ Route::middleware([
     })->where('path', '.*')->name('tenant.storage.file');
 
     Route::get('/', [StorefrontController::class, 'index'])->name('tenant.storefront');
+    Route::get('/cart', [StorefrontController::class, 'cart'])->name('tenant.cart');
+    Route::post('/cart/add', [StorefrontController::class, 'addToCart'])->name('tenant.cart.add');
+    Route::post('/cart/update', [StorefrontController::class, 'updateCart'])->name('tenant.cart.update');
+    Route::post('/cart/remove', [StorefrontController::class, 'removeFromCart'])->name('tenant.cart.remove');
+    Route::get('/checkout', [StorefrontController::class, 'checkout'])->name('tenant.checkout');
+    Route::post('/checkout/submit', [StorefrontController::class, 'submitOrder'])->name('tenant.checkout.submit');
+    Route::get('/order-success/{orderNo}', [StorefrontController::class, 'orderSuccess'])->name('tenant.order.success');
 });

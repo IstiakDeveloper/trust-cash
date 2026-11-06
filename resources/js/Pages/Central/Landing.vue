@@ -85,22 +85,34 @@
                         <i v-else class="fas fa-moon text-slate-700 text-sm"></i>
                     </button>
 
-                    <!-- Login Link -->
-                    <Link
-                        :href="route('login')"
-                        class="text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-white px-2.5 py-1.5 transition-colors"
-                    >
-                        {{ t('লগইন', 'Log In') }}
-                    </Link>
+                    <!-- Auth-Aware Header Actions -->
+                    <template v-if="authUser">
+                        <Link
+                            :href="dashboardUrl"
+                            class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
+                        >
+                            <i class="fas fa-gauge-high text-xs"></i>
+                            <span>{{ t('ড্যাশবোর্ডে যান', 'Go to Dashboard') }}</span>
+                        </Link>
+                    </template>
+                    <template v-else>
+                        <!-- Login Link -->
+                        <Link
+                            :href="route('login')"
+                            class="text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-white px-2.5 py-1.5 transition-colors"
+                        >
+                            {{ t('লগইন', 'Log In') }}
+                        </Link>
 
-                    <!-- Main Register CTA -->
-                    <Link
-                        :href="$page.props.platform?.nav_cta_url || route('tenant.register')"
-                        class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
-                    >
-                        <span>{{ t('ফ্রি ট্রায়াল', 'Start Free') }}</span>
-                        <i class="fas fa-arrow-right text-[10px] hidden sm:inline-block"></i>
-                    </Link>
+                        <!-- Main Register CTA -->
+                        <Link
+                            :href="$page.props.platform?.nav_cta_url || route('tenant.register')"
+                            class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5"
+                        >
+                            <span>{{ t('ফ্রি ট্রায়াল', 'Start Free') }}</span>
+                            <i class="fas fa-arrow-right text-[10px] hidden sm:inline-block"></i>
+                        </Link>
+                    </template>
                 </div>
             </div>
         </header>
@@ -136,13 +148,24 @@
 
                 <!-- Hero Action Buttons -->
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-                    <Link
-                        :href="route('tenant.register')"
-                        class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-emerald-600/25 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
-                    >
-                        <i class="fas fa-rocket text-xs"></i>
-                        <span>{{ t('১৪ দিন ফ্রি ট্রায়াল শুরু করুন', 'Start 14-Day Free Trial') }}</span>
-                    </Link>
+                    <template v-if="authUser">
+                        <Link
+                            :href="dashboardUrl"
+                            class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-indigo-600/25 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+                        >
+                            <i class="fas fa-gauge-high text-xs"></i>
+                            <span>{{ t('ড্যাশবোর্ডে প্রবেশ করুন', 'Go to Dashboard') }}</span>
+                        </Link>
+                    </template>
+                    <template v-else>
+                        <Link
+                            :href="route('tenant.register')"
+                            class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-emerald-600/25 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+                        >
+                            <i class="fas fa-rocket text-xs"></i>
+                            <span>{{ t('১৪ দিন ফ্রি ট্রায়াল শুরু করুন', 'Start 14-Day Free Trial') }}</span>
+                        </Link>
+                    </template>
                     <a
                         href="#pricing"
                         class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-xs"
@@ -587,12 +610,26 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useLanguage } from '@/composables/useLanguage'
 import { switchTheme } from '@/theme'
 
 const props = defineProps({
     plans: Array,
+})
+
+const page = usePage()
+
+const authUser = computed(() => page.props.auth?.user)
+
+const dashboardUrl = computed(() => {
+    if (!authUser.value) return route('login')
+    const roleSlug = authUser.value.role?.slug || ''
+    const roleName = authUser.value.role?.name || ''
+    if (roleSlug === 'super-admin' || roleSlug === 'superadmin' || roleName.toLowerCase().includes('super admin')) {
+        return route('super-admin.dashboard')
+    }
+    return route('admin.dashboard')
 })
 
 // Bilingual composable

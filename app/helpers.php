@@ -152,6 +152,9 @@ if (!function_exists('business_phone')) {
                 $phone = \App\Models\Setting::get('business_phone');
                 if (!empty($phone)) return $phone;
             }
+            if (function_exists('tenant') && tenant() && tenant('phone')) {
+                return tenant('phone');
+            }
         } catch (\Throwable $e) {}
         return '';
     }
@@ -180,6 +183,9 @@ if (!function_exists('business_address')) {
             if (class_exists(\App\Models\Setting::class)) {
                 $address = \App\Models\Setting::get('business_address');
                 if (!empty($address)) return $address;
+            }
+            if (function_exists('tenant') && tenant() && tenant('address')) {
+                return tenant('address');
             }
         } catch (\Throwable $e) {}
         return '';
