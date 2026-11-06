@@ -13,11 +13,8 @@
                             <h1 class="text-base font-bold text-slate-900 dark:text-white">
                                 {{ t('বারকোড প্রিন্ট প্রিভিউ', 'Barcode Print Preview') }}
                             </h1>
-                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                            <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60">
                                 {{ currentSizeLabel }}
-                            </span>
-                            <span v-if="rotation !== 0" class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
-                                {{ rotation }}°
                             </span>
                         </div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -101,47 +98,54 @@
                 </div>
             </div>
 
-            <!-- Direction, Rotation & Orientation Toolbar (Multiple Rotation Options) -->
+            <!-- Direction, Rotation & Page Size Rotation Toolbar -->
             <div class="rounded-2xl bg-white p-3.5 shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <!-- Rotation Segmented Buttons -->
+                <!-- Page Size Rotation Buttons -->
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <ArrowPathIcon class="h-4 w-4 text-indigo-600" />
-                        {{ t('প্রিন্ট দিক / রোটেশন:', 'Rotation / Direction:') }}
+                        {{ t('পেজ সাইজ রোটেশন:', 'Page Size Rotation:') }}
                     </span>
                     <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600">
+                        <!-- 0 Degree (Normal Base Dimensions) -->
                         <button
                             type="button"
                             @click="setRotation(0)"
                             :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 0 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t('স্বাভাবিক / সোজা প্রিন্ট', 'Normal 0 degree orientation')"
+                            :title="t(`স্বাভাবিক পেজ সাইজ: ${rawBaseWidth}×${rawBaseHeight} মিমি`, `Normal Page: ${rawBaseWidth}x${rawBaseHeight}mm`)"
                         >
-                            0° {{ t('সোজা', 'Normal') }}
+                            0° সোজা ({{ rawBaseWidth }}×{{ rawBaseHeight }} mm)
                         </button>
+
+                        <!-- 90 Degree (Page Size Rotates: Width & Height swap physically in @page) -->
                         <button
                             type="button"
                             @click="setRotation(90)"
-                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1', rotation === 90 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t('যদি প্রিন্টারে ল্যান্ডস্কেপ বা আড়াআড়ি বের হয়, ৯০° সিলেক্ট করুন', 'Rotate 90 degrees if prints sideways/landscape')"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5', rotation === 90 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t(`পেজ সাইজ সহ ৯০° রোটেট: ${rawBaseHeight}×${rawBaseWidth} মিমি`, `Rotate page size to ${rawBaseHeight}x${rawBaseWidth}mm`)"
                         >
-                            <span>90° {{ t('ডানে', 'Rotate 90°') }}</span>
+                            <span>90° পেজ রোটেট ({{ rawBaseHeight }}×{{ rawBaseWidth }} mm)</span>
                             <span v-if="rotation === 90" class="rounded bg-indigo-700 px-1 text-[9px] text-white">Active</span>
                         </button>
+
+                        <!-- 180 Degree (Inverted 180) -->
                         <button
                             type="button"
                             @click="setRotation(180)"
                             :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 180 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
                             :title="t('১৮০° উল্টো প্রিন্ট', 'Inverted 180 degree rotation')"
                         >
-                            180° {{ t('উল্টো', 'Inverted') }}
+                            180° উল্টো
                         </button>
+
+                        <!-- 270 Degree (Page Size Rotates Counter-Clockwise) -->
                         <button
                             type="button"
                             @click="setRotation(270)"
                             :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 270 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
-                            :title="t('২৭০° বাঁয়ে ঘুরানো প্রিন্ট', 'Counter-clockwise 270 degree rotation')"
+                            :title="t(`পেজ সাইজ সহ ২৭০° রোটেট: ${rawBaseHeight}×${rawBaseWidth} মিমি`, `Rotate page size to ${rawBaseHeight}x${rawBaseWidth}mm`)"
                         >
-                            270° {{ t('বাঁয়ে', 'Rotate 270°') }}
+                            270° ({{ rawBaseHeight }}×{{ rawBaseWidth }} mm)
                         </button>
                     </div>
                 </div>
@@ -179,7 +183,7 @@
                 <div class="flex items-center gap-2">
                     <CheckCircleIcon class="h-5 w-5 text-emerald-600 shrink-0" />
                     <span class="font-bold">
-                        {{ t(`ডিফল্ট সেটিংস সফলভাবে সংরক্ষিত হয়েছে (${currentSizeLabel}, ${rotation}°)! পরবর্তী সময়ে স্বয়ংক্রিয়ভাবে এটি কার্যকর থাকবে।`, `Default settings saved successfully (${currentSizeLabel}, ${rotation}°)!`) }}
+                        {{ t(`ডিফল্ট পেজ সাইজ সফলভাবে সংরক্ষিত হয়েছে (${effectiveWidth}×${effectiveHeight} মিমি, রোটেশন: ${rotation}°)! পরবর্তী সময়ে এটিই কার্যকর থাকবে।`, `Default settings saved successfully (${effectiveWidth}x${effectiveHeight}mm, ${rotation}°)!`) }}
                     </span>
                 </div>
                 <button type="button" @click="savedToast = false" class="text-emerald-600 hover:text-emerald-800">
@@ -200,10 +204,10 @@
                 </button>
             </div>
 
-            <!-- Helpful Rotation Banner -->
-            <div v-if="rotation === 90 || isSwapped" class="rounded-xl bg-indigo-50/90 p-2.5 border border-indigo-200/80 dark:bg-indigo-950/30 dark:border-indigo-900/40 flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
+            <!-- Helpful Rotation Banner when 90° is active -->
+            <div v-if="rotation === 90" class="rounded-xl bg-indigo-50/90 p-2.5 border border-indigo-200/80 dark:bg-indigo-950/30 dark:border-indigo-900/40 flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
                 <InformationCircleIcon class="h-4 w-4 text-indigo-600 shrink-0" />
-                <span>{{ t('💡 ল্যান্ডস্কেপ ফিক্স সক্রিয়: যদি আপনার প্রিন্টারে বারকোড সাইডওয়েজ বা আড়াআড়ি বের হচ্ছিল, এখন ৯০° রোটেশন দেওয়া হয়েছে। প্রিন্ট দিলে স্টিকারের দিক অনুযায়ী একদম সোজা বের হবে!', '💡 90° rotation active! This fixes printers that print sideways or in landscape.') }}</span>
+                <span>{{ t(`💡 পেজ সাইজ সহ ৯০° রোটেট সক্রিয়: প্রিন্টারের জন্য কাগজের সাইজ এখন সরাসরি ${effectiveWidth}×${effectiveHeight} মিমি হিসেবে পাঠানো হচ্ছে। ফলে স্টিকার একদম সোজা বের হবে!`, `💡 90° page rotation active: paper size is set to ${effectiveWidth}x${effectiveHeight}mm!`) }}</span>
             </div>
 
             <!-- Custom Size Inputs & Quick mm Presets (When selectedPaperSize === 'custom') -->
@@ -218,7 +222,7 @@
                                 {{ t('কাস্টম সাইজ নির্ধারণ (মিমি):', 'Custom Dimensions (mm):') }}
                             </span>
                             <span class="ml-2 rounded-md bg-indigo-50 px-2 py-0.5 text-indigo-700 font-bold dark:bg-indigo-950 dark:text-indigo-300">
-                                {{ customWidth }}mm × {{ customHeight }}mm
+                                {{ effectiveWidth }}mm × {{ effectiveHeight }}mm
                             </span>
                         </div>
                     </div>
@@ -257,7 +261,7 @@
                         :key="`${p.w}x${p.h}`"
                         type="button"
                         @click="setCustomPreset(p.w, p.h)"
-                        :class="['px-2.5 py-0.5 rounded-lg font-bold border transition-all cursor-pointer', (customWidth === p.w && customHeight === p.h) ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-700/50 dark:text-slate-200 dark:border-slate-600']"
+                        :class="['px-2.5 py-0.5 rounded-lg font-bold border transition-all cursor-pointer', (rawBaseWidth === p.w && rawBaseHeight === p.h) ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-700/50 dark:text-slate-200 dark:border-slate-600']"
                     >
                         {{ p.w }}×{{ p.h }} mm
                     </button>
@@ -412,7 +416,7 @@
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
                                 <span class="font-bold text-amber-900 dark:text-amber-200">২. Paper Size (কাগজের সাইজ):</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারে 38mm x 25mm অথবা আপনার কাস্টম সাইজ সিলেক্ট করুন।</p>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারে {{ effectiveWidth }}mm x {{ effectiveHeight }}mm সিলেক্ট করুন।</p>
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
                                 <span class="font-bold text-amber-900 dark:text-amber-200">৩. Margins (মার্জিন):</span>
@@ -420,7 +424,7 @@
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
                                 <span class="font-bold text-amber-900 dark:text-amber-200">৪. Orientation & Headers:</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারের কাগজ অনুযায়ী Portrait বা Landscape রাখুন এবং "Headers and Footers" আনচেক রাখুন।</p>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারে Portrait রাখুন এবং "Headers and Footers" আনচেক রাখুন।</p>
                             </div>
                         </div>
                     </div>
@@ -447,7 +451,7 @@
                             ]"
                             :style="computedWrapperStyle"
                         >
-                            <!-- Label Content (With dynamic Rotation: 0°, 90°, 180°, 270°) -->
+                            <!-- Label Content (Naturally fills the rotated page size) -->
                             <div class="label-content" :style="computedContentStyle">
                                 <!-- Store Name -->
                                 <div
@@ -646,7 +650,7 @@ const pricePrefix = ref(
 )
 const showBorder = ref(localStorage.getItem('trustcash_barcode_show_border') === 'true')
 
-// Base Size Configurations (Unswapped)
+// Base Size Configurations (Unrotated)
 const SIZES = {
     '38x25mm': {
         labelBn: '৩৮ × ২৫ মিমি (১-কলাম থার্মাল স্টিকার)',
@@ -733,34 +737,45 @@ const currentConfig = computed(() => {
     return SIZES[selectedPaperSize.value] || SIZES['38x25mm']
 })
 
-const baseWidth = computed(() => {
+const rawBaseWidth = computed(() => {
     if (selectedPaperSize.value === 'custom') {
         return Number(customWidth.value) || 38
     }
     return currentConfig.value.baseWidth || 38
 })
 
-const baseHeight = computed(() => {
+const rawBaseHeight = computed(() => {
     if (selectedPaperSize.value === 'custom') {
         return Number(customHeight.value) || 25
     }
     return currentConfig.value.baseHeight || 25
 })
 
-// Effective dimensions after accounting for dimension swap
+// Whether 90° or 270° rotation is active
+const is90or270 = computed(() => {
+    return Number(rotation.value) === 90 || Number(rotation.value) === 270
+})
+
+// Dimension swap: true when 90/270 rotated (or if user manually toggles swap)
+const isDimensionsSwapped = computed(() => {
+    return is90or270.value ? !isSwapped.value : isSwapped.value
+})
+
+// ACTUAL PHYSICAL PAGE DIMENSIONS (Sent directly to CSS @page size and physical label element)
 const effectiveWidth = computed(() => {
-    return isSwapped.value ? baseHeight.value : baseWidth.value
+    return isDimensionsSwapped.value ? rawBaseHeight.value : rawBaseWidth.value
 })
 
 const effectiveHeight = computed(() => {
-    return isSwapped.value ? baseWidth.value : baseHeight.value
+    return isDimensionsSwapped.value ? rawBaseWidth.value : rawBaseHeight.value
 })
 
 const currentSizeLabel = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        return `${effectiveWidth.value}×${effectiveHeight.value} mm (${t('কাস্টম', 'Custom')})`
+    let base = `${effectiveWidth.value}×${effectiveHeight.value} mm`
+    if (rotation.value !== 0) {
+        base += ` (${rotation.value}° পেজ রোটেটেড)`
     }
-    return `${currentConfig.value.labelBn || currentConfig.value.labelEn} [${effectiveWidth.value}×${effectiveHeight.value}mm]`
+    return base
 })
 
 const currentModeClass = computed(() => {
@@ -771,28 +786,15 @@ const currentSizeClass = computed(() => {
     return currentConfig.value.sizeClass
 })
 
-// Active content dimensions before rotation
-const isRotated90or270 = computed(() => {
-    return rotation.value === 90 || rotation.value === 270
-})
-
-const contentWidth = computed(() => {
-    return isRotated90or270.value ? effectiveHeight.value : effectiveWidth.value
-})
-
-const contentHeight = computed(() => {
-    return isRotated90or270.value ? effectiveWidth.value : effectiveHeight.value
-})
-
 const computedMaxNameLength = computed(() => {
-    return Math.max(12, Math.floor(contentWidth.value * 0.65))
+    return Math.max(12, Math.floor(effectiveWidth.value * 0.65))
 })
 
 const totalLabels = computed(() => {
     return props.products.reduce((acc, p) => acc + (Number(p.copies) || 1), 0)
 })
 
-// Wrapper style (Bounding box of the physical label)
+// Wrapper style (The actual physical rotated card)
 const computedWrapperStyle = computed(() => {
     const w = effectiveWidth.value
     const h = effectiveHeight.value
@@ -800,26 +802,22 @@ const computedWrapperStyle = computed(() => {
         width: `${w}mm`,
         height: `${h}mm`,
         maxWidth: `${w}mm`,
-        maxHeight: `${h}mm`
+        maxHeight: `${h}mm`,
+        minWidth: `${w}mm`,
+        minHeight: `${h}mm`
     }
 })
 
-// Content style (Applies rotation transform: 0°, 90°, 180°, 270°)
+// Content style (Fills the rotated wrapper with proper padding and 180° inversion if needed)
 const computedContentStyle = computed(() => {
-    const deg = rotation.value || 0
-    const padX = Math.max(0.8, contentWidth.value * 0.04).toFixed(1)
-    const padY = Math.max(0.8, contentHeight.value * 0.04).toFixed(1)
+    const deg = Number(rotation.value) || 0
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const padX = Math.max(0.8, w * 0.04).toFixed(1)
+    const padY = Math.max(0.8, h * 0.04).toFixed(1)
 
-    if (deg === 90 || deg === 270) {
-        return {
-            width: `${effectiveHeight.value}mm`,
-            height: `${effectiveWidth.value}mm`,
-            flexShrink: '0',
-            padding: `${padY}mm ${padX}mm`,
-            transform: `rotate(${deg}deg)`,
-            transformOrigin: 'center center'
-        }
-    } else if (deg === 180) {
+    // At 180° or 270°, invert content 180 degrees
+    if (deg === 180 || deg === 270) {
         return {
             width: '100%',
             height: '100%',
@@ -837,48 +835,55 @@ const computedContentStyle = computed(() => {
     }
 })
 
-// Inner element styles scaled to content dimensions
+// Inner element styles dynamically scaled to the effective dimensions
 const computedStoreStyle = computed(() => {
-    const h = contentHeight.value
-    const sizeMm = Math.max(1.8, Math.min(3.2, h * 0.09)).toFixed(1)
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const sizeMm = Math.max(1.8, Math.min(3.2, (h < w ? h * 0.09 : w * 0.09))).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`,
-        maxWidth: `${contentWidth.value - 2}mm`
+        maxWidth: `${w - 2.5}mm`
     }
 })
 
 const computedNameStyle = computed(() => {
-    const h = contentHeight.value
-    const sizeMm = Math.max(2.1, Math.min(3.6, h * 0.11)).toFixed(1)
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const sizeMm = Math.max(2.1, Math.min(3.5, (h < w ? h * 0.11 : w * 0.11))).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`,
-        maxWidth: `${contentWidth.value - 2}mm`
+        maxWidth: `${w - 2.5}mm`
     }
 })
 
 const computedBarcodeStyle = computed(() => {
-    const h = contentHeight.value
-    const w = contentWidth.value
-    const maxH = Math.max(6, Math.min(38, h * 0.42)).toFixed(1)
-    const maxW = Math.max(10, w - 4).toFixed(1)
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    // If tall (like 25x38mm), barcode height is up to 14mm
+    // If wide (like 38x25mm), barcode height is up to 10mm
+    const maxH = (w < h ? Math.min(14, h * 0.38) : Math.min(10, h * 0.42)).toFixed(1)
+    const maxW = Math.max(10, w - 2.5).toFixed(1)
     return {
         maxHeight: `${maxH}mm`,
         height: `${maxH}mm`,
-        maxWidth: `${maxW}mm`
+        maxWidth: `${maxW}mm`,
+        width: 'auto'
     }
 })
 
 const computedCodeStyle = computed(() => {
-    const h = contentHeight.value
-    const sizeMm = Math.max(1.8, Math.min(3.0, h * 0.09)).toFixed(1)
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const sizeMm = Math.max(1.8, Math.min(2.8, (h < w ? h * 0.09 : w * 0.09))).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`
     }
 })
 
 const computedPriceStyle = computed(() => {
-    const h = contentHeight.value
-    const sizeMm = Math.max(2.5, Math.min(4.5, h * 0.14)).toFixed(1)
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const sizeMm = Math.max(2.5, Math.min(4.2, (h < w ? h * 0.14 : w * 0.14))).toFixed(1)
     return {
         fontSize: `${sizeMm}mm`
     }
@@ -905,7 +910,7 @@ const formatPrice = (price) => {
     return num % 1 === 0 ? num.toFixed(0) : num.toFixed(2)
 }
 
-// Injected dynamic @page print CSS
+// Injected dynamic @page print CSS (Rotates the paper size physically)
 const updatePrintStyleTag = () => {
     let styleTag = document.getElementById('barcode-dynamic-page-rule')
     if (!styleTag) {
@@ -1083,7 +1088,7 @@ const triggerPrint = () => {
 
 .lbl-name {
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.15;
     color: #000000;
     white-space: nowrap;
     overflow: hidden;
@@ -1156,7 +1161,7 @@ const triggerPrint = () => {
         box-shadow: none !important;
     }
 
-    /* 1-Column Thermal Mode (Every label breaks to new page) */
+    /* 1-Column Thermal Mode (Every label breaks to new page with exact rotated dimensions) */
     .mode-thermal-single {
         display: block !important;
         margin: 0 !important;

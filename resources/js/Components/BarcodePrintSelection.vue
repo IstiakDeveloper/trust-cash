@@ -163,10 +163,10 @@
                           v-model="rotation"
                           class="block w-full rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                         >
-                          <option value="0">{{ t('০° সোজা (Normal / Portrait)', '0° Normal') }}</option>
-                          <option value="90">{{ t('৯০° ডানে ঘুরানো (Rotate 90° - ল্যান্ডস্কেপ ফিক্স)', '90° Clockwise') }}</option>
-                          <option value="180">{{ t('১৮০° উল্টো (Inverted / 180°)', '180° Inverted') }}</option>
-                          <option value="270">{{ t('২৭০° বাঁয়ে ঘুরানো (Rotate 270°)', '270° Counter-Clockwise') }}</option>
+                          <option value="0">{{ t('০° সোজা (স্বাভাবিক: ৩৮×২৫ মিমি)', '0° Normal (38x25mm)') }}</option>
+                          <option value="90">{{ t('৯০° পেজ রোটেট (কাগজের সাইজ সহ ঘুরে ২৫×৩৮ মিমি হবে - ল্যান্ডস্কেপ ফিক্স)', '90° Clockwise (Page size rotates to 25x38mm)') }}</option>
+                          <option value="180">{{ t('১৮০° উল্টো প্রিন্ট (Inverted / 180°)', '180° Inverted') }}</option>
+                          <option value="270">{{ t('২৭০° পেজ রোটেট (কাগজের সাইজ সহ ২৫×৩৮ মিমি)', '270° Counter-Clockwise (Page size rotates to 25x38mm)') }}</option>
                         </select>
                       </div>
                     </div>
