@@ -130,28 +130,65 @@
                       </div>
                     </div>
 
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        {{ t('ডিফল্ট কপি সংখ্যা', 'Default Copies') }}
-                      </label>
-                      <div class="flex items-center gap-2">
-                        <input
-                          type="number"
-                          v-model.number="bulkCopies"
-                          min="1"
-                          max="100"
-                          class="block w-full rounded-xl border-slate-200 bg-white py-2 px-3 text-xs font-semibold text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                        />
-                        <button
-                          type="button"
-                          @click="applyBulkCopies"
-                          :title="t('সবার উপর প্রয়োগ করুন', 'Apply to all')"
-                          class="shrink-0 rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-all cursor-pointer"
+                    <div class="space-y-3">
+                      <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          {{ t('ডিফল্ট কপি সংখ্যা', 'Default Copies') }}
+                        </label>
+                        <div class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            v-model.number="bulkCopies"
+                            min="1"
+                            max="100"
+                            class="block w-full rounded-xl border-slate-200 bg-white py-2 px-3 text-xs font-semibold text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                          />
+                          <button
+                            type="button"
+                            @click="applyBulkCopies"
+                            :title="t('সবার উপর প্রয়োগ করুন', 'Apply to all')"
+                            class="shrink-0 rounded-xl bg-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-all cursor-pointer"
+                          >
+                            {{ t('প্রয়োগ', 'Apply') }}
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Print Direction / Rotation Selector -->
+                      <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          {{ t('প্রিন্ট দিক / রোটেশন', 'Print Direction / Rotation') }}
+                        </label>
+                        <select
+                          v-model="rotation"
+                          class="block w-full rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                         >
-                          {{ t('প্রয়োগ', 'Apply') }}
-                        </button>
+                          <option value="0">{{ t('০° সোজা (Normal / Portrait)', '0° Normal') }}</option>
+                          <option value="90">{{ t('৯০° ডানে ঘুরানো (Rotate 90° - ল্যান্ডস্কেপ ফিক্স)', '90° Clockwise') }}</option>
+                          <option value="180">{{ t('১৮০° উল্টো (Inverted / 180°)', '180° Inverted') }}</option>
+                          <option value="270">{{ t('২৭০° বাঁয়ে ঘুরানো (Rotate 270°)', '270° Counter-Clockwise') }}</option>
+                        </select>
                       </div>
                     </div>
+                  </div>
+
+                  <!-- Save as Default Option -->
+                  <div class="flex items-center justify-between px-1 bg-indigo-50/50 dark:bg-slate-800/40 p-2 rounded-xl border border-indigo-100 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      @click="saveCurrentAsDefault"
+                      class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-all cursor-pointer"
+                    >
+                      <BookmarkIcon class="h-4 w-4" />
+                      <span>{{ savedFeedback ? t('✓ ডিফল্ট হিসেবে সংরক্ষিত হয়েছে!', '✓ Saved as Default!') : t('এই সেটিংসটি ডিফল্ট হিসেবে সংরক্ষণ করুন', 'Save as My Default') }}</span>
+                    </button>
+                    <span v-if="savedFeedback" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-pulse">
+                      <CheckCircleIcon class="h-4 w-4" />
+                      <span>{{ t('পরবর্তী সময়ে এই সেটিংসটি স্বয়ংক্রিয়ভাবে থাকবে', 'Saved!') }}</span>
+                    </span>
+                    <span v-else class="text-[10px] text-slate-400 dark:text-slate-500">
+                      {{ t('পরের বার সরাসরি এই সাইজ ও রোটেশন থাকবে', 'Remember my preference') }}
+                    </span>
                   </div>
 
                   <!-- Selected Products List -->
@@ -236,7 +273,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from '@headlessui/vue'
-import { QrCodeIcon, PrinterIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { QrCodeIcon, PrinterIcon, XMarkIcon, BookmarkIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 
 const { t, formatCurrency, formatNumber } = useLanguage()
@@ -262,11 +299,25 @@ const props = defineProps({
 
 const isOpen = ref(false)
 const isSubmitting = ref(false)
-const bulkCopies = ref(1)
-const paperSize = ref('38x25mm')
+const savedFeedback = ref(false)
+const bulkCopies = ref(Number(localStorage.getItem('trustcash_barcode_bulk_copies')) || 1)
+const paperSize = ref(localStorage.getItem('trustcash_barcode_papersize') || '38x25mm')
+const rotation = ref(localStorage.getItem('trustcash_barcode_rotation') || '0')
 const customWidth = ref(Number(localStorage.getItem('trustcash_barcode_custom_w')) || 38)
 const customHeight = ref(Number(localStorage.getItem('trustcash_barcode_custom_h')) || 25)
 const localProducts = ref([])
+
+watch(paperSize, (val) => {
+  if (val) localStorage.setItem('trustcash_barcode_papersize', val)
+})
+
+watch(rotation, (val) => {
+  localStorage.setItem('trustcash_barcode_rotation', val)
+})
+
+watch(bulkCopies, (val) => {
+  if (val) localStorage.setItem('trustcash_barcode_bulk_copies', val)
+})
 
 watch(customWidth, (val) => {
   if (val) localStorage.setItem('trustcash_barcode_custom_w', val)
@@ -275,6 +326,20 @@ watch(customWidth, (val) => {
 watch(customHeight, (val) => {
   if (val) localStorage.setItem('trustcash_barcode_custom_h', val)
 })
+
+const saveCurrentAsDefault = () => {
+  localStorage.setItem('trustcash_barcode_papersize', paperSize.value)
+  localStorage.setItem('trustcash_barcode_rotation', String(rotation.value))
+  localStorage.setItem('trustcash_barcode_bulk_copies', String(bulkCopies.value))
+  if (paperSize.value === 'custom') {
+    localStorage.setItem('trustcash_barcode_custom_w', String(customWidth.value))
+    localStorage.setItem('trustcash_barcode_custom_h', String(customHeight.value))
+  }
+  savedFeedback.value = true
+  setTimeout(() => {
+    savedFeedback.value = false
+  }, 2500)
+}
 
 const effectiveProducts = computed(() => {
   return localProducts.value.length > 0 ? localProducts.value : props.products
@@ -334,7 +399,8 @@ const confirmPrint = () => {
     })),
     paperSize: paperSize.value,
     customWidth: paperSize.value === 'custom' ? Number(customWidth.value) || 38 : null,
-    customHeight: paperSize.value === 'custom' ? Number(customHeight.value) || 25 : null
+    customHeight: paperSize.value === 'custom' ? Number(customHeight.value) || 25 : null,
+    rotation: Number(rotation.value) || 0
   }, {
     onFinish: () => {
       isSubmitting.value = false

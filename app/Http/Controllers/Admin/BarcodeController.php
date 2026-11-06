@@ -108,6 +108,8 @@ class BarcodeController extends Controller
             'paperSize' => 'nullable|string|max:50',
             'customWidth' => 'nullable|numeric|min:10|max:300',
             'customHeight' => 'nullable|numeric|min:10|max:300',
+            'rotation' => 'nullable|in:0,90,180,270',
+            'orientation' => 'nullable|in:auto,portrait,landscape',
         ]);
 
         $svgGenerator = new BarcodeGeneratorSVG();
@@ -171,6 +173,8 @@ class BarcodeController extends Controller
             'paperSize' => $paperSize,
             'initialCustomWidth' => $request->customWidth ? (float) $request->customWidth : 38,
             'initialCustomHeight' => $request->customHeight ? (float) $request->customHeight : 25,
+            'initialRotation' => $request->has('rotation') ? (int) $request->rotation : 0,
+            'initialOrientation' => $request->orientation ?? 'auto',
         ]);
     }
 }

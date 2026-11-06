@@ -1,7 +1,7 @@
 <template>
     <div class="min-h-screen bg-slate-100 p-4 sm:p-6 dark:bg-slate-900 print:bg-white print:p-0">
         <!-- Top Toolbar & Settings (Hidden during print) -->
-        <div class="mx-auto max-w-5xl mb-6 space-y-4 print:hidden">
+        <div class="mx-auto max-w-5xl mb-6 space-y-3 print:hidden">
             <!-- Main Action Bar -->
             <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
@@ -15,6 +15,9 @@
                             </h1>
                             <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                                 {{ currentSizeLabel }}
+                            </span>
+                            <span v-if="rotation !== 0" class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                                {{ rotation }}°
                             </span>
                         </div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -45,6 +48,17 @@
                             <option value="custom">{{ t('✨ কাস্টম সাইজ (Custom mm - নিজের সাইজ দিন)', '✨ Custom Size (Enter Custom mm)') }}</option>
                         </select>
                     </div>
+
+                    <!-- Save as Default Button -->
+                    <button
+                        type="button"
+                        @click="saveSettingsAsDefault"
+                        :class="['inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer', savedToast ? 'border-emerald-600 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900']"
+                        :title="t('বর্তমান সকল সাইজ ও রোটেশন সেটিংস ডিফল্ট হিসেবে সংরক্ষণ করুন', 'Save current size and rotation as your permanent default')"
+                    >
+                        <BookmarkIcon class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                        <span>{{ savedToast ? t('✓ ডিফল্ট সেভ হয়েছে!', '✓ Saved!') : t('ডিফল্ট সেভ করুন', 'Save as Default') }}</span>
+                    </button>
 
                     <!-- Customize Settings Toggle -->
                     <button
@@ -85,6 +99,111 @@
                         <span class="hidden sm:inline">{{ t('পণ্য তালিকা', 'Products') }}</span>
                     </Link>
                 </div>
+            </div>
+
+            <!-- Direction, Rotation & Orientation Toolbar (Multiple Rotation Options) -->
+            <div class="rounded-2xl bg-white p-3.5 shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <!-- Rotation Segmented Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <ArrowPathIcon class="h-4 w-4 text-indigo-600" />
+                        {{ t('প্রিন্ট দিক / রোটেশন:', 'Rotation / Direction:') }}
+                    </span>
+                    <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600">
+                        <button
+                            type="button"
+                            @click="setRotation(0)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 0 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t('স্বাভাবিক / সোজা প্রিন্ট', 'Normal 0 degree orientation')"
+                        >
+                            0° {{ t('সোজা', 'Normal') }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="setRotation(90)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1', rotation === 90 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t('যদি প্রিন্টারে ল্যান্ডস্কেপ বা আড়াআড়ি বের হয়, ৯০° সিলেক্ট করুন', 'Rotate 90 degrees if prints sideways/landscape')"
+                        >
+                            <span>90° {{ t('ডানে', 'Rotate 90°') }}</span>
+                            <span v-if="rotation === 90" class="rounded bg-indigo-700 px-1 text-[9px] text-white">Active</span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="setRotation(180)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 180 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t('১৮০° উল্টো প্রিন্ট', 'Inverted 180 degree rotation')"
+                        >
+                            180° {{ t('উল্টো', 'Inverted') }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="setRotation(270)"
+                            :class="['px-3 py-1 rounded-lg font-bold transition-all cursor-pointer', rotation === 270 ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-600']"
+                            :title="t('২৭০° বাঁয়ে ঘুরানো প্রিন্ট', 'Counter-clockwise 270 degree rotation')"
+                        >
+                            270° {{ t('বাঁয়ে', 'Rotate 270°') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dimension Swap & Layout Controls -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Swap W <-> H Button -->
+                    <button
+                        type="button"
+                        @click="toggleSwapDimensions"
+                        :class="['inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-bold transition-all cursor-pointer', isSwapped ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600']"
+                        :title="t('প্রস্থ ও উচ্চতা অদলবদল করুন', 'Swap width and height dimensions')"
+                    >
+                        <ArrowsRightLeftIcon class="h-4 w-4 text-indigo-600" />
+                        <span>{{ t('সাইজ অদলবদল', 'Swap W ⇄ H') }} ({{ effectiveWidth }}×{{ effectiveHeight }} mm)</span>
+                    </button>
+
+                    <!-- Page Orientation Dropdown -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-500 dark:text-slate-400 font-semibold">{{ t('লেআউট:', 'Layout:') }}</span>
+                        <select
+                            v-model="pageOrientation"
+                            class="rounded-xl border border-slate-300 bg-white py-1 px-2.5 text-xs font-bold text-slate-800 shadow-xs focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                        >
+                            <option value="auto">Auto ({{ t('স্বয়ংক্রিয়', 'Auto') }})</option>
+                            <option value="portrait">Portrait ({{ t('লম্বালম্বি', 'Portrait') }})</option>
+                            <option value="landscape">Landscape ({{ t('আড়াআড়ি', 'Landscape') }})</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Toast Notification -->
+            <div v-if="savedToast" class="rounded-xl bg-emerald-50 p-2.5 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/50 flex items-center justify-between gap-2 text-xs text-emerald-900 dark:text-emerald-200 transition-all">
+                <div class="flex items-center gap-2">
+                    <CheckCircleIcon class="h-5 w-5 text-emerald-600 shrink-0" />
+                    <span class="font-bold">
+                        {{ t(`ডিফল্ট সেটিংস সফলভাবে সংরক্ষিত হয়েছে (${currentSizeLabel}, ${rotation}°)! পরবর্তী সময়ে স্বয়ংক্রিয়ভাবে এটি কার্যকর থাকবে।`, `Default settings saved successfully (${currentSizeLabel}, ${rotation}°)!`) }}
+                    </span>
+                </div>
+                <button type="button" @click="savedToast = false" class="text-emerald-600 hover:text-emerald-800">
+                    <XMarkIcon class="h-4 w-4" />
+                </button>
+            </div>
+
+            <!-- Reset Toast Notification -->
+            <div v-if="resetToast" class="rounded-xl bg-amber-50 p-2.5 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/50 flex items-center justify-between gap-2 text-xs text-amber-900 dark:text-amber-200 transition-all">
+                <div class="flex items-center gap-2">
+                    <CheckCircleIcon class="h-5 w-5 text-amber-600 shrink-0" />
+                    <span class="font-bold">
+                        {{ t('ডিফল্ট সেটিংস সফলভাবে রিসেট করা হয়েছে!', 'Default settings reset successfully!') }}
+                    </span>
+                </div>
+                <button type="button" @click="resetToast = false" class="text-amber-600 hover:text-amber-800">
+                    <XMarkIcon class="h-4 w-4" />
+                </button>
+            </div>
+
+            <!-- Helpful Rotation Banner -->
+            <div v-if="rotation === 90 || isSwapped" class="rounded-xl bg-indigo-50/90 p-2.5 border border-indigo-200/80 dark:bg-indigo-950/30 dark:border-indigo-900/40 flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
+                <InformationCircleIcon class="h-4 w-4 text-indigo-600 shrink-0" />
+                <span>{{ t('💡 ল্যান্ডস্কেপ ফিক্স সক্রিয়: যদি আপনার প্রিন্টারে বারকোড সাইডওয়েজ বা আড়াআড়ি বের হচ্ছিল, এখন ৯০° রোটেশন দেওয়া হয়েছে। প্রিন্ট দিলে স্টিকারের দিক অনুযায়ী একদম সোজা বের হবে!', '💡 90° rotation active! This fixes printers that print sideways or in landscape.') }}</span>
             </div>
 
             <!-- Custom Size Inputs & Quick mm Presets (When selectedPaperSize === 'custom') -->
@@ -252,6 +371,27 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Settings Panel Footer Actions -->
+                <div class="border-t border-slate-100 dark:border-slate-700 pt-3 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                        type="button"
+                        @click="saveSettingsAsDefault"
+                        class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-500 transition-all cursor-pointer"
+                    >
+                        <BookmarkIcon class="h-4 w-4" />
+                        <span>{{ savedToast ? t('✓ ডিফল্ট হিসেবে সংরক্ষিত হয়েছে!', '✓ Default Saved!') : t('এই সকল সেটিংস ডিফল্ট হিসেবে সেভ করুন', 'Save Settings as Default') }}</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="resetToFactoryDefaults"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-all cursor-pointer"
+                    >
+                        <ArrowPathIcon class="h-4 w-4" />
+                        <span>{{ t('ফ্যাক্টরি ডিফল্টে রিসেট করুন', 'Reset to Factory Defaults') }}</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Thermal Printer Instruction Guide (Expandable) -->
@@ -279,8 +419,8 @@
                                 <p class="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">"None" (কোনো মার্জিন নয়) সিলেক্ট করুন। ডিফল্ট মার্জিন রাখবেন না।</p>
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                                <span class="font-bold text-amber-900 dark:text-amber-200">৪. Scale & Headers:</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">Scale: 100% (বা Default), এবং "Headers and Footers" আনচেক রাখুন।</p>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">৪. Orientation & Headers:</span>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারের কাগজ অনুযায়ী Portrait বা Landscape রাখুন এবং "Headers and Footers" আনচেক রাখুন।</p>
                             </div>
                         </div>
                     </div>
@@ -305,14 +445,15 @@
                                 currentSizeClass,
                                 showBorder ? 'has-print-border' : 'no-print-border'
                             ]"
-                            :style="customLabelStyle"
+                            :style="computedWrapperStyle"
                         >
-                            <div class="label-content">
+                            <!-- Label Content (With dynamic Rotation: 0°, 90°, 180°, 270°) -->
+                            <div class="label-content" :style="computedContentStyle">
                                 <!-- Store Name -->
                                 <div
                                     v-if="showStoreName && storeName"
                                     class="lbl-store"
-                                    :style="customStoreStyle"
+                                    :style="computedStoreStyle"
                                     :title="storeName"
                                 >
                                     {{ storeName }}
@@ -322,10 +463,10 @@
                                 <div
                                     v-if="showProductName"
                                     class="lbl-name"
-                                    :style="customNameStyle"
+                                    :style="computedNameStyle"
                                     :title="product.name"
                                 >
-                                    {{ truncate(product.name, maxNameLength) }}
+                                    {{ truncate(product.name, computedMaxNameLength) }}
                                 </div>
 
                                 <!-- Barcode Image (Crisp SVG) -->
@@ -334,7 +475,7 @@
                                         :src="product.image_url"
                                         :alt="product.barcode"
                                         class="lbl-barcode-img"
-                                        :style="customBarcodeStyle"
+                                        :style="computedBarcodeStyle"
                                     />
                                 </div>
 
@@ -342,7 +483,7 @@
                                 <div
                                     v-if="showBarcodeText"
                                     class="lbl-code"
-                                    :style="customCodeStyle"
+                                    :style="computedCodeStyle"
                                 >
                                     {{ product.barcode }}
                                 </div>
@@ -351,7 +492,7 @@
                                 <div
                                     v-if="showPrice"
                                     class="lbl-price"
-                                    :style="customPriceStyle"
+                                    :style="computedPriceStyle"
                                 >
                                     <span>{{ pricePrefix }}</span>{{ formatPrice(product.price) }}
                                 </div>
@@ -373,7 +514,11 @@ import {
     QrCodeIcon,
     AdjustmentsHorizontalIcon,
     InformationCircleIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowPathIcon,
+    ArrowsRightLeftIcon,
+    BookmarkIcon,
+    CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 import { useLanguage } from '@/composables/useLanguage'
 
@@ -397,16 +542,42 @@ const props = defineProps({
     initialCustomHeight: {
         type: Number,
         default: 25
+    },
+    initialRotation: {
+        type: Number,
+        default: 0
+    },
+    initialOrientation: {
+        type: String,
+        default: 'auto'
     }
 })
 
-// UI & Customization State
-const selectedPaperSize = ref(props.paperSize || '38x25mm')
+// UI & Customization State (Loaded from localStorage if saved)
+const savedPaperSize = localStorage.getItem('trustcash_barcode_papersize')
+const selectedPaperSize = ref(
+    props.paperSize && props.paperSize !== '38x25mm'
+        ? props.paperSize
+        : (savedPaperSize || props.paperSize || '38x25mm')
+)
+
 const customWidth = ref(Number(localStorage.getItem('trustcash_barcode_custom_w')) || props.initialCustomWidth || 38)
 const customHeight = ref(Number(localStorage.getItem('trustcash_barcode_custom_h')) || props.initialCustomHeight || 25)
+
+// Rotation & Orientation State
+const rotation = ref(
+    localStorage.getItem('trustcash_barcode_rotation') !== null
+        ? Number(localStorage.getItem('trustcash_barcode_rotation'))
+        : (Number(props.initialRotation) || 0)
+)
+const pageOrientation = ref(localStorage.getItem('trustcash_barcode_orientation') || props.initialOrientation || 'auto')
+const isSwapped = ref(localStorage.getItem('trustcash_barcode_swapped') === 'true')
+
 const showSettings = ref(false)
 const showGuide = ref(false)
-const previewScale = ref(1)
+const savedToast = ref(false)
+const resetToast = ref(false)
+const previewScale = ref(Number(localStorage.getItem('trustcash_barcode_preview_scale')) || 1)
 
 // Quick Presets
 const commonMmPresets = [
@@ -430,24 +601,60 @@ const setCustomPreset = (w, h) => {
     updatePrintStyleTag()
 }
 
-// Content Toggles
-const showStoreName = ref(true)
-const storeName = ref(page.props.business_name || page.props.app_name || '')
-const showProductName = ref(true)
-const showBarcodeText = ref(true)
-const showPrice = ref(true)
-const pricePrefix = ref('MRP: ৳ ')
-const showBorder = ref(false)
+const setRotation = (deg) => {
+    rotation.value = deg
+    localStorage.setItem('trustcash_barcode_rotation', deg)
+    updatePrintStyleTag()
+}
 
-// Size Configurations
+const toggleSwapDimensions = () => {
+    isSwapped.value = !isSwapped.value
+    localStorage.setItem('trustcash_barcode_swapped', isSwapped.value ? 'true' : 'false')
+    updatePrintStyleTag()
+}
+
+// Content Toggles (Loaded from localStorage if saved)
+const showStoreName = ref(
+    localStorage.getItem('trustcash_barcode_show_store') !== null
+        ? localStorage.getItem('trustcash_barcode_show_store') === 'true'
+        : true
+)
+const storeName = ref(
+    localStorage.getItem('trustcash_barcode_store_name') !== null
+        ? localStorage.getItem('trustcash_barcode_store_name')
+        : (page.props.business_name || page.props.app_name || '')
+)
+const showProductName = ref(
+    localStorage.getItem('trustcash_barcode_show_name') !== null
+        ? localStorage.getItem('trustcash_barcode_show_name') === 'true'
+        : true
+)
+const showBarcodeText = ref(
+    localStorage.getItem('trustcash_barcode_show_code') !== null
+        ? localStorage.getItem('trustcash_barcode_show_code') === 'true'
+        : true
+)
+const showPrice = ref(
+    localStorage.getItem('trustcash_barcode_show_price') !== null
+        ? localStorage.getItem('trustcash_barcode_show_price') === 'true'
+        : true
+)
+const pricePrefix = ref(
+    localStorage.getItem('trustcash_barcode_price_prefix') !== null
+        ? localStorage.getItem('trustcash_barcode_price_prefix')
+        : 'MRP: ৳ '
+)
+const showBorder = ref(localStorage.getItem('trustcash_barcode_show_border') === 'true')
+
+// Base Size Configurations (Unswapped)
 const SIZES = {
     '38x25mm': {
         labelBn: '৩৮ × ২৫ মিমি (১-কলাম থার্মাল স্টিকার)',
         labelEn: '38mm x 25mm (Single Thermal Label)',
         mode: 'mode-thermal-single',
         sizeClass: 'size-38x25',
-        pageSize: '38mm 25mm',
-        pageMargin: '0mm',
+        baseWidth: 38,
+        baseHeight: 25,
         maxNameLength: 22
     },
     '38x25mm_2col': {
@@ -455,8 +662,8 @@ const SIZES = {
         labelEn: '38mm x 25mm (2-Column Roll)',
         mode: 'mode-thermal-2col',
         sizeClass: 'size-38x25-2col',
-        pageSize: '80mm 25mm',
-        pageMargin: '0mm',
+        baseWidth: 38,
+        baseHeight: 25,
         maxNameLength: 22
     },
     '40x30mm': {
@@ -464,8 +671,8 @@ const SIZES = {
         labelEn: '40mm x 30mm Thermal Label',
         mode: 'mode-thermal-single',
         sizeClass: 'size-40x30',
-        pageSize: '40mm 30mm',
-        pageMargin: '0mm',
+        baseWidth: 40,
+        baseHeight: 30,
         maxNameLength: 26
     },
     '50x25mm': {
@@ -473,8 +680,8 @@ const SIZES = {
         labelEn: '50mm x 25mm Thermal Label',
         mode: 'mode-thermal-single',
         sizeClass: 'size-50x25',
-        pageSize: '50mm 25mm',
-        pageMargin: '0mm',
+        baseWidth: 50,
+        baseHeight: 25,
         maxNameLength: 30
     },
     '50x30mm': {
@@ -482,8 +689,8 @@ const SIZES = {
         labelEn: '50mm x 30mm Thermal Label',
         mode: 'mode-thermal-single',
         sizeClass: 'size-50x30',
-        pageSize: '50mm 30mm',
-        pageMargin: '0mm',
+        baseWidth: 50,
+        baseHeight: 30,
         maxNameLength: 32
     },
     '80mm': {
@@ -491,8 +698,8 @@ const SIZES = {
         labelEn: '80mm Continuous Roll',
         mode: 'mode-thermal-roll',
         sizeClass: 'size-80mm',
-        pageSize: '80mm auto',
-        pageMargin: '0mm',
+        baseWidth: 72,
+        baseHeight: 40,
         maxNameLength: 40
     },
     'A4': {
@@ -500,8 +707,8 @@ const SIZES = {
         labelEn: 'A4 Multi-label Sheet',
         mode: 'mode-sheet',
         sizeClass: 'size-a4',
-        pageSize: 'A4 portrait',
-        pageMargin: '6mm',
+        baseWidth: 48,
+        baseHeight: 32,
         maxNameLength: 28
     },
     'Letter': {
@@ -509,8 +716,8 @@ const SIZES = {
         labelEn: 'Letter Sheet',
         mode: 'mode-sheet',
         sizeClass: 'size-a4',
-        pageSize: 'letter portrait',
-        pageMargin: '6mm',
+        baseWidth: 48,
+        baseHeight: 32,
         maxNameLength: 28
     },
     'custom': {
@@ -526,11 +733,34 @@ const currentConfig = computed(() => {
     return SIZES[selectedPaperSize.value] || SIZES['38x25mm']
 })
 
+const baseWidth = computed(() => {
+    if (selectedPaperSize.value === 'custom') {
+        return Number(customWidth.value) || 38
+    }
+    return currentConfig.value.baseWidth || 38
+})
+
+const baseHeight = computed(() => {
+    if (selectedPaperSize.value === 'custom') {
+        return Number(customHeight.value) || 25
+    }
+    return currentConfig.value.baseHeight || 25
+})
+
+// Effective dimensions after accounting for dimension swap
+const effectiveWidth = computed(() => {
+    return isSwapped.value ? baseHeight.value : baseWidth.value
+})
+
+const effectiveHeight = computed(() => {
+    return isSwapped.value ? baseWidth.value : baseHeight.value
+})
+
 const currentSizeLabel = computed(() => {
     if (selectedPaperSize.value === 'custom') {
-        return `${customWidth.value}×${customHeight.value} mm (${t('কাস্টম', 'Custom')})`
+        return `${effectiveWidth.value}×${effectiveHeight.value} mm (${t('কাস্টম', 'Custom')})`
     }
-    return currentConfig.value.labelBn || currentConfig.value.labelEn
+    return `${currentConfig.value.labelBn || currentConfig.value.labelEn} [${effectiveWidth.value}×${effectiveHeight.value}mm]`
 })
 
 const currentModeClass = computed(() => {
@@ -541,83 +771,117 @@ const currentSizeClass = computed(() => {
     return currentConfig.value.sizeClass
 })
 
-const maxNameLength = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const w = customWidth.value || 38
-        return Math.max(14, Math.floor(w * 0.65))
-    }
-    return currentConfig.value.maxNameLength || 25
+// Active content dimensions before rotation
+const isRotated90or270 = computed(() => {
+    return rotation.value === 90 || rotation.value === 270
+})
+
+const contentWidth = computed(() => {
+    return isRotated90or270.value ? effectiveHeight.value : effectiveWidth.value
+})
+
+const contentHeight = computed(() => {
+    return isRotated90or270.value ? effectiveWidth.value : effectiveHeight.value
+})
+
+const computedMaxNameLength = computed(() => {
+    return Math.max(12, Math.floor(contentWidth.value * 0.65))
 })
 
 const totalLabels = computed(() => {
     return props.products.reduce((acc, p) => acc + (Number(p.copies) || 1), 0)
 })
 
-// Dynamic Proportional Custom Styling (Scales accurately for ANY mm)
-const customLabelStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const w = customWidth.value || 38
-        const h = customHeight.value || 25
+// Wrapper style (Bounding box of the physical label)
+const computedWrapperStyle = computed(() => {
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    return {
+        width: `${w}mm`,
+        height: `${h}mm`,
+        maxWidth: `${w}mm`,
+        maxHeight: `${h}mm`
+    }
+})
+
+// Content style (Applies rotation transform: 0°, 90°, 180°, 270°)
+const computedContentStyle = computed(() => {
+    const deg = rotation.value || 0
+    const padX = Math.max(0.8, contentWidth.value * 0.04).toFixed(1)
+    const padY = Math.max(0.8, contentHeight.value * 0.04).toFixed(1)
+
+    if (deg === 90 || deg === 270) {
         return {
-            width: `${w}mm`,
-            height: `${h}mm`,
-            maxWidth: `${w}mm`,
-            maxHeight: `${h}mm`,
-            padding: `${Math.max(0.8, h * 0.04).toFixed(1)}mm ${Math.max(1, w * 0.04).toFixed(1)}mm`
+            width: `${effectiveHeight.value}mm`,
+            height: `${effectiveWidth.value}mm`,
+            flexShrink: '0',
+            padding: `${padY}mm ${padX}mm`,
+            transform: `rotate(${deg}deg)`,
+            transformOrigin: 'center center'
+        }
+    } else if (deg === 180) {
+        return {
+            width: '100%',
+            height: '100%',
+            padding: `${padY}mm ${padX}mm`,
+            transform: 'rotate(180deg)',
+            transformOrigin: 'center center'
         }
     }
-    return {}
+
+    return {
+        width: '100%',
+        height: '100%',
+        padding: `${padY}mm ${padX}mm`,
+        transform: 'none'
+    }
 })
 
-const customStoreStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const h = customHeight.value || 25
-        const sizeMm = Math.max(1.8, Math.min(3.2, h * 0.09)).toFixed(1)
-        return { fontSize: `${sizeMm}mm` }
+// Inner element styles scaled to content dimensions
+const computedStoreStyle = computed(() => {
+    const h = contentHeight.value
+    const sizeMm = Math.max(1.8, Math.min(3.2, h * 0.09)).toFixed(1)
+    return {
+        fontSize: `${sizeMm}mm`,
+        maxWidth: `${contentWidth.value - 2}mm`
     }
-    return {}
 })
 
-const customNameStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const h = customHeight.value || 25
-        const sizeMm = Math.max(2.1, Math.min(3.6, h * 0.11)).toFixed(1)
-        return { fontSize: `${sizeMm}mm` }
+const computedNameStyle = computed(() => {
+    const h = contentHeight.value
+    const sizeMm = Math.max(2.1, Math.min(3.6, h * 0.11)).toFixed(1)
+    return {
+        fontSize: `${sizeMm}mm`,
+        maxWidth: `${contentWidth.value - 2}mm`
     }
-    return {}
 })
 
-const customBarcodeStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const h = customHeight.value || 25
-        const w = customWidth.value || 38
-        const maxH = Math.max(6, Math.min(40, h * 0.42)).toFixed(1)
-        const maxW = Math.max(10, w - 4).toFixed(1)
-        return {
-            maxHeight: `${maxH}mm`,
-            height: `${maxH}mm`,
-            maxWidth: `${maxW}mm`
-        }
+const computedBarcodeStyle = computed(() => {
+    const h = contentHeight.value
+    const w = contentWidth.value
+    const maxH = Math.max(6, Math.min(38, h * 0.42)).toFixed(1)
+    const maxW = Math.max(10, w - 4).toFixed(1)
+    return {
+        maxHeight: `${maxH}mm`,
+        height: `${maxH}mm`,
+        maxWidth: `${maxW}mm`
     }
-    return {}
 })
 
-const customCodeStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const h = customHeight.value || 25
-        const sizeMm = Math.max(1.8, Math.min(3.0, h * 0.09)).toFixed(1)
-        return { fontSize: `${sizeMm}mm` }
+const computedCodeStyle = computed(() => {
+    const h = contentHeight.value
+    const sizeMm = Math.max(1.8, Math.min(3.0, h * 0.09)).toFixed(1)
+    return {
+        fontSize: `${sizeMm}mm`
     }
-    return {}
 })
 
-const customPriceStyle = computed(() => {
-    if (selectedPaperSize.value === 'custom') {
-        const h = customHeight.value || 25
-        const sizeMm = Math.max(2.5, Math.min(4.5, h * 0.14)).toFixed(1)
-        return { fontSize: `${sizeMm}mm` }
+const computedPriceStyle = computed(() => {
+    const h = contentHeight.value
+    const sizeMm = Math.max(2.5, Math.min(4.5, h * 0.14)).toFixed(1)
+    return {
+        fontSize: `${sizeMm}mm`
     }
-    return {}
 })
 
 const previewContainerStyle = computed(() => {
@@ -650,15 +914,21 @@ const updatePrintStyleTag = () => {
         document.head.appendChild(styleTag)
     }
 
-    let pSize = '38mm 25mm'
+    const w = effectiveWidth.value
+    const h = effectiveHeight.value
+    const orient = pageOrientation.value !== 'auto' ? ` ${pageOrientation.value}` : ''
+    let pSize = `${w}mm ${h}mm${orient}`
     let pMargin = '0mm'
 
-    if (selectedPaperSize.value === 'custom') {
-        pSize = `${customWidth.value || 38}mm ${customHeight.value || 25}mm`
+    if (selectedPaperSize.value === 'A4') {
+        pSize = pageOrientation.value === 'landscape' ? 'A4 landscape' : 'A4 portrait'
+        pMargin = '6mm'
+    } else if (selectedPaperSize.value === 'Letter') {
+        pSize = pageOrientation.value === 'landscape' ? 'letter landscape' : 'letter portrait'
+        pMargin = '6mm'
+    } else if (selectedPaperSize.value === '80mm') {
+        pSize = '80mm auto'
         pMargin = '0mm'
-    } else if (SIZES[selectedPaperSize.value]) {
-        pSize = SIZES[selectedPaperSize.value].pageSize
-        pMargin = SIZES[selectedPaperSize.value].pageMargin
     }
 
     styleTag.textContent = `
@@ -671,9 +941,79 @@ const updatePrintStyleTag = () => {
     `
 }
 
-watch([selectedPaperSize, customWidth, customHeight], () => {
+// Save Current Settings as Default
+const saveSettingsAsDefault = () => {
+    localStorage.setItem('trustcash_barcode_papersize', selectedPaperSize.value)
+    localStorage.setItem('trustcash_barcode_rotation', String(rotation.value))
+    localStorage.setItem('trustcash_barcode_orientation', pageOrientation.value)
+    localStorage.setItem('trustcash_barcode_swapped', isSwapped.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_custom_w', String(customWidth.value))
+    localStorage.setItem('trustcash_barcode_custom_h', String(customHeight.value))
+    localStorage.setItem('trustcash_barcode_show_store', showStoreName.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_store_name', storeName.value || '')
+    localStorage.setItem('trustcash_barcode_show_name', showProductName.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_show_code', showBarcodeText.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_show_price', showPrice.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_price_prefix', pricePrefix.value || '')
+    localStorage.setItem('trustcash_barcode_show_border', showBorder.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_preview_scale', String(previewScale.value))
+
+    savedToast.value = true
+    setTimeout(() => {
+        savedToast.value = false
+    }, 4000)
+}
+
+// Reset to Factory Defaults
+const resetToFactoryDefaults = () => {
+    const keys = [
+        'trustcash_barcode_papersize',
+        'trustcash_barcode_rotation',
+        'trustcash_barcode_orientation',
+        'trustcash_barcode_swapped',
+        'trustcash_barcode_custom_w',
+        'trustcash_barcode_custom_h',
+        'trustcash_barcode_show_store',
+        'trustcash_barcode_store_name',
+        'trustcash_barcode_show_name',
+        'trustcash_barcode_show_code',
+        'trustcash_barcode_show_price',
+        'trustcash_barcode_price_prefix',
+        'trustcash_barcode_show_border',
+        'trustcash_barcode_preview_scale',
+        'trustcash_barcode_bulk_copies'
+    ]
+    keys.forEach(k => localStorage.removeItem(k))
+
+    selectedPaperSize.value = '38x25mm'
+    rotation.value = 0
+    pageOrientation.value = 'auto'
+    isSwapped.value = false
+    customWidth.value = 38
+    customHeight.value = 25
+    showStoreName.value = true
+    storeName.value = page.props.business_name || page.props.app_name || ''
+    showProductName.value = true
+    showBarcodeText.value = true
+    showPrice.value = true
+    pricePrefix.value = 'MRP: ৳ '
+    showBorder.value = false
+    previewScale.value = 1
+
+    resetToast.value = true
+    setTimeout(() => {
+        resetToast.value = false
+    }, 3000)
+}
+
+watch([selectedPaperSize, customWidth, customHeight, rotation, pageOrientation, isSwapped, previewScale], () => {
     if (customWidth.value) localStorage.setItem('trustcash_barcode_custom_w', customWidth.value)
     if (customHeight.value) localStorage.setItem('trustcash_barcode_custom_h', customHeight.value)
+    localStorage.setItem('trustcash_barcode_rotation', rotation.value)
+    localStorage.setItem('trustcash_barcode_orientation', pageOrientation.value)
+    localStorage.setItem('trustcash_barcode_swapped', isSwapped.value ? 'true' : 'false')
+    localStorage.setItem('trustcash_barcode_papersize', selectedPaperSize.value)
+    localStorage.setItem('trustcash_barcode_preview_scale', previewScale.value)
     updatePrintStyleTag()
 }, { immediate: true })
 
@@ -701,7 +1041,7 @@ const triggerPrint = () => {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     transition: transform 0.2s ease-in-out;
 }
 
@@ -716,71 +1056,48 @@ const triggerPrint = () => {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px dashed #cbd5e1;
     overflow: hidden;
+    transition: width 0.2s, height 0.2s;
 }
 
 .label-content {
-    width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
     text-align: center;
     box-sizing: border-box;
+    transition: transform 0.2s ease-in-out;
 }
 
-/* ============================================================
-   LABEL SIZE DIMENSIONS (Screen & Base)
-   ============================================================ */
-
-/* 1. Standard 38mm x 25mm Thermal Label */
-.label-wrapper.size-38x25,
-.label-wrapper.size-38x25-2col {
-    width: 38mm;
-    height: 25mm;
-    max-width: 38mm;
-    max-height: 25mm;
-    padding: 1mm 1.5mm;
-}
-
-.size-38x25 .lbl-store,
-.size-38x25-2col .lbl-store {
-    font-size: 2mm;
+/* Base typography for sticker items */
+.lbl-store {
     font-weight: 800;
     line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     color: #111827;
-    max-width: 35mm;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.size-38x25 .lbl-name,
-.size-38x25-2col .lbl-name {
-    font-size: 2.5mm;
+.lbl-name {
     font-weight: 700;
     line-height: 1.1;
     color: #000000;
-    max-width: 35mm;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.size-38x25 .lbl-barcode-wrapper,
-.size-38x25-2col .lbl-barcode-wrapper {
+.lbl-barcode-wrapper {
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.size-38x25 .lbl-barcode-img,
-.size-38x25-2col .lbl-barcode-img {
-    max-width: 34mm;
-    height: 9.5mm;
+.lbl-barcode-img {
     object-fit: contain;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
@@ -789,291 +1106,22 @@ const triggerPrint = () => {
     margin: 0.2mm auto;
 }
 
-.size-38x25 .lbl-code,
-.size-38x25-2col .lbl-code {
-    font-size: 2.2mm;
+.lbl-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     font-weight: 700;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.5px;
     line-height: 1;
     color: #1f2937;
 }
 
-.size-38x25 .lbl-price,
-.size-38x25-2col .lbl-price {
-    font-size: 3.2mm;
-    font-weight: 900;
-    line-height: 1;
-    color: #000000;
-}
-
-/* 2. 40mm x 30mm Thermal Label */
-.label-wrapper.size-40x30 {
-    width: 40mm;
-    height: 30mm;
-    max-width: 40mm;
-    max-height: 30mm;
-    padding: 1.5mm 1.5mm;
-}
-
-.size-40x30 .lbl-store {
-    font-size: 2.3mm;
-    font-weight: 800;
-    line-height: 1;
-    max-width: 37mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-40x30 .lbl-name {
-    font-size: 2.8mm;
-    font-weight: 700;
-    line-height: 1.1;
-    max-width: 37mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-40x30 .lbl-barcode-img {
-    max-width: 36mm;
-    height: 11.5mm;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.size-40x30 .lbl-code {
-    font-size: 2.4mm;
-    font-family: monospace;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.size-40x30 .lbl-price {
-    font-size: 3.5mm;
-    font-weight: 900;
-    line-height: 1;
-}
-
-/* 3. 50mm x 25mm Thermal Label */
-.label-wrapper.size-50x25 {
-    width: 50mm;
-    height: 25mm;
-    max-width: 50mm;
-    max-height: 25mm;
-    padding: 1mm 2mm;
-}
-
-.size-50x25 .lbl-store {
-    font-size: 2.2mm;
-    font-weight: 800;
-    line-height: 1;
-    max-width: 46mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-50x25 .lbl-name {
-    font-size: 2.8mm;
-    font-weight: 700;
-    line-height: 1.1;
-    max-width: 46mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-50x25 .lbl-barcode-img {
-    max-width: 44mm;
-    height: 10mm;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.size-50x25 .lbl-code {
-    font-size: 2.3mm;
-    font-family: monospace;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.size-50x25 .lbl-price {
-    font-size: 3.4mm;
-    font-weight: 900;
-    line-height: 1;
-}
-
-/* 4. 50mm x 30mm Thermal Label */
-.label-wrapper.size-50x30 {
-    width: 50mm;
-    height: 30mm;
-    max-width: 50mm;
-    max-height: 30mm;
-    padding: 1.5mm 2mm;
-}
-
-.size-50x30 .lbl-store {
-    font-size: 2.4mm;
-    font-weight: 800;
-    max-width: 46mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-50x30 .lbl-name {
-    font-size: 3mm;
-    font-weight: 700;
-    max-width: 46mm;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.size-50x30 .lbl-barcode-img {
-    max-width: 44mm;
-    height: 12mm;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.size-50x30 .lbl-code {
-    font-size: 2.4mm;
-    font-family: monospace;
-    font-weight: 700;
-}
-
-.size-50x30 .lbl-price {
-    font-size: 3.6mm;
-    font-weight: 900;
-}
-
-/* 5. 80mm Continuous POS Roll */
-.label-wrapper.size-80mm {
-    width: 72mm;
-    height: 40mm;
-    max-width: 72mm;
-    padding: 2mm 3mm;
-}
-
-.size-80mm .lbl-store {
-    font-size: 3.2mm;
-    font-weight: 800;
-}
-
-.size-80mm .lbl-name {
-    font-size: 3.5mm;
-    font-weight: 700;
-}
-
-.size-80mm .lbl-barcode-img {
-    max-width: 60mm;
-    height: 16mm;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.size-80mm .lbl-code {
-    font-size: 3mm;
-    font-family: monospace;
-    font-weight: 700;
-}
-
-.size-80mm .lbl-price {
-    font-size: 4.2mm;
-    font-weight: 900;
-}
-
-/* 6. A4 / Letter Multi-label Sheet */
-.label-wrapper.size-a4 {
-    width: 48mm;
-    height: 32mm;
-    max-width: 48mm;
-    max-height: 32mm;
-    padding: 1.5mm 2mm;
-}
-
-.size-a4 .lbl-store {
-    font-size: 2.3mm;
-    font-weight: 800;
-}
-
-.size-a4 .lbl-name {
-    font-size: 2.8mm;
-    font-weight: 700;
-}
-
-.size-a4 .lbl-barcode-img {
-    max-width: 42mm;
-    height: 12mm;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.size-a4 .lbl-code {
-    font-size: 2.4mm;
-    font-family: monospace;
-    font-weight: 700;
-}
-
-.size-a4 .lbl-price {
-    font-size: 3.5mm;
-    font-weight: 900;
-}
-
-/* 7. Custom Dimensions (Base fallbacks) */
-.label-wrapper.size-custom {
-    padding: 1mm 1.5mm;
-}
-
-.size-custom .lbl-store {
-    font-weight: 800;
-    line-height: 1;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.size-custom .lbl-name {
-    font-weight: 700;
-    line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.size-custom .lbl-barcode-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.size-custom .lbl-barcode-img {
-    object-fit: contain;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-    display: block;
-    margin: 0.2mm auto;
-}
-
-.size-custom .lbl-code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.size-custom .lbl-price {
+.lbl-price {
     font-weight: 900;
     line-height: 1;
     color: #000000;
 }
 
 /* ============================================================
-   PRINT RULES (Clean, Zero-Margin, Page-Break Controlled)
+   PRINT RULES (Zero-Margin, Page-Break Controlled)
    ============================================================ */
 @media print {
     html, body {
