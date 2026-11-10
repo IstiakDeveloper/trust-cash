@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\PendingSale;
+use App\Models\Setting;
+use App\Support\TenancyHost;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -32,6 +34,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'business_date' => now()->toDateString(),
             'auth' => [
                 'user' => $request->user() ? $request->user()->loadMissing('role') : null,
             ],
@@ -48,64 +51,70 @@ class HandleInertiaRequests extends Middleware
             'business_details' => fn () => business_details(),
             'business_logo' => function () {
                 try {
-                    if (class_exists(\App\Models\Setting::class)) {
-                        $tenantLogo = \App\Models\Setting::get('business_logo', '');
-                        if (!empty($tenantLogo)) {
+                    if (class_exists(Setting::class)) {
+                        $tenantLogo = Setting::get('business_logo', '');
+                        if (! empty($tenantLogo)) {
                             return $tenantLogo;
                         }
-                        return \App\Models\Setting::getCentral('site_logo', '');
+
+                        return Setting::getCentral('site_logo', '');
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
+
                 return '';
             },
             'currency_symbol' => function () {
                 try {
-                    if (class_exists(\App\Models\Setting::class) && method_exists(\App\Models\Setting::class, 'get')) {
-                        return \App\Models\Setting::get('currency_symbol', '৳');
+                    if (class_exists(Setting::class) && method_exists(Setting::class, 'get')) {
+                        return Setting::get('currency_symbol', '৳');
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
+
                 return '৳';
             },
             'platform' => function () {
                 try {
-                    if (class_exists(\App\Models\Setting::class)) {
+                    if (class_exists(Setting::class)) {
                         return [
-                            'name'          => \App\Models\Setting::getCentral('app_name', 'TrustCash'),
-                            'tagline'       => \App\Models\Setting::getCentral('app_tagline', 'Cloud POS & Accounting'),
-                            'logo'          => \App\Models\Setting::getCentral('site_logo', ''),
-                            'favicon'       => \App\Models\Setting::getCentral('site_favicon', ''),
-                            'phone'         => \App\Models\Setting::getCentral('support_phone', '+880 1700-000000'),
-                            'email'         => \App\Models\Setting::getCentral('support_email', 'support@trustcash.com'),
-                            'address'       => \App\Models\Setting::getCentral('company_address', 'Dhaka, Bangladesh'),
-                            'whatsapp'      => \App\Models\Setting::getCentral('whatsapp_number', ''),
-                            'facebook'      => \App\Models\Setting::getCentral('social_facebook', ''),
-                            'youtube'       => \App\Models\Setting::getCentral('social_youtube', ''),
-                            'currency'      => \App\Models\Setting::getCentral('currency_symbol', '৳'),
-                            'nav_features'  => in_array(\App\Models\Setting::getCentral('nav_show_features', 'true'), ['true', '1', true, 1], true),
-                            'nav_use_cases' => in_array(\App\Models\Setting::getCentral('nav_show_use_cases', 'true'), ['true', '1', true, 1], true),
-                            'nav_pricing'   => in_array(\App\Models\Setting::getCentral('nav_show_pricing', 'true'), ['true', '1', true, 1], true),
-                            'nav_faq'       => in_array(\App\Models\Setting::getCentral('nav_show_faq', 'true'), ['true', '1', true, 1], true),
-                            'nav_cta_text'  => \App\Models\Setting::getCentral('nav_cta_text', '১৪ দিন ফ্রি ট্রায়াল শুরু করুন'),
-                            'nav_cta_url'   => \App\Models\Setting::getCentral('nav_cta_url', '/register-business'),
+                            'name' => Setting::getCentral('app_name', 'TrustCash'),
+                            'tagline' => Setting::getCentral('app_tagline', 'Cloud POS & Accounting'),
+                            'logo' => Setting::getCentral('site_logo', ''),
+                            'favicon' => Setting::getCentral('site_favicon', ''),
+                            'phone' => Setting::getCentral('support_phone', '+880 1700-000000'),
+                            'email' => Setting::getCentral('support_email', 'support@trustcash.com'),
+                            'address' => Setting::getCentral('company_address', 'Dhaka, Bangladesh'),
+                            'whatsapp' => Setting::getCentral('whatsapp_number', ''),
+                            'facebook' => Setting::getCentral('social_facebook', ''),
+                            'youtube' => Setting::getCentral('social_youtube', ''),
+                            'currency' => Setting::getCentral('currency_symbol', '৳'),
+                            'nav_features' => in_array(Setting::getCentral('nav_show_features', 'true'), ['true', '1', true, 1], true),
+                            'nav_use_cases' => in_array(Setting::getCentral('nav_show_use_cases', 'true'), ['true', '1', true, 1], true),
+                            'nav_pricing' => in_array(Setting::getCentral('nav_show_pricing', 'true'), ['true', '1', true, 1], true),
+                            'nav_faq' => in_array(Setting::getCentral('nav_show_faq', 'true'), ['true', '1', true, 1], true),
+                            'nav_cta_text' => Setting::getCentral('nav_cta_text', '১৪ দিন ফ্রি ট্রায়াল শুরু করুন'),
+                            'nav_cta_url' => Setting::getCentral('nav_cta_url', '/register-business'),
                         ];
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
+
                 return null;
             },
             'impersonation' => fn () => $request->session()->get('impersonator_id') ? true : null,
             'shop_url' => function () {
-                if (!function_exists('tenancy') || !tenancy()->initialized || !tenant()) {
+                if (! function_exists('tenancy') || ! tenancy()->initialized || ! tenant()) {
                     return null;
                 }
 
-                return \App\Support\TenancyHost::shopUrl((string) tenant('id'));
+                return TenancyHost::shopUrl((string) tenant('id'));
             },
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error'   => fn() => $request->session()->get('error'),
-                'sale'    => fn() => $request->session()->get('sale'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'sale' => fn () => $request->session()->get('sale'),
             ],
         ];
     }
-
 }

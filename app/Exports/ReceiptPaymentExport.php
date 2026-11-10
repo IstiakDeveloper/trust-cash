@@ -8,16 +8,19 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles, WithTitle
+class ReceiptPaymentExport implements FromArray, ShouldAutoSize, WithHeadings, WithStyles, WithTitle
 {
     protected array $receipt;
+
     protected array $payment;
+
     protected ?string $accountName;
+
     protected string $startDate;
+
     protected string $endDate;
 
     public function __construct(array $receipt, array $payment, ?string $accountName = null, string $startDate = '', string $endDate = '')
@@ -46,10 +49,25 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
     public function array(): array
     {
+        if (isset($this->receipt['rows'])) {
+            $rows = [['INFO', $this->accountName, $this->startDate, $this->endDate]];
+            $rows[] = ['RECEIPT', 'Opening cash and bank', (float) $this->receipt['opening_cash_on_bank']['period'], (float) $this->receipt['opening_cash_on_bank']['cumulative']];
+            foreach ($this->receipt['rows'] as $row) {
+                $rows[] = ['RECEIPT', $row['name'], (float) $row['period'], (float) $row['cumulative']];
+            }
+            $rows[] = ['RECEIPT TOTAL', 'Total', (float) $this->receipt['total']['period'], (float) $this->receipt['total']['cumulative']];
+            foreach ($this->payment['rows'] as $row) {
+                $rows[] = ['PAYMENT', $row['name'], (float) $row['period'], (float) $row['cumulative']];
+            }
+            $rows[] = ['PAYMENT', 'Closing cash and bank', (float) $this->payment['closing_cash_at_bank']['period'], (float) $this->payment['closing_cash_at_bank']['cumulative']];
+            $rows[] = ['PAYMENT TOTAL', 'Total', (float) $this->payment['total']['period'], (float) $this->payment['total']['cumulative']];
+
+            return $rows;
+        }
         $rows = [];
 
         // Meta info row
-        $rows[] = ['INFO', 'Account: ' . $this->accountName, 'From: ' . $this->startDate, 'To: ' . $this->endDate];
+        $rows[] = ['INFO', 'Account: '.$this->accountName, 'From: '.$this->startDate, 'To: '.$this->endDate];
         $rows[] = ['', '', '', ''];
 
         // --- RECEIPTS SECTION ---
@@ -73,11 +91,11 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
         // Extra Incomes
         $extraCats = $this->receipt['extra_incomes']['categories'] ?? [];
-        if (!empty($extraCats)) {
+        if (! empty($extraCats)) {
             foreach ($extraCats as $cat) {
                 $rows[] = [
                     'RECEIPT',
-                    '  • Extra Income: ' . ($cat['name'] ?? 'General'),
+                    '  • Extra Income: '.($cat['name'] ?? 'General'),
                     (float) ($cat['period'] ?? 0),
                     (float) ($cat['cumulative'] ?? 0),
                 ];
@@ -92,11 +110,11 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
         // Fund In
         $fundIns = $this->receipt['fund_in']['items'] ?? [];
-        if (!empty($fundIns)) {
+        if (! empty($fundIns)) {
             foreach ($fundIns as $item) {
                 $rows[] = [
                     'RECEIPT',
-                    '  • Fund Receipt: ' . ($item['name'] ?? 'Capital'),
+                    '  • Fund Receipt: '.($item['name'] ?? 'Capital'),
                     (float) ($item['period'] ?? 0),
                     (float) ($item['cumulative'] ?? 0),
                 ];
@@ -132,11 +150,11 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
         // Fixed Assets
         $assets = $this->payment['fixed_assets']['items'] ?? [];
-        if (!empty($assets)) {
+        if (! empty($assets)) {
             foreach ($assets as $asset) {
                 $rows[] = [
                     'PAYMENT',
-                    '  • Fixed Asset: ' . ($asset['name'] ?? 'Asset'),
+                    '  • Fixed Asset: '.($asset['name'] ?? 'Asset'),
                     (float) ($asset['period'] ?? 0),
                     (float) ($asset['cumulative'] ?? 0),
                 ];
@@ -151,11 +169,11 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
         // Fund Refund
         $fundRefunds = $this->payment['fund_refund']['items'] ?? [];
-        if (!empty($fundRefunds)) {
+        if (! empty($fundRefunds)) {
             foreach ($fundRefunds as $fRef) {
                 $rows[] = [
                     'PAYMENT',
-                    '  • Fund Refund: ' . ($fRef['name'] ?? 'Refund'),
+                    '  • Fund Refund: '.($fRef['name'] ?? 'Refund'),
                     (float) ($fRef['period'] ?? 0),
                     (float) ($fRef['cumulative'] ?? 0),
                 ];
@@ -170,11 +188,11 @@ class ReceiptPaymentExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
         // Expenses
         $expenseCats = $this->payment['expenses']['categories'] ?? [];
-        if (!empty($expenseCats)) {
+        if (! empty($expenseCats)) {
             foreach ($expenseCats as $expCat) {
                 $rows[] = [
                     'PAYMENT',
-                    '  • Expense: ' . ($expCat['name'] ?? 'General'),
+                    '  • Expense: '.($expCat['name'] ?? 'General'),
                     (float) ($expCat['period'] ?? 0),
                     (float) ($expCat['cumulative'] ?? 0),
                 ];

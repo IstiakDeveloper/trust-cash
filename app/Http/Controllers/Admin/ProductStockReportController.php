@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\StockReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStock;
-use App\Models\SaleItem;
+use App\Models\Sale;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductStockReportController extends Controller
 {
@@ -28,7 +30,7 @@ class ProductStockReportController extends Controller
         $toDate = $request->to_date ? Carbon::parse($request->to_date) : Carbon::now()->endOfMonth();
 
         $query = Product::with(['category', 'unit'])
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('type')->orWhere('type', '!=', 'service');
             })
             ->when($request->product_id, function ($q) use ($request) {
@@ -43,7 +45,7 @@ class ProductStockReportController extends Controller
         $reportData = $this->generateReports($products, $fromDate, $toDate);
 
         return Inertia::render('Admin/Reports/StockReport', [
-            'products' => Product::where(function($q) {
+            'products' => Product::where(function ($q) {
                 $q->whereNull('type')->orWhere('type', '!=', 'service');
             })->select('id', 'name', 'sku')->get(),
             'categories' => Category::select('id', 'name')->get(),
@@ -58,244 +60,47 @@ class ProductStockReportController extends Controller
         ]);
     }
 
-    private function getStockMovements($productId, $fromDate, $toDate)
-    {
-        // Get stock ins with purchase type only
-        $stockIns = ProductStock::where('product_id', $productId)
-            ->where('type', 'purchase')
-            ->whereBetween('created_at', [$fromDate, $toDate])
-            ->get()
-            ->map(function ($stock) {
-                return [
-                    'date' => $stock->created_at,
-                    'type' => 'in',
-                    'quantity' => $stock->quantity,
-                    'available_quantity' => $stock->available_quantity,
-                    'unit_cost' => $stock->unit_cost,
-                    'total_cost' => $stock->total_cost,
-                    'note' => $stock->note,
-                ];
-            });
-
-        // Get stock outs
-        $stockOuts = ProductStock::where('product_id', $productId)
-            ->where('type', 'sale')
-            ->whereBetween('created_at', [$fromDate, $toDate])
-            ->get()
-            ->map(function ($stock) {
-                return [
-                    'date' => $stock->created_at,
-                    'type' => 'out',
-                    'quantity' => abs($stock->quantity), // Make positive for display
-                    'available_quantity' => $stock->available_quantity,
-                    'unit_cost' => $stock->unit_cost,
-                    'total_cost' => abs($stock->total_cost), // Make positive for display
-                    'invoice_no' => 'Sale Entry', // You can add sale reference if needed
-                ];
-            });
-
-        return $stockIns->concat($stockOuts)->sortBy('date');
-    }
-
-    private function calculateInitialStock($productId, $fromDate)
-    {
-        return ProductStock::where('product_id', $productId)
-            ->where('created_at', '<', $fromDate)
-            ->orderBy('id', 'desc')
-            ->value('available_quantity') ?? 0;
-    }
-
-    private function generateStockReports($products, $fromDate, $toDate)
-    {
-        return $products->map(function ($product) use ($fromDate, $toDate) {
-            // Get initial stock (available_quantity) before from_date
-            $initialStock = $this->calculateInitialStock($product->id, $fromDate);
-
-            // Get all movements between dates
-            $movements = $this->getStockMovements($product->id, $fromDate, $toDate);
-
-            $monthlyData = [];
-            $currentDate = Carbon::parse($fromDate)->startOfMonth();
-            $endDate = Carbon::parse($toDate)->endOfMonth();
-
-            // Calculate total purchase stats for weighted average
-            $totalPurchaseQuantity = ProductStock::where('product_id', $product->id)
-                ->where('type', 'purchase')
-                ->where('created_at', '<=', $toDate)
-                ->sum('quantity');
-
-            $totalPurchaseValue = ProductStock::where('product_id', $product->id)
-                ->where('type', 'purchase')
-                ->where('created_at', '<=', $toDate)
-                ->sum(DB::raw('quantity * unit_cost'));
-
-            // Calculate weighted average cost
-            $weightedAverageCost = $totalPurchaseQuantity > 0
-                ? $totalPurchaseValue / $totalPurchaseQuantity
-                : $product->cost_price;
-
-            while ($currentDate->lte($endDate)) {
-                $monthStart = $currentDate->copy()->startOfMonth();
-                $monthEnd = $currentDate->copy()->endOfMonth();
-
-                // Get this month's movements
-                $monthMovements = $movements->filter(function ($movement) use ($monthStart, $monthEnd) {
-                    $date = Carbon::parse($movement['date']);
-
-                    return $date->between($monthStart, $monthEnd);
-                });
-
-                // Get month's stock ins (purchases only)
-                $monthStockIns = $monthMovements->where('type', 'in')->values();
-
-                // Get month's stock outs (sales only)
-                $monthStockOuts = $monthMovements->where('type', 'out')->values();
-
-                // Get end of month available quantity
-                $monthEndStock = ProductStock::where('product_id', $product->id)
-                    ->where('created_at', '<=', $monthEnd)
-                    ->orderBy('id', 'desc')
-                    ->value('available_quantity') ?? 0;
-
-                $monthlyData[] = [
-                    'month' => $currentDate->format('F Y'),
-                    'opening_stock' => $initialStock,
-                    'stock_ins' => $monthStockIns,
-                    'stock_outs' => $monthStockOuts,
-                    'total_in' => $monthStockIns->sum('quantity'),
-                    'total_out' => $monthStockOuts->sum('quantity'),
-                    'closing_stock' => $monthEndStock,
-                    'in_value' => $monthStockIns->sum('total_cost'),
-                    'out_value' => $monthStockOuts->sum('total_cost'),
-                ];
-
-                $initialStock = $monthEndStock;
-                $currentDate->addMonth();
-            }
-
-            // Get current available quantity
-            $currentStock = ProductStock::where('product_id', $product->id)
-                ->orderBy('id', 'desc')
-                ->value('available_quantity') ?? 0;
-
-            return [
-                'product' => [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'sku' => $product->sku,
-                    'category' => $product->category->name,
-                    'unit' => $product->unit->name,
-                    'cost_price' => round($weightedAverageCost, 2),
-                ],
-                'opening_stock' => $initialStock,
-                'current_stock' => $currentStock,
-                'total_stock_in' => collect($monthlyData)->sum('total_in'),
-                'total_stock_out' => collect($monthlyData)->sum('total_out'),
-                'total_stock_value' => round($currentStock * $weightedAverageCost, 2),
-                'monthly_data' => $monthlyData,
-            ];
-        });
-    }
-
     private function generateReports($products, $fromDate, $toDate)
     {
-        $reports = $products->map(function ($product) use ($fromDate, $toDate) {
-            $purchases = ProductStock::where('product_id', $product->id)
-                ->where('type', 'purchase')
-                ->whereBetween('created_at', [$fromDate, $toDate])
-                ->orderBy('created_at')
-                ->get()
-                ->map(function ($stock) {
-                    return [
-                        'date' => $stock->created_at,
-                        'quantity' => round($stock->quantity),
-                        'unit_cost' => round($stock->unit_cost, 2),
-                        'total_cost' => round($stock->total_cost, 2),
-                        'available_quantity' => round($stock->available_quantity),
-                        'note' => $stock->note,
-                    ];
-                });
-
-            // Get sales from SaleItem instead of ProductStock
-            $sales = SaleItem::with('sale')
-                ->where('product_id', $product->id)
-                ->whereHas('sale', function ($query) use ($fromDate, $toDate) {
-                    $query->whereBetween('created_at', [$fromDate, $toDate]);
-                })
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'date' => $item->sale->created_at,
-                        'quantity' => round($item->quantity),
-                        'invoice_no' => $item->sale->invoice_no,
-                        'unit_price' => round($item->unit_price, 2),
-                        'total' => round($item->subtotal, 2),
-                        'available_quantity' => round($this->getAvailableQuantityAtTime($item->product_id, $item->sale->created_at)),
-                    ];
-                });
-
-            // Get the stock at start date
-            $openingStock = ProductStock::where('product_id', $product->id)
-                ->where('created_at', '<', $fromDate)
-                ->orderByDesc('id')
-                ->first();
-
-            // Get current stock
-            $currentStock = ProductStock::where('product_id', $product->id)
-                ->orderByDesc('id')
-                ->first();
-
-            // Calculate weighted average cost
-            $totalPurchaseQty = $purchases->sum('quantity');
-            $totalPurchaseCost = $purchases->sum('total_cost');
-            $avgCost = $totalPurchaseQty > 0 ? ($totalPurchaseCost / $totalPurchaseQty) : $product->cost_price;
+        $analysis = Product::getProductAnalysis($fromDate, $toDate)['products']->keyBy('product_id');
+        $from = $fromDate->toDateString();
+        $through = $toDate->toDateString();
+        $reports = $products->filter(fn ($p) => ! $p->isService())->map(function ($product) use ($analysis, $from, $through) {
+            $metrics = $analysis->get($product->id);
+            if (! $metrics) {
+                return null;
+            }
+            $purchases = ProductStock::where('product_id', $product->id)->whereIn('type', ['purchase', 'purchase_reversal'])
+                ->whereBetween('date', [$from, $through])->orderBy('date')->orderBy('id')->get()->map(fn ($stock) => [
+                    'date' => $stock->date, 'quantity' => $stock->quantity, 'unit_cost' => $stock->unit_cost,
+                    'total_cost' => $stock->quantity > 0 ? $stock->total_cost : bcmul((string) $stock->total_cost, '-1', 6),
+                    'available_quantity' => $stock->available_quantity, 'note' => $stock->note, 'lot_number' => $stock->lot_number,
+                ]);
+            $sales = DB::table('sale_accounting_entries')->where('product_id', $product->id)->whereBetween('date', [$from, $through])
+                ->orderBy('date')->orderBy('id')->get()->map(fn ($entry) => [
+                    'date' => $entry->date, 'quantity' => $entry->quantity,
+                    'invoice_no' => (Sale::withTrashed()->find($entry->sale_id)?->invoice_no ?? 'Archived').($entry->source_type === 'sale' ? '' : ' ('.$entry->source_type.')'),
+                    'unit_price' => bccomp((string) $entry->quantity, '0', 6) === 0 ? 0 : bcdiv((string) $entry->net, (string) $entry->quantity, 6),
+                    'total' => $entry->net, 'available_quantity' => null,
+                ]);
 
             return [
-                'product' => [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'sku' => $product->sku,
-                    'category' => $product->category->name,
-                    'unit' => $product->unit->name,
-                ],
+                'product' => ['id' => $product->id, 'name' => $product->name, 'sku' => $product->sku,
+                    'category' => $product->category?->name ?? 'Uncategorized', 'unit' => $product->unit?->name ?? ''],
                 'summary' => [
-                    'opening_stock' => $openingStock ? round($openingStock->available_quantity) : 0,
-                    'current_stock' => $currentStock ? round($currentStock->available_quantity) : 0,
-                    'total_purchased' => round($totalPurchaseQty),
-                    'total_sold' => round($sales->sum('quantity')),
-                    'avg_cost' => round($avgCost, 2),
-                    'stock_value' => round(($currentStock ? $currentStock->available_quantity : 0) * $avgCost, 2),
-                    'sales_value' => round($sales->sum('total'), 2),
-                    'purchase_value' => round($totalPurchaseCost, 2),
-                ],
-                'purchases' => $purchases,
-                'sales' => $sales->sortBy('date')->values(),
+                    'opening_stock' => $metrics['before_quantity'], 'current_stock' => $metrics['available_quantity'],
+                    'total_purchased' => $metrics['buy_quantity'], 'total_sold' => $metrics['sale_quantity'],
+                    'avg_cost' => bccomp($metrics['available_quantity'], '0', 6) > 0 ? bcdiv($metrics['available_stock_value'], $metrics['available_quantity'], 6) : 0,
+                    'stock_value' => $metrics['available_stock_value'], 'sales_value' => $metrics['sale_after_discount'], 'purchase_value' => $metrics['total_buy_price'],
+                ], 'purchases' => $purchases, 'sales' => $sales,
             ];
-        });
+        })->filter()->values();
 
-        $totalSummary = [
-            'total_purchase_quantity' => $reports->sum('summary.total_purchased'),
-            'total_purchase_value' => $reports->sum('summary.purchase_value'),
-            'total_sales_quantity' => $reports->sum('summary.total_sold'),
-            'total_sales_value' => $reports->sum('summary.sales_value'),
-            'total_current_stock' => $reports->sum('summary.current_stock'),
-            'total_stock_value' => $reports->sum('summary.stock_value'),
-        ];
-
-        return [
-            'data' => $reports,
-            'summary' => $totalSummary,
-        ];
-    }
-
-    // Helper function to get available quantity at a specific time
-    private function getAvailableQuantityAtTime($productId, $date)
-    {
-        return ProductStock::where('product_id', $productId)
-            ->where('created_at', '<=', $date)
-            ->orderByDesc('id')
-            ->first()
-            ?->available_quantity ?? 0;
+        return ['data' => $reports, 'summary' => [
+            'total_purchase_quantity' => $reports->sum('summary.total_purchased'), 'total_purchase_value' => $reports->sum('summary.purchase_value'),
+            'total_sales_quantity' => $reports->sum('summary.total_sold'), 'total_sales_value' => $reports->sum('summary.sales_value'),
+            'total_current_stock' => $reports->sum('summary.current_stock'), 'total_stock_value' => $reports->sum('summary.stock_value'),
+        ]];
     }
 
     public function downloadPdf(Request $request)
@@ -343,7 +148,7 @@ class ProductStockReportController extends Controller
             'locale' => $locale,
         ];
 
-        $pdf = PDF::loadView('reports.stock-report-pdf', $data);
+        $pdf = Pdf::loadView('reports.stock-report-pdf', $data);
         $pdf->setPaper('a4', 'landscape');
 
         return $pdf->download('stock-report-'.now()->format('Y-m-d').'.pdf');
@@ -372,9 +177,10 @@ class ProductStockReportController extends Controller
         $products = $query->get();
         $reportData = $this->generateReports($products, $fromDate, $toDate);
 
-        $fileName = 'stock-report-' . now()->format('Y-m-d') . '.xlsx';
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\StockReportExport($reportData['data'], $reportData['summary']),
+        $fileName = 'stock-report-'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download(
+            new StockReportExport($reportData['data'], $reportData['summary']),
             $fileName
         );
     }

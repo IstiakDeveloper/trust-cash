@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 
 class Supplier extends Model
 {
+    use PostsAccountingAtomically;
     use SoftDeletes;
 
     protected $fillable = [

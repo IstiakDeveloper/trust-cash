@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +39,7 @@ class CustomerController extends Controller
             $query->where('status', $request->status);
         }
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $customers */
+        /** @var LengthAwarePaginator $customers */
         $customers = $query->latest()->paginate(10);
         $customers->setCollection(
             $customers->getCollection()->transform(fn ($customer) => [
@@ -214,7 +215,7 @@ class CustomerController extends Controller
             DB::beginTransaction();
 
             // Get the sale and bank account
-            $sale = Sale::findOrFail($validatedData['sale_id']);
+            $sale = Sale::where('customer_id', $customer->id)->whereKey($validatedData['sale_id'])->lockForUpdate()->firstOrFail();
             $bankAccount = BankAccount::findOrFail($validatedData['bank_account_id']);
 
             // Check if payment amount is valid

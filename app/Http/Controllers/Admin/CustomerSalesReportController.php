@@ -2,163 +2,52 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\CustomerSalesExport;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
-use App\Models\Sale;
+use App\Services\FinancialLedger;
+use App\Services\SalesReporting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerSalesReportController extends Controller
 {
     public function index()
     {
-        $customers = Customer::select('id', 'name', 'phone')
-            ->orderBy('name')
-            ->get();
-
         return Inertia::render('Admin/Reports/CustomerSales/Index', [
-            'customers' => $customers,
-            'months' => $this->getMonthsList(),
-            'years' => $this->getYearsList(),
+            'customers' => Customer::withTrashed()->orderBy('name')->get(['id', 'name', 'phone']),
+            'months' => collect(range(1, 12))->map(fn ($month) => ['value' => $month, 'label' => Carbon::create()->month($month)->format('F')]),
+            'years' => collect(range(now()->year - 4, now()->year))->map(fn ($year) => ['value' => $year, 'label' => $year]),
         ]);
+    }
+
+    private function data(Request $request): array
+    {
+        $request->validate(['customer_id' => 'required|exists:customers,id', 'year' => 'required|integer|min:1900|max:9999', 'month' => 'required|integer|between:1,12']);
+        $customer = Customer::withTrashed()->findOrFail($request->integer('customer_id'));
+        $start = Carbon::create($request->integer('year'), $request->integer('month'), 1)->startOfDay();
+        $end = $start->copy()->endOfMonth();
+        $report = app(SalesReporting::class)->build($start->toDateString(), $end->toDateString(), $customer->id);
+        $opening = app(FinancialLedger::class)->balances($start->copy()->subDay()->toDateString())['receivable:'.$customer->id] ?? '0';
+        $closing = app(FinancialLedger::class)->balances($end->toDateString())['receivable:'.$customer->id] ?? '0';
+
+        return ['customer' => $customer, 'previousBalance' => $opening, 'monthlySales' => $report['rows'],
+            'monthlyTotals' => ['total_sales' => $report['summary']['total_amount'], 'total_paid' => $report['summary']['received'],
+                'total_due' => $closing, 'due_movement' => $report['summary']['due']], 'periodLabel' => $start->format('F Y')];
     }
 
     public function getReportData(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'year' => 'required|integer',
-            'month' => 'required|integer|between:1,12',
-        ]);
-
-        $customer = Customer::findOrFail($request->customer_id);
-        $year = $request->year;
-        $month = $request->month;
-
-        // Get previous balance
-        $previousBalance = Sale::where('customer_id', $customer->id)
-            ->whereDate('created_at', '<', Carbon::createFromDate($year, $month, 1))
-            ->sum('due');
-
-        // Get monthly sales
-        $monthlySales = Sale::where('customer_id', $customer->id)
-            ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->with(['saleItems.product', 'salePayments'])
-            ->get()
-            ->map(function ($sale) {
-                return [
-                    'id' => $sale->id,
-                    'date' => $sale->created_at->format('Y-m-d'),
-                    'invoice_no' => $sale->invoice_no,
-                    'total' => $sale->total,
-                    'paid' => $sale->paid,
-                    'due' => $sale->due,
-                    'items' => $sale->saleItems->map(function ($item) {
-                        return [
-                            'product' => $item->product->name,
-                            'quantity' => $item->quantity,
-                            'unit_price' => $item->unit_price,
-                            'subtotal' => $item->subtotal,
-                        ];
-                    }),
-                    'payments' => $sale->salePayments->map(function ($payment) {
-                        return [
-                            'date' => $payment->created_at->format('Y-m-d'),
-                            'amount' => $payment->amount,
-                            'method' => $payment->payment_method,
-                        ];
-                    }),
-                ];
-            });
-
-        return response()->json([
-            'customer' => $customer,
-            'previousBalance' => $previousBalance,
-            'monthlySales' => $monthlySales,
-            'monthlyTotals' => [
-                'total_sales' => $monthlySales->sum('total'),
-                'total_paid' => $monthlySales->sum('paid'),
-                'total_due' => $monthlySales->sum('due'),
-            ],
-        ]);
-    }
-
-    private function getMonthsList()
-    {
-        return collect(range(1, 12))->map(function ($month) {
-            return [
-                'value' => $month,
-                'label' => Carbon::create()->month($month)->format('F'),
-            ];
-        });
-    }
-
-    private function getYearsList()
-    {
-        $currentYear = Carbon::now()->year;
-
-        return collect(range($currentYear - 4, $currentYear))->map(function ($year) {
-            return [
-                'value' => $year,
-                'label' => $year,
-            ];
-        });
+        return response()->json($this->data($request));
     }
 
     public function downloadExcel(Request $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'year' => 'required|integer',
-            'month' => 'required|integer|between:1,12',
-        ]);
+        $data = $this->data($request);
 
-        $customer = Customer::findOrFail($request->customer_id);
-        $year = (int) $request->year;
-        $month = (int) $request->month;
-
-        $previousBalance = (float) Sale::where('customer_id', $customer->id)
-            ->whereDate('created_at', '<', Carbon::createFromDate($year, $month, 1))
-            ->sum('due');
-
-        $monthlySales = Sale::where('customer_id', $customer->id)
-            ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->with(['saleItems.product', 'salePayments'])
-            ->get()
-            ->map(function ($sale) {
-                return [
-                    'id' => $sale->id,
-                    'date' => $sale->created_at->format('Y-m-d'),
-                    'invoice_no' => $sale->invoice_no,
-                    'total' => (float) $sale->total,
-                    'paid' => (float) $sale->paid,
-                    'due' => (float) $sale->due,
-                    'items' => $sale->saleItems->map(fn($item) => [
-                        'product' => $item->product->name ?? 'Product',
-                        'quantity' => $item->quantity,
-                        'unit_price' => $item->unit_price,
-                        'subtotal' => $item->subtotal,
-                    ])->toArray(),
-                ];
-            })->toArray();
-
-        $monthName = Carbon::create()->month($month)->format('F');
-        $periodLabel = "{$monthName} {$year}";
-        $slug = \Illuminate\Support\Str::slug($customer->name);
-        $filename = "customer-sales-{$slug}-{$month}-{$year}.xlsx";
-
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\CustomerSalesExport(
-                $monthlySales,
-                $customer->toArray(),
-                $previousBalance,
-                [],
-                $periodLabel
-            ),
-            $filename
-        );
+        return Excel::download(new CustomerSalesExport($data['monthlySales']->toArray(), $data['customer']->toArray(),
+            (float) $data['previousBalance'], $data['monthlyTotals'], $data['periodLabel']), 'customer-ledger.xlsx');
     }
 }

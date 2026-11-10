@@ -108,7 +108,7 @@ class ExtraIncomeController extends Controller
             $categoryName = $extraIncome->category ? $extraIncome->category->name : 'Uncategorized';
 
             // Create bank transaction (Observer automatically adds to bank account balance)
-            BankTransaction::create([
+            $bankTransaction = BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => 'in',
                 'amount' => $validated['amount'],
@@ -116,6 +116,7 @@ class ExtraIncomeController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
+            $extraIncome->update(['bank_transaction_id' => $bankTransaction->id]);
         });
 
         return redirect()->route('admin.extra-incomes.index')
@@ -144,11 +145,10 @@ class ExtraIncomeController extends Controller
 
         DB::transaction(function () use ($validated, $extraIncome) {
             // Find existing bank transaction model
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $extraIncome->getOriginal('bank_account_id'),
-                'amount' => $extraIncome->getOriginal('amount'),
-                'date' => $extraIncome->getOriginal('date'),
-            ])->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($extraIncome->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             // Update extra income
             $extraIncome->update($validated);
@@ -185,11 +185,10 @@ class ExtraIncomeController extends Controller
     {
         DB::transaction(function () use ($extraIncome) {
             // Delete related bank transaction through model so observer reverses bank balance
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $extraIncome->bank_account_id,
-                'amount' => $extraIncome->amount,
-                'date' => $extraIncome->date,
-            ])->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($extraIncome->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             if ($bankTransaction) {
                 $bankTransaction->delete();

@@ -75,7 +75,7 @@ class FundManagementController extends Controller
             ]);
 
             // Create bank transaction (Observer automatically updates bank balance)
-            BankTransaction::create([
+            $bankTransaction = BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => $validated['type'],
                 'amount' => $validated['amount'],
@@ -83,6 +83,7 @@ class FundManagementController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
+            $fund->update(['bank_transaction_id' => $bankTransaction->id]);
         });
 
         return redirect()->route('admin.funds.index')
@@ -110,11 +111,10 @@ class FundManagementController extends Controller
 
         DB::transaction(function () use ($validated, $fund) {
             // Find existing bank transaction model to trigger observer
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $fund->getOriginal('bank_account_id'),
-                'amount' => $fund->getOriginal('amount'),
-                'date' => $fund->getOriginal('date'),
-            ])->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($fund->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             // Update fund record
             $fund->update($validated);
@@ -148,11 +148,10 @@ class FundManagementController extends Controller
     {
         DB::transaction(function () use ($fund) {
             // Delete related bank transaction through model so observer reverses bank balance
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $fund->bank_account_id,
-                'amount' => $fund->amount,
-                'date' => $fund->date,
-            ])->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($fund->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             if ($bankTransaction) {
                 $bankTransaction->delete();

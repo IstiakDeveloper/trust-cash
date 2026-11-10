@@ -4,20 +4,26 @@ namespace App\Console\Commands;
 
 use App\Models\Product;
 use App\Models\ProductStock;
-use App\Models\StockMovement;
 use App\Models\Sale;
-use App\Models\SaleItem;
+use App\Models\StockMovement;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class RecalculateHistoricalStock extends Command
 {
     protected $signature = 'stock:recalculate-historical {--from=2024-01-01} {--to=2025-01-29}';
+
     protected $description = 'Recalculate historical stock data for old records';
 
     public function handle()
     {
+        if (Schema::hasColumn('product_stocks', 'costing_method') && ProductStock::whereNotNull('costing_method')->exists()) {
+            $this->error('This legacy repair command cannot change posted inventory. Use linked corrections and reconciliation.');
+
+            return 1;
+        }
         $fromDate = Carbon::parse($this->option('from'));
         $toDate = Carbon::parse($this->option('to'));
 
@@ -36,6 +42,7 @@ class RecalculateHistoricalStock extends Command
         });
 
         $this->info("\nHistorical stock recalculation completed!");
+
         return 0;
     }
 
@@ -59,7 +66,7 @@ class RecalculateHistoricalStock extends Command
                 'reference_type' => 'App\Models\ProductStock',
                 'reference_id' => $purchase->id,
                 'created_by' => $purchase->created_by,
-                'data' => $purchase
+                'data' => $purchase,
             ]);
         }
 
@@ -81,7 +88,7 @@ class RecalculateHistoricalStock extends Command
                 'reference_type' => 'App\Models\SaleItem',
                 'reference_id' => $sale->id,
                 'created_by' => $sale->created_by,
-                'data' => $sale
+                'data' => $sale,
             ]);
         }
 
@@ -103,7 +110,7 @@ class RecalculateHistoricalStock extends Command
                 $stock = ProductStock::find($transaction['data']->id);
                 if ($stock && $stock->available_quantity != $runningQuantity) {
                     $stock->update([
-                        'available_quantity' => $runningQuantity
+                        'available_quantity' => $runningQuantity,
                     ]);
                 }
 
@@ -112,7 +119,7 @@ class RecalculateHistoricalStock extends Command
                     ->where('reference_id', $transaction['reference_id'])
                     ->first();
 
-                if (!$existingMovement) {
+                if (! $existingMovement) {
                     StockMovement::create([
                         'product_id' => $product->id,
                         'reference_type' => $transaction['reference_type'],
@@ -123,11 +130,11 @@ class RecalculateHistoricalStock extends Command
                         'type' => 'in',
                         'created_by' => $transaction['created_by'],
                         'created_at' => $transaction['date'],
-                        'updated_at' => $transaction['date']
+                        'updated_at' => $transaction['date'],
                     ]);
                 }
 
-            } else if ($transaction['type'] === 'sale') {
+            } elseif ($transaction['type'] === 'sale') {
                 $runningQuantity -= $transaction['quantity'];
 
                 // Check if product_stocks entry exists for this sale
@@ -137,7 +144,7 @@ class RecalculateHistoricalStock extends Command
                     ->where('quantity', -$transaction['quantity'])
                     ->first();
 
-                if (!$existingStock) {
+                if (! $existingStock) {
                     // Create missing stock entry
                     ProductStock::create([
                         'product_id' => $product->id,
@@ -148,7 +155,7 @@ class RecalculateHistoricalStock extends Command
                         'total_cost' => 0,
                         'created_by' => $transaction['created_by'],
                         'created_at' => $transaction['date'],
-                        'updated_at' => $transaction['date']
+                        'updated_at' => $transaction['date'],
                     ]);
                 }
 
@@ -157,7 +164,7 @@ class RecalculateHistoricalStock extends Command
                     ->where('reference_id', $transaction['reference_id'])
                     ->first();
 
-                if (!$existingMovement) {
+                if (! $existingMovement) {
                     StockMovement::create([
                         'product_id' => $product->id,
                         'reference_type' => $transaction['reference_type'],
@@ -168,7 +175,7 @@ class RecalculateHistoricalStock extends Command
                         'type' => 'out',
                         'created_by' => $transaction['created_by'],
                         'created_at' => $transaction['date'],
-                        'updated_at' => $transaction['date']
+                        'updated_at' => $transaction['date'],
                     ]);
                 }
             }

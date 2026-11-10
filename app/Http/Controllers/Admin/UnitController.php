@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class UnitController extends Controller
@@ -38,10 +39,22 @@ class UnitController extends Controller
                 'status' => 'boolean',
             ]);
 
-            Unit::create($validated);
+            $record = Unit::create($validated);
+
+            if ($request->expectsJson()) {
+                return response()->json(['data' => $record], 201);
+            }
 
             return redirect()->back()->with('success', 'Unit created successfully.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                report($e);
+
+                return response()->json(['message' => 'Unable to save. Please try again.'], 500);
+            }
+
             return redirect()->back()->with('error', 'Failed to create unit: '.$e->getMessage());
         }
     }

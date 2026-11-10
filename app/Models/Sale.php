@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Services\SaleAccounting;
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sale extends Model
 {
+    use PostsAccountingAtomically;
     use SoftDeletes;
 
     protected $fillable = [
@@ -20,7 +23,7 @@ class Sale extends Model
         'due',
         'payment_status',
         'note',
-        'created_by'
+        'created_by', 'business_date', 'bank_account_id', 'request_key', 'request_hash',
     ];
 
     protected $casts = [
@@ -29,8 +32,18 @@ class Sale extends Model
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
         'paid' => 'decimal:2',
-        'due' => 'decimal:2'
+        'due' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(fn ($sale) => $sale->business_date ??= ($sale->created_at?->toDateString() ?? now()->toDateString()));
+        static::deleting(function ($sale) {
+            foreach ($sale->saleItems as $item) {
+                app(SaleAccounting::class)->reverse($item);
+            }
+        });
+    }
 
     public function customer()
     {
@@ -56,6 +69,7 @@ class Sale extends Model
     {
         return $this->hasMany(SalePayment::class);
     }
+
     public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class); // Adjust the relationship type and model as necessary

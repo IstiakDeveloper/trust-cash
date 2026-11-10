@@ -44,7 +44,7 @@
 
             <!-- Main Form & Preview Grid -->
             <form @submit.prevent="submit" class="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-                
+
                 <!-- Left Main Section: Required & Secondary Fields -->
                 <div class="space-y-6 lg:col-span-8">
 
@@ -153,22 +153,10 @@
                                         <label for="category_id" class="block text-xs font-bold text-slate-800 dark:text-slate-200">
                                             {{ t('ক্যাটাগরি *', 'Category *') }}
                                         </label>
-                                        <Link :href="route('admin.categories.index')" target="_blank"
-                                            class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
-                                            + {{ t('নতুন ক্যাটাগরি', 'New Category') }}
-                                        </Link>
+
                                     </div>
                                     <div class="relative">
-                                        <select id="category_id" v-model="form.category_id" required
-                                            class="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 shadow-xs focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 transition-all">
-                                            <option value="" disabled class="bg-white dark:bg-slate-800 text-slate-400">
-                                                {{ t('ক্যাটাগরি নির্বাচন করুন...', 'Select Category...') }}
-                                            </option>
-                                            <option v-for="category in categories" :key="category.id" :value="category.id"
-                                                class="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-1">
-                                                {{ category.name }}
-                                            </option>
-                                        </select>
+                                        <QuickCreateSelect v-model="form.category_id" resource="categories" :options="categories" @created="record => rememberLookup('categories', record)" />
                                     </div>
                                     <InputError :message="form.errors.category_id" class="mt-1" />
                                 </div>
@@ -179,22 +167,10 @@
                                         <label for="unit_id" class="block text-xs font-bold text-slate-800 dark:text-slate-200">
                                             {{ t('পরিমাপের একক *', 'Measurement Unit *') }}
                                         </label>
-                                        <Link :href="route('admin.units.index')" target="_blank"
-                                            class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
-                                            + {{ t('নতুন একক', 'New Unit') }}
-                                        </Link>
+
                                     </div>
                                     <div class="relative">
-                                        <select id="unit_id" v-model="form.unit_id" required
-                                            class="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 shadow-xs focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 transition-all">
-                                            <option value="" disabled class="bg-white dark:bg-slate-800 text-slate-400">
-                                                {{ t('একক নির্বাচন করুন...', 'Select Unit...') }}
-                                            </option>
-                                            <option v-for="unit in units" :key="unit.id" :value="unit.id"
-                                                class="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-1">
-                                                {{ unit.name }} ({{ unit.short_name }})
-                                            </option>
-                                        </select>
+                                        <QuickCreateSelect v-model="form.unit_id" resource="units" :options="units" @created="record => rememberLookup('units', record)" />
                                     </div>
                                     <InputError :message="form.errors.unit_id" class="mt-1" />
                                 </div>
@@ -330,22 +306,10 @@
                                     <label for="brand_id" class="block text-xs font-bold text-slate-800 dark:text-slate-200">
                                         {{ t('ব্র্যান্ড', 'Brand') }}
                                     </label>
-                                    <Link :href="route('admin.brands.index')" target="_blank"
-                                        class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
-                                        + {{ t('নতুন ব্র্যান্ড', 'New Brand') }}
-                                    </Link>
+
                                 </div>
                                 <div class="relative">
-                                    <select id="brand_id" v-model="form.brand_id"
-                                        class="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 shadow-xs focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 transition-all">
-                                        <option value="" class="bg-white dark:bg-slate-800 text-slate-400">
-                                            {{ t('কোনো ব্র্যান্ড নেই / প্রযোজ্য নয়', 'No Brand / Not Applicable') }}
-                                        </option>
-                                        <option v-for="brand in brands" :key="brand.id" :value="brand.id"
-                                            class="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-1">
-                                            {{ brand.name }}
-                                        </option>
-                                    </select>
+                                    <QuickCreateSelect v-model="form.brand_id" resource="brands" :options="brands" @created="record => rememberLookup('brands', record)" />
                                 </div>
                                 <InputError :message="form.errors.brand_id" class="mt-1" />
                             </div>
@@ -406,7 +370,7 @@
                                 class="relative aspect-square rounded-xl overflow-hidden border-2 bg-slate-100 dark:bg-slate-800 group transition-all"
                                 :class="primaryImageIndex === index ? 'border-indigo-600 ring-2 ring-indigo-600/30 shadow-md' : 'border-slate-200 dark:border-slate-700'">
                                 <img :src="preview" class="h-full w-full object-cover">
-                                
+
                                 <!-- Primary Badge -->
                                 <div v-if="primaryImageIndex === index"
                                     class="absolute top-2 left-2 bg-indigo-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1">
@@ -498,7 +462,7 @@
                                         <input v-model="spec.key" type="text"
                                             class="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                             :placeholder="t('বৈশিষ্ট্যের নাম (যেমন: সাইজ, রঙ)', 'Spec Name (e.g. Size)')" />
-                                        
+
                                         <input v-model="spec.value" type="text"
                                             class="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                             :placeholder="t('মান (যেমন: XL, লাল, ২ বছর)', 'Value (e.g. Red, XL)')" />
@@ -530,7 +494,7 @@
 
                 <!-- Right Sidebar: Live Preview & Status Settings -->
                 <div class="space-y-6 lg:col-span-4 lg:sticky lg:top-6">
-                    
+
                     <!-- LIVE PRODUCT CARD PREVIEW -->
                     <div class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
@@ -606,7 +570,7 @@
                             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                                 {{ t('প্রয়োজনীয় তথ্য পূরণ অবস্থা', 'Required Fields Checklist') }}
                             </span>
-                            
+
                             <div class="space-y-1 text-xs">
                                 <div class="flex items-center justify-between" :class="form.name ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400'">
                                     <span>{{ t('পণ্যের নাম', 'Product Name') }}</span>
@@ -695,6 +659,7 @@
 </template>
 
 <script setup>
+import QuickCreateSelect from '@/Components/QuickCreateSelect.vue';
 import { ref, watch, computed } from 'vue';
 import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -732,6 +697,13 @@ const props = defineProps({
         default: () => []
     }
 });
+const categories = ref([...(props.categories || [])]);
+const brands = ref([...(props.brands || [])]);
+const units = ref([...(props.units || [])]);
+const rememberLookup = (resource, record) => {
+    ({ categories, brands, units })[resource].value.push(record);
+};
+
 
 // Form State with sensible defaults
 const form = useForm({
@@ -869,17 +841,17 @@ watch(() => form.name, (newValue) => {
 
 // Helper computed values for Live Preview
 const selectedCategoryName = computed(() => {
-    const cat = props.categories.find(c => c.id == form.category_id);
+    const cat = categories.value.find(c => c.id == form.category_id);
     return cat ? cat.name : '';
 });
 
 const selectedBrandName = computed(() => {
-    const brand = props.brands.find(b => b.id == form.brand_id);
+    const brand = brands.value.find(b => b.id == form.brand_id);
     return brand ? brand.name : '';
 });
 
 const selectedUnitShortName = computed(() => {
-    const unit = props.units.find(u => u.id == form.unit_id);
+    const unit = units.value.find(u => u.id == form.unit_id);
     return unit ? (unit.short_name || unit.name) : '';
 });
 

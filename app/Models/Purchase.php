@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Purchase extends Model
 {
+    use PostsAccountingAtomically;
     use SoftDeletes;
 
     protected $fillable = [
@@ -29,7 +31,7 @@ class Purchase extends Model
     ];
 
     protected $casts = [
-        'purchase_date' => 'date',
+        'purchase_date' => 'date:Y-m-d',
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',

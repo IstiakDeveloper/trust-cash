@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RecalculateProductStocks extends Command
 {
@@ -28,6 +29,11 @@ class RecalculateProductStocks extends Command
      */
     public function handle()
     {
+        if (Schema::hasColumn('product_stocks', 'costing_method') && ProductStock::whereNotNull('costing_method')->exists()) {
+            $this->error('This legacy repair command cannot change posted inventory. Use linked corrections and reconciliation.');
+
+            return 1;
+        }
         $this->info('Starting product stock recalculation...');
         $dryRun = $this->option('dry-run');
 
@@ -56,6 +62,7 @@ class RecalculateProductStocks extends Command
 
                 if ($stockTransactions->isEmpty()) {
                     $progressBar->advance();
+
                     continue;
                 }
 
@@ -86,7 +93,7 @@ class RecalculateProductStocks extends Command
                     $newAvailableQty = max(0, $newAvailableQty);
 
                     if (abs($oldAvailableQty - $newAvailableQty) > 0.01) {
-                        if (!$dryRun) {
+                        if (! $dryRun) {
                             $transaction->available_quantity = $newAvailableQty;
                             $transaction->saveQuietly();
                         }
@@ -95,7 +102,7 @@ class RecalculateProductStocks extends Command
                 }
 
             } catch (\Exception $e) {
-                $this->error("\nError processing product {$product->name}: " . $e->getMessage());
+                $this->error("\nError processing product {$product->name}: ".$e->getMessage());
                 $errorCount++;
             }
 

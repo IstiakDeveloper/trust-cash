@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 
 class SaleReturnItem extends Model
 {
+    use PostsAccountingAtomically;
+
     protected $fillable = [
         'sale_return_id',
         'product_id',
@@ -13,10 +16,12 @@ class SaleReturnItem extends Model
         'quantity',
         'unit_price',
         'subtotal',
+        'sale_item_id', 'cost_total',
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:2',
+        'quantity' => 'decimal:6',
+        'cost_total' => 'decimal:6',
         'unit_price' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];

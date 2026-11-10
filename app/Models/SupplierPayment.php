@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 
 class SupplierPayment extends Model
 {
+    use PostsAccountingAtomically;
+
     protected $fillable = [
         'supplier_id',
         'purchase_id',
@@ -20,7 +23,7 @@ class SupplierPayment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'payment_date' => 'date',
+        'payment_date' => 'date:Y-m-d',
     ];
 
     public function supplier()

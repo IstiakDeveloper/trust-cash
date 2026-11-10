@@ -8,6 +8,7 @@ use App\Models\StockMovement;
 use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class FixDeletedSalesStock extends Command
 {
@@ -34,6 +35,11 @@ class FixDeletedSalesStock extends Command
      */
     public function handle(): int
     {
+        if (Schema::hasColumn('product_stocks', 'costing_method') && ProductStock::whereNotNull('costing_method')->exists()) {
+            $this->error('This legacy repair command cannot change posted inventory. Use linked corrections and reconciliation.');
+
+            return 1;
+        }
         $tenantId = $this->option('tenant');
         $runAll = $this->option('all');
         $isDryRun = (bool) $this->option('dry-run');

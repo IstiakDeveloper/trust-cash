@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\InventoryPolicy;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class SettingController extends Controller
@@ -18,6 +20,7 @@ class SettingController extends Controller
             'business_phone' => '',
             'business_email' => '',
             'business_address' => '',
+            'business_timezone' => 'Asia/Dhaka',
             'currency_symbol' => '৳',
             'currency_code' => 'BDT',
             'tax_percentage' => '0',
@@ -27,15 +30,30 @@ class SettingController extends Controller
         ];
 
         $mergedSettings = array_merge($defaultSettings, $settings);
+        $policy = app(InventoryPolicy::class)->current();
+        $mergedSettings['inventory_costing_method'] = $policy->method;
 
         return Inertia::render('Admin/Settings/Index', [
             'settings' => $mergedSettings,
+            'inventoryMethodLocked' => (bool) $policy->locked,
         ]);
     }
 
     public function update(Request $request)
     {
-        $data = $request->except(['_token', '_method']);
+        $request->validate([
+            'inventory_costing_method' => 'sometimes|required|in:fifo,moving_weighted_average',
+            'business_timezone' => 'sometimes|required|timezone',
+        ]);
+        if ($request->has('inventory_costing_method')) {
+            app(InventoryPolicy::class)->select($request->string('inventory_costing_method')->toString());
+        }
+        $data = $request->only([
+            'business_name', 'business_phone', 'business_email', 'business_address',
+            'business_timezone',
+            'currency_symbol', 'currency_code', 'tax_percentage', 'invoice_prefix',
+            'invoice_footer_note', 'receipt_paper_size',
+        ]);
 
         foreach ($data as $key => $value) {
             Setting::set($key, (string) $value);
@@ -46,10 +64,10 @@ class SettingController extends Controller
             try {
                 $tenant = tenant();
                 $tenantUpdate = [];
-                if (!empty($data['business_name'])) {
+                if (! empty($data['business_name'])) {
                     $tenantUpdate['name'] = $data['business_name'];
                 }
-                if (!empty($data['business_email'])) {
+                if (! empty($data['business_email'])) {
                     $tenantUpdate['email'] = $data['business_email'];
                 }
                 if (isset($data['business_phone'])) {
@@ -58,11 +76,11 @@ class SettingController extends Controller
                 if (isset($data['business_address'])) {
                     $tenantUpdate['address'] = $data['business_address'];
                 }
-                if (!empty($tenantUpdate)) {
+                if (! empty($tenantUpdate)) {
                     $tenant->update($tenantUpdate);
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Could not sync tenant settings to central database: " . $e->getMessage());
+                Log::warning('Could not sync tenant settings to central database: '.$e->getMessage());
             }
         }
 

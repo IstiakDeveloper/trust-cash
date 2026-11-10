@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\IncomeExpenditureExport;
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
-use App\Models\ExpenseCategory;
-use App\Models\ExtraIncome;
-use App\Models\ExtraIncomeCategory;
-use App\Models\Product;
+use App\Services\FinancialReport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class IncomeExpenditureController extends Controller
 {
@@ -53,139 +50,12 @@ class IncomeExpenditureController extends Controller
 
     private function calculateIncome(Carbon $startDate, Carbon $endDate)
     {
-        // Pass Carbon instances (not strings) to be consistent with Product model
-        $productAnalysis = Product::getProductAnalysis($startDate, $endDate);
-
-        // FIX: Calculate cumulative sales profit up to endDate
-        $cumulativeAnalysis = Product::getProductAnalysis(
-            Carbon::now()->startOfCentury(),
-            $endDate
-        );
-        $cumulativeSalesProfit = $cumulativeAnalysis['totals']['total_profit'] ?? 0;
-
-        $extraIncomeAnalysis = $this->calculateExtraIncome($startDate, $endDate);
-
-        return [
-            'sales_profit' => [
-                'period' => (float) $productAnalysis['totals']['total_profit'],
-                'cumulative' => (float) $cumulativeSalesProfit,
-            ],
-            'extra_income' => $extraIncomeAnalysis,
-            'total' => [
-                'period' => (float) $productAnalysis['totals']['total_profit'] + $extraIncomeAnalysis['total']['period'],
-                'cumulative' => (float) $cumulativeSalesProfit + $extraIncomeAnalysis['total']['cumulative'],
-            ],
-        ];
-    }
-
-    private function calculateExtraIncome(Carbon $startDate, Carbon $endDate)
-    {
-        // Get all category IDs that have ever had a transaction up to endDate
-        $allCategoryIds = ExtraIncome::select('category_id')
-            ->distinct()
-            ->whereNotNull('category_id')
-            ->where('date', '<=', $endDate) // FIX: Only consider categories with transactions up to endDate
-            ->pluck('category_id');
-
-        // Get current period data - Use whereBetween to match Product model
-        $currentPeriodData = ExtraIncome::whereBetween('date', [$startDate, $endDate])
-            ->select('category_id', DB::raw('SUM(amount) as total_amount'))
-            ->groupBy('category_id')
-            ->pluck('total_amount', 'category_id')
-            ->toArray();
-
-        // Create the results array with all categories
-        $extraIncomeCategories = collect();
-
-        foreach ($allCategoryIds as $categoryId) {
-            // Get the category name
-            $category = ExtraIncomeCategory::find($categoryId);
-            $categoryName = $category ? $category->name : 'Uncategorized';
-
-            // FIX: Calculate cumulative amount up to endDate only
-            $cumulative = ExtraIncome::where('category_id', $categoryId)
-                ->where('date', '<=', $endDate)
-                ->sum('amount');
-
-            // Get period amount (0 if not present in current period)
-            $periodAmount = $currentPeriodData[$categoryId] ?? 0;
-
-            // Add to results only if cumulative amount exists
-            if ($cumulative > 0) {
-                $extraIncomeCategories->push([
-                    'name' => $categoryName,
-                    'period' => (float) $periodAmount,
-                    'cumulative' => (float) $cumulative,
-                ]);
-            }
-        }
-
-        // FIX: Handle uncategorized income - only up to endDate
-        $uncategorizedPeriod = ExtraIncome::whereBetween('date', [$startDate, $endDate])
-            ->whereNull('category_id')
-            ->sum('amount');
-
-        $uncategorizedCumulative = ExtraIncome::whereNull('category_id')
-            ->where('date', '<=', $endDate)
-            ->sum('amount');
-
-        if ($uncategorizedCumulative > 0) {
-            $extraIncomeCategories->push([
-                'name' => 'Uncategorized',
-                'period' => (float) $uncategorizedPeriod,
-                'cumulative' => (float) $uncategorizedCumulative,
-            ]);
-        }
-
-        return [
-            'categories' => $extraIncomeCategories,
-            'total' => [
-                'period' => (float) $extraIncomeCategories->sum('period'),
-                'cumulative' => (float) $extraIncomeCategories->sum('cumulative'),
-            ],
-        ];
+        return app(FinancialReport::class)->income($startDate->toDateString(), $endDate->toDateString());
     }
 
     private function calculateExpenditure(Carbon $startDate, Carbon $endDate)
     {
-        // Get all active expense categories
-        $expenseCategories = ExpenseCategory::where('status', true)->get();
-
-        // Prepare categories with their expenses
-        $categoriesWithExpenses = $expenseCategories->map(function ($category) use ($startDate, $endDate) {
-            // Period expenses - Use whereBetween to match Product model
-            $periodExpenses = Expense::where('expense_category_id', $category->id)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('amount');
-
-            // Cumulative expenses up to endDate only
-            $cumulativeExpenses = Expense::where('expense_category_id', $category->id)
-                ->where('date', '<=', $endDate)
-                ->sum('amount');
-
-            return [
-                'name' => $category->name,
-                'period' => (float) $periodExpenses,
-                'cumulative' => (float) $cumulativeExpenses,
-            ];
-        });
-
-        // Calculate total expenses up to endDate only
-        $totalExpensesPeriod = Expense::whereBetween('date', [$startDate, $endDate])
-            ->whereNull('deleted_at')
-            ->sum('amount');
-
-        $totalExpensesCumulative = Expense::where('date', '<=', $endDate)
-            ->whereNull('deleted_at')
-            ->sum('amount');
-
-        return [
-            'categories' => $categoriesWithExpenses,
-            'total' => [
-                'period' => (float) $totalExpensesPeriod,
-                'cumulative' => (float) $totalExpensesCumulative,
-            ],
-        ];
+        return app(FinancialReport::class)->expenditure($startDate->toDateString(), $endDate->toDateString());
     }
 
     public function downloadPdf(Request $request)
@@ -202,22 +72,9 @@ class IncomeExpenditureController extends Controller
         $startDate = Carbon::parse($request->start_date)->startOfDay();
         $endDate = Carbon::parse($request->end_date)->endOfDay();
 
-        // Extract month and year - use the directly provided values if available
-        if ($request->has('selected_month') && $request->has('selected_year')) {
-            $month = (int) $request->selected_month;
-            $year = (int) $request->selected_year;
-
-            // Recreate dates based on selected month/year to avoid timezone issues
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
-            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
-
-            $monthName = $startDate->format('F');
-        } else {
-            // Fallback to extracting from the date
-            $month = $startDate->month;
-            $year = $startDate->year;
-            $monthName = $startDate->format('F');
-        }
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $monthName = $startDate->format('F');
 
         // Calculate Income Section
         $incomeData = $this->calculateIncome($startDate, $endDate);
@@ -255,6 +112,7 @@ class IncomeExpenditureController extends Controller
 
     public function downloadExcel(Request $request)
     {
+        $request->validate(['start_date' => 'nullable|date', 'end_date' => 'nullable|date|after_or_equal:start_date']);
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)->startOfDay()
             : Carbon::now()->startOfMonth();
@@ -265,10 +123,10 @@ class IncomeExpenditureController extends Controller
         $incomeData = $this->calculateIncome($startDate, $endDate);
         $expenditureData = $this->calculateExpenditure($startDate, $endDate);
 
-        $filename = 'income-expenditure-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.xlsx';
+        $filename = 'income-expenditure-'.$startDate->format('Y-m-d').'-to-'.$endDate->format('Y-m-d').'.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\IncomeExpenditureExport(
+        return Excel::download(
+            new IncomeExpenditureExport(
                 $incomeData,
                 $expenditureData,
                 $startDate->format('Y-m-d'),

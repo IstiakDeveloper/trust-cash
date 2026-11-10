@@ -248,6 +248,7 @@ export const offlineSync = {
                 const payload = {
                     ...item.sale_data,
                     offline_token: item.offline_token,
+                    idempotency_key: item.sale_data.idempotency_key || item.offline_token,
                     is_offline_sync: true
                 };
 

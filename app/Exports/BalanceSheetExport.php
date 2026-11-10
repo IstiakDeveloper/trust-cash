@@ -8,23 +8,28 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BalanceSheetExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles, WithTitle
+class BalanceSheetExport implements FromArray, ShouldAutoSize, WithHeadings, WithStyles, WithTitle
 {
+    protected array $reconciliation;
+
     protected array $fundAndLiabilities;
+
     protected array $propertyAndAssets;
+
     protected string $startDate;
+
     protected string $endDate;
 
-    public function __construct(array $fundAndLiabilities, array $propertyAndAssets, string $startDate = '', string $endDate = '')
+    public function __construct(array $fundAndLiabilities, array $propertyAndAssets, string $startDate = '', string $endDate = '', array $reconciliation = [])
     {
         $this->fundAndLiabilities = $fundAndLiabilities;
         $this->propertyAndAssets = $propertyAndAssets;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
+        $this->reconciliation = $reconciliation;
     }
 
     public function title(): string
@@ -44,9 +49,24 @@ class BalanceSheetExport implements FromArray, WithHeadings, ShouldAutoSize, Wit
 
     public function array(): array
     {
+        if (isset($this->propertyAndAssets['rows'])) {
+            $rows = [['INFO', 'Financial position as of '.$this->endDate, '', '']];
+            foreach (['ASSET' => $this->propertyAndAssets, 'LIABILITY / EQUITY' => $this->fundAndLiabilities] as $title => $section) {
+                foreach ($section['rows'] as $row) {
+                    $rows[] = [$title, $row['name'], (float) $row['amount'], ''];
+                }
+                $rows[] = [$title.' TOTAL', 'Total', (float) $section['total'], ''];
+            }
+            $rows[] = ['RECONCILIATION', 'Assets minus liabilities and equity', (float) bcsub((string) $this->propertyAndAssets['total'], (string) $this->fundAndLiabilities['total'], 6), ''];
+            foreach ($this->reconciliation as $name => $difference) {
+                $rows[] = ['RECONCILIATION', str_replace('_', ' ', $name), (float) $difference, ''];
+            }
+
+            return $rows;
+        }
         $rows = [];
 
-        $rows[] = ['INFO', 'Statement of Financial Position (Balance Sheet)', 'From: ' . $this->startDate, 'To: ' . $this->endDate];
+        $rows[] = ['INFO', 'Statement of Financial Position (Balance Sheet)', 'From: '.$this->startDate, 'To: '.$this->endDate];
         $rows[] = ['', '', '', ''];
 
         // --- PROPERTY & ASSETS ---
@@ -57,7 +77,7 @@ class BalanceSheetExport implements FromArray, WithHeadings, ShouldAutoSize, Wit
             $amount = (float) ($fa['amount'] ?? $fa['period'] ?? 0);
             $rows[] = [
                 'ASSET',
-                '  • Fixed Asset: ' . ($fa['name'] ?? 'Asset'),
+                '  • Fixed Asset: '.($fa['name'] ?? 'Asset'),
                 $amount,
                 $amount,
             ];

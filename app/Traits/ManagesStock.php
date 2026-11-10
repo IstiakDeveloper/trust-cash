@@ -2,17 +2,14 @@
 
 namespace App\Traits;
 
-use App\Models\ProductStock;
 use App\Models\StockMovement;
+use Illuminate\Support\Facades\DB;
 
 trait ManagesStock
 {
     public function getCurrentStock($productId)
     {
-        return ProductStock::where('product_id', $productId)
-            ->orderBy('id', 'desc')
-            ->first()
-            ?->available_quantity ?? 0;
+        return DB::table('inventory_balances')->where('product_id', $productId)->sum('quantity');
     }
 
     public function updateProductStock($productId, $quantity, $type, $referenceType, $referenceId)

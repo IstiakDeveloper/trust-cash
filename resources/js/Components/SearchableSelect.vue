@@ -51,6 +51,9 @@
             leave-to-class="opacity-0 translate-y-1">
             <div v-if="isOpen"
                 class="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-hidden">
+                <button v-if="creatable" type="button" @click="requestCreate" class="w-full px-4 py-3 text-left text-sm font-bold text-indigo-600 border-b dark:border-gray-700">
+                    + {{ createLabel }}<span v-if="searchQuery.trim()">: {{ searchQuery.trim() }}</span>
+                </button>
                 <!-- Options List -->
                 <div class="overflow-y-auto max-h-80 py-1" ref="optionsList">
                     <div v-if="filteredOptions.length === 0"
@@ -110,6 +113,8 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
+    creatable: Boolean,
+    createLabel: { type: String, default: 'Create new' },
     modelValue: {
         type: [String, Number, Object],
         default: null
@@ -148,7 +153,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:modelValue', 'change']);
+const emit = defineEmits(['update:modelValue', 'change', 'create']);
 
 const dropdown = ref(null);
 const searchInput = ref(null);
@@ -206,6 +211,12 @@ const closeDropdown = () => {
     isOpen.value = false;
     searchQuery.value = '';
     highlightedIndex.value = -1;
+};
+
+const requestCreate = () => {
+    const name = searchQuery.value.trim();
+    closeDropdown();
+    emit('create', name);
 };
 
 const selectOption = (option) => {

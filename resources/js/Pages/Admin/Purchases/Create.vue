@@ -78,6 +78,8 @@
                                 </div>
                             </div>
                         </div>
+                        <p v-if="productSearch.trim() && !filteredProducts.length" class="mt-1 text-xs text-slate-500">{{ t('???? ????? ?????? ?????? ???? ?????', 'No product found. Create it here.') }}</p>
+                        <QuickCreateSelect trigger-only resource="products" :initial-name="productSearch" @created="productCreated" />
                     </div>
                 </div>
 
@@ -97,7 +99,7 @@
                                         <span class="text-gray-400 font-normal mr-1">#{{ index + 1 }}</span>
                                         {{ item.product_name }}
                                     </div>
-                                    <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div>
+                                    <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
                                 </div>
                                 <button
                                     type="button"
@@ -117,7 +119,7 @@
                                         class="w-full text-xs px-2.5 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     >
                                         <option :value="null">{{ t('ডিফল্ট', 'Default') }}</option>
-                                        <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+                                        <option v-for="u in localUnits.filter(unit => unit.id === item.base_unit_id)" :key="u.id" :value="u.id">{{ u.name }}</option>
                                     </select>
                                 </div>
                                 <div>
@@ -186,7 +188,7 @@
                                     <td class="px-4 py-3 text-gray-400 text-xs">{{ index + 1 }}</td>
                                     <td class="px-4 py-3">
                                         <div class="font-bold text-gray-900 dark:text-white">{{ item.product_name }}</div>
-                                        <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div>
+                                        <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
                                     </td>
                                     <td class="px-4 py-3">
                                         <select
@@ -194,7 +196,7 @@
                                             class="w-full text-xs px-2 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                                         >
                                             <option :value="null">{{ t('ডিফল্ট', 'Default') }}</option>
-                                            <option v-for="u in units" :key="u.id" :value="u.id">{{ u.name }}</option>
+                                            <option v-for="u in localUnits.filter(unit => unit.id === item.base_unit_id)" :key="u.id" :value="u.id">{{ u.name }}</option>
                                         </select>
                                     </td>
                                     <td class="px-4 py-3">
@@ -386,8 +388,9 @@
 </template>
 
 <script setup>
+import QuickCreateSelect from '@/Components/QuickCreateSelect.vue';
 import { ref, computed } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { useLanguage } from '@/composables/useLanguage'
 import {
@@ -407,12 +410,19 @@ const props = defineProps({
 })
 
 const productSearch = ref('')
+const localProducts = ref([...(props.products || [])])
+const localUnits = ref([...(props.units || [])])
+const productCreated = (product) => {
+    localProducts.value.push(product)
+    if (product.unit && !localUnits.value.some(unit => unit.id === product.unit.id)) localUnits.value.push(product.unit)
+    addProductToItems(product)
+}
 const submitting = ref(false)
 const isDuePurchase = ref(false)
 
 const form = ref({
     supplier_id: '',
-    purchase_date: new Date().toISOString().split('T')[0],
+    purchase_date: (usePage().props.business_date || new Date().toLocaleDateString('en-CA')),
     bank_account_id: props.bankAccounts?.[0]?.id || '',
     discount_type: 'fixed',
     discount_amount: 0,
@@ -426,7 +436,7 @@ const form = ref({
 const filteredProducts = computed(() => {
     if (!productSearch.value.trim()) return []
     const q = productSearch.value.toLowerCase()
-    return (props.products || []).filter(p =>
+    return localProducts.value.filter(p =>
         p.name.toLowerCase().includes(q) ||
         (p.sku && p.sku.toLowerCase().includes(q)) ||
         (p.barcode && p.barcode.toLowerCase().includes(q))
@@ -444,6 +454,8 @@ const addProductToItems = (p) => {
             sku: p.sku,
             unit_id: p.unit_id || null,
             product_variant_id: null,
+            base_unit_id: p.unit_id,
+            lot_number: '',
             purchase_price: Number(p.cost_price || p.selling_price || 0),
             selling_price: Number(p.selling_price || 0),
             quantity: 1,

@@ -13,7 +13,9 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\Unit;
+use App\Services\DecimalInput;
 use App\Services\PurchaseReversalService;
+use App\Services\SaleAmounts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -105,9 +107,11 @@ class PurchaseController extends Controller
             'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
             'items.*.unit_id' => 'nullable|exists:units,id',
             'items.*.purchase_price' => 'required|numeric|min:0',
+            'items.*.lot_number' => 'nullable|string|max:100',
             'items.*.selling_price' => 'nullable|numeric|min:0',
             'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
+        $validated['items'] = array_values($validated['items']);
 
         if (($validated['paid_amount'] ?? 0) > 0 && empty($validated['bank_account_id'])) {
             return back()->withErrors([
@@ -116,29 +120,44 @@ class PurchaseController extends Controller
         }
 
         DB::beginTransaction();
+        DB::table('inventory_policies')->lockForUpdate()->find(1);
         try {
             // Generate unique purchase number
             $today = date('Ymd');
             $latest = Purchase::whereDate('created_at', today())->latest()->first();
             $nextSeq = $latest ? ((int) substr($latest->purchase_number, -4)) + 1 : 1;
-            $purchaseNumber = 'PUR-' . $today . '-' . sprintf('%04d', $nextSeq);
+            $purchaseNumber = 'PUR-'.$today.'-'.sprintf('%04d', $nextSeq);
 
-            // Compute subtotal
-            $subtotal = 0;
-            foreach ($validated['items'] as $item) {
-                $subtotal += ($item['purchase_price'] * $item['quantity']);
+            $subtotal = '0';
+            foreach ($validated['items'] as &$item) {
+                $item['quantity'] = DecimalInput::normalize($item['quantity'], 6);
+                $item['purchase_price'] = DecimalInput::normalize($item['purchase_price'], 2);
+                $product = Product::findOrFail($item['product_id']);
+                if (! empty($item['unit_id']) && $item['unit_id'] != $product->unit_id) {
+                    throw new \LogicException('Use the product base unit. A different purchase unit requires an explicit conversion factor.');
+                }
+                $subtotal = bcadd($subtotal, bcmul($item['purchase_price'], $item['quantity'], 6), 6);
             }
-
-            $discountAmount = $validated['discount_amount'] ?? 0;
+            unset($item);
+            $subtotal = bcadd($subtotal, '0.005', 2);
+            $discountAmount = DecimalInput::normalize($validated['discount_amount'] ?? 0, 2);
             if (($validated['discount_type'] ?? 'fixed') === 'percentage') {
-                $discountAmount = ($subtotal * $discountAmount) / 100;
+                if (bccomp($discountAmount, '100', 2) > 0) {
+                    throw new \LogicException('Discount cannot exceed 100 percent.');
+                }
+                $discountAmount = bcadd(bcdiv(bcmul($subtotal, $discountAmount, 6), '100', 6), '0.005', 2);
             }
-
-            $taxAmount = $validated['tax_amount'] ?? 0;
-            $shippingCost = $validated['shipping_cost'] ?? 0;
-            $totalAmount = max(0, $subtotal - $discountAmount + $taxAmount + $shippingCost);
-            $paidAmount = min($totalAmount, $validated['paid_amount'] ?? 0);
-            $dueAmount = max(0, $totalAmount - $paidAmount);
+            if (bccomp($discountAmount, $subtotal, 2) > 0) {
+                throw new \LogicException('Discount cannot exceed the purchase subtotal.');
+            }
+            $taxAmount = DecimalInput::normalize($validated['tax_amount'] ?? 0, 2);
+            $shippingCost = DecimalInput::normalize($validated['shipping_cost'] ?? 0, 2);
+            $totalAmount = bcadd(bcadd(bcsub($subtotal, $discountAmount, 2), $taxAmount, 2), $shippingCost, 2);
+            $paidAmount = DecimalInput::normalize($validated['paid_amount'] ?? 0, 2);
+            if (bccomp($paidAmount, $totalAmount, 2) > 0) {
+                throw new \LogicException('Payment cannot exceed the invoice total. Record supplier advances separately.');
+            }
+            $dueAmount = bcsub($totalAmount, $paidAmount, 2);
             $paymentBankAccountId = $paidAmount > 0 ? ($validated['bank_account_id'] ?? null) : null;
 
             $paymentStatus = 'due';
@@ -169,10 +188,12 @@ class PurchaseController extends Controller
             ]);
 
             // Save items & increase stock
-            foreach ($validated['items'] as $item) {
-                $itemSubtotal = $item['purchase_price'] * $item['quantity'];
+            $allocatedCost = '0';
+            $lineCosts = app(SaleAmounts::class)->lineSubtotals(array_map(fn ($item) => ['quantity' => $item['quantity'], 'unit_price' => $item['purchase_price']], $validated['items']), $subtotal);
+            foreach ($validated['items'] as $itemIndex => $item) {
+                $itemSubtotal = $lineCosts[$itemIndex];
 
-                PurchaseItem::create([
+                $purchaseItem = PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $item['product_id'],
                     'product_variant_id' => $item['product_variant_id'] ?? null,
@@ -183,6 +204,14 @@ class PurchaseController extends Controller
                     'subtotal' => $itemSubtotal,
                 ]);
 
+                // Invoice discount, shipping and non-recoverable tax form landed cost.
+                $landedCost = $itemIndex === array_key_last($validated['items'])
+                    ? bcsub((string) $totalAmount, $allocatedCost, 6)
+                    : ($subtotal > 0
+                        ? bcmul(bcdiv((string) $itemSubtotal, (string) $subtotal, 12), (string) $totalAmount, 6)
+                        : bcdiv((string) $totalAmount, (string) count($validated['items']), 6));
+                $allocatedCost = bcadd($allocatedCost, $landedCost, 6);
+
                 // Create product stock record
                 $stock = ProductStock::create([
                     'product_id' => $item['product_id'],
@@ -190,8 +219,11 @@ class PurchaseController extends Controller
                     'quantity' => $item['quantity'],
                     'total_quantity' => $item['quantity'],
                     'available_quantity' => $item['quantity'],
-                    'unit_cost' => $item['purchase_price'],
-                    'total_cost' => $itemSubtotal,
+                    'unit_cost' => bcdiv($landedCost, (string) $item['quantity'], 8),
+                    'total_cost' => $landedCost,
+                    'purchase_item_id' => $purchaseItem->id,
+                    'lot_number' => $item['lot_number'] ?? null,
+                    'selling_price' => $item['selling_price'] ?? null,
                     'type' => 'purchase',
                     'date' => $validated['purchase_date'],
                     'bank_account_id' => $paymentBankAccountId,
@@ -202,7 +234,8 @@ class PurchaseController extends Controller
                 // Record stock movement
                 $prevStock = ProductStock::where('product_id', $item['product_id'])
                     ->where('id', '!=', $stock->id)
-                    ->sum('available_quantity');
+                    ->where('product_variant_id', $item['product_variant_id'] ?? null)
+                    ->latest('id')->value('available_quantity') ?? 0;
 
                 StockMovement::create([
                     'product_id' => $item['product_id'],
@@ -216,13 +249,19 @@ class PurchaseController extends Controller
                 ]);
 
                 // Update product cost_price if provided
-                if (!empty($item['selling_price']) || !empty($item['purchase_price'])) {
+                if (! empty($item['selling_price']) || ! empty($item['purchase_price'])) {
                     $prod = Product::find($item['product_id']);
                     if ($prod) {
                         $prodUpdates = [];
-                        if ($item['purchase_price'] > 0) $prodUpdates['cost_price'] = $item['purchase_price'];
-                        if (!empty($item['selling_price']) && $item['selling_price'] > 0) $prodUpdates['selling_price'] = $item['selling_price'];
-                        if (!empty($prodUpdates)) $prod->update($prodUpdates);
+                        if ($item['purchase_price'] > 0) {
+                            $prodUpdates['cost_price'] = $item['purchase_price'];
+                        }
+                        if (! empty($item['selling_price']) && $item['selling_price'] > 0) {
+                            $prodUpdates['selling_price'] = $item['selling_price'];
+                        }
+                        if (! empty($prodUpdates)) {
+                            $prod->update($prodUpdates);
+                        }
                     }
                 }
             }
@@ -264,7 +303,8 @@ class PurchaseController extends Controller
                 ->with('success', "Purchase #{$purchaseNumber} created and stock updated successfully.");
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Purchase failed: ' . $e->getMessage());
+
+            return redirect()->back()->withInput()->with('error', 'Purchase failed: '.$e->getMessage());
         }
     }
 
@@ -277,7 +317,7 @@ class PurchaseController extends Controller
             'items.product',
             'items.variant',
             'items.unit',
-            'payments.bankAccount'
+            'payments.bankAccount',
         ]);
 
         return Inertia::render('Admin/Purchases/Show', [

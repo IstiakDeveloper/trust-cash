@@ -42,11 +42,15 @@ class BranchController extends Controller
             'status' => 'required|string|in:active,inactive',
         ]);
 
-        if (!empty($validated['is_main']) && $validated['is_main']) {
+        if (! empty($validated['is_main']) && $validated['is_main']) {
             Branch::where('is_main', true)->update(['is_main' => false]);
         }
 
-        Branch::create($validated);
+        $record = Branch::create($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $record], 201);
+        }
 
         return redirect()->back()->with('success', 'Branch created successfully.');
     }
@@ -55,7 +59,7 @@ class BranchController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:branches,code,' . $branch->id,
+            'code' => 'required|string|max:50|unique:branches,code,'.$branch->id,
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
@@ -63,7 +67,7 @@ class BranchController extends Controller
             'status' => 'required|string|in:active,inactive',
         ]);
 
-        if (!empty($validated['is_main']) && $validated['is_main']) {
+        if (! empty($validated['is_main']) && $validated['is_main']) {
             Branch::where('id', '!=', $branch->id)->where('is_main', true)->update(['is_main' => false]);
         }
 

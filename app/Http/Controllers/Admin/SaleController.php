@@ -10,9 +10,11 @@ use App\Models\ProductStock;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
+use App\Services\SaleAmounts;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use NumberFormatter;
 
@@ -213,7 +215,9 @@ class SaleController extends Controller
             $request->validate([
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|exists:products,id',
-                'items.*.quantity' => 'required|numeric|min:1',
+                'items.*.product_variant_id' => 'nullable|exists:product_variants,id',
+                'items.*.lot_id' => 'nullable|exists:product_stocks,id',
+                'items.*.quantity' => 'required|numeric|min:0.000001',
                 'items.*.unit_price' => 'required|numeric|min:0',
                 'subtotal' => 'required|numeric|min:0',
                 'discount' => 'required|numeric|min:0',
@@ -224,9 +228,18 @@ class SaleController extends Controller
                 'note' => 'nullable|string|max:1000',
             ]);
 
+            app(SaleAmounts::class)->validate($request->items, $request->subtotal, $request->discount, $request->total, $request->paid);
+
             DB::beginTransaction();
+            DB::table('inventory_policies')->lockForUpdate()->find(1);
 
             $sale = Sale::with(['saleItems.product', 'customer', 'bankAccount'])->findOrFail($id);
+            if (bccomp((string) $sale->tax, '0', 2) !== 0) {
+                throw new \LogicException('Correct a tax-bearing invoice with a linked return or credit document.');
+            }
+            if ($sale->payments()->exists()) {
+                throw new \LogicException('An invoice with later collections must be corrected using a linked return.');
+            }
 
             // Store original values for reversal
             $originalCustomerId = $sale->customer_id;
@@ -241,7 +254,7 @@ class SaleController extends Controller
                 }
 
                 // Get current stock with row lock to prevent race conditions
-                $currentStock = ProductStock::where('product_id', $item->product_id)
+                $currentStock = ProductStock::where('product_id', $item->product_id)->where('product_variant_id', $item->product_variant_id)
                     ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
@@ -252,6 +265,8 @@ class SaleController extends Controller
                 // Create new stock record to reverse the sale
                 ProductStock::create([
                     'product_id' => $item->product_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'source_stock_id' => ProductStock::where('sale_item_id', $item->id)->where('type', 'sale')->value('id'),
                     'quantity' => $item->quantity, // positive for reversal
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale_reversal',
@@ -297,27 +312,38 @@ class SaleController extends Controller
             }
 
             // Step 4: Delete old sale items
-            $sale->saleItems()->delete();
+            foreach ($sale->saleItems as $originalItem) {
+                $originalItem->delete();
+            }
+
+            // New sale lines must snapshot the replacement invoice's discount.
+            $sale->fill(['subtotal' => $request->subtotal, 'discount' => $request->discount, 'customer_id' => $request->customer_id, 'business_date' => now()->toDateString()]);
+            $sale->save();
 
             // Step 5: Calculate new values
             $due = $request->total - $request->paid;
             $paymentStatus = $request->paid >= $request->total ? 'paid' : ($request->paid > 0 ? 'partial' : 'due');
 
             // Step 6: Process new items and check stock
-            foreach ($request->items as $item) {
-                $product = Product::findOrFail($item['product_id']);
+            $lineSubtotals = app(SaleAmounts::class)->lineSubtotals($request->items, $request->subtotal);
+            $lineDiscounts = app(SaleAmounts::class)->allocate($lineSubtotals, $request->discount);
+            foreach (array_values($request->items) as $itemIndex => $item) {
+                $product = Product::whereKey($item['product_id'])->lockForUpdate()->firstOrFail();
 
                 if ($product->isService()) {
-                    SaleItem::create([
+                    $saleItem = SaleItem::create([
                         'sale_id' => $sale->id,
                         'product_id' => $item['product_id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
                         'quantity' => $item['quantity'],
+                        'lot_id' => $item['lot_id'] ?? null,
                         'unit_price' => $item['unit_price'],
-                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                        'subtotal' => $lineSubtotals[$itemIndex],
+                        'discount_amount' => $lineDiscounts[$itemIndex], 'tax_amount' => 0,
                     ]);
                 } else {
                     // Check stock availability for new quantity with row lock
-                    $currentStock = ProductStock::where('product_id', $item['product_id'])
+                    $currentStock = ProductStock::where('product_id', $item['product_id'])->where('product_variant_id', $item['product_variant_id'] ?? null)
                         ->lockForUpdate()
                         ->orderBy('id', 'desc')
                         ->first();
@@ -331,17 +357,22 @@ class SaleController extends Controller
                     }
 
                     // Create new sale item
-                    SaleItem::create([
+                    $saleItem = SaleItem::create([
                         'sale_id' => $sale->id,
                         'product_id' => $item['product_id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
                         'quantity' => $item['quantity'],
+                        'lot_id' => $item['lot_id'] ?? null,
                         'unit_price' => $item['unit_price'],
-                        'subtotal' => $item['quantity'] * $item['unit_price'],
+                        'subtotal' => $lineSubtotals[$itemIndex],
+                        'discount_amount' => $lineDiscounts[$itemIndex], 'tax_amount' => 0,
                     ]);
 
                     // Create new stock record
                     ProductStock::create([
                         'product_id' => $item['product_id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
+                        'sale_item_id' => $saleItem->id,
                         'quantity' => -$item['quantity'], // negative for sales
                         'available_quantity' => $afterQuantity,
                         'type' => 'sale',
@@ -378,41 +409,14 @@ class SaleController extends Controller
                 $customer->increment('balance', $due);
             }
 
-            // Step 8: Handle payment difference (Observer handles bank balance)
-            $paymentDifference = $request->paid - $originalPaid;
-
-            if ($paymentDifference != 0 && $request->bank_account_id) {
-                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-
-                if ($paymentDifference > 0) {
-                    // Payment increased - add to bank
-                    $bankAccount->transactions()->create([
-                        'transaction_type' => 'in',
-                        'amount' => $paymentDifference,
-                        'date' => now(),
-                        'description' => "Additional payment for updated invoice {$sale->invoice_no}",
-                        'created_by' => auth()->id(),
-                    ]);
-                } else {
-                    // Payment decreased - deduct from bank
-                    $decreaseAmount = abs($paymentDifference);
-
-                    $bankAccount->transactions()->create([
-                        'transaction_type' => 'out',
-                        'amount' => $decreaseAmount,
-                        'date' => now(),
-                        'description' => "Payment reduction for updated invoice {$sale->invoice_no}",
-                        'created_by' => auth()->id(),
-                    ]);
+            // Original payment was refunded above; post the full replacement payment once.
+            if ($request->paid > 0) {
+                if (! $request->bank_account_id) {
+                    throw new \LogicException('Choose an account for the replacement payment.');
                 }
-            } elseif ($request->paid > 0 && $request->bank_account_id && $originalPaid == 0) {
-                // First time payment
-                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-                $bankAccount->transactions()->create([
-                    'transaction_type' => 'in',
-                    'amount' => $request->paid,
-                    'date' => now(),
-                    'description' => "Payment received for updated invoice {$sale->invoice_no}",
+                BankAccount::findOrFail($request->bank_account_id)->transactions()->create([
+                    'transaction_type' => 'in', 'amount' => $request->paid, 'date' => now()->toDateString(),
+                    'category' => 'sale_collection', 'description' => 'Payment received for updated invoice '.$sale->invoice_no,
                     'created_by' => auth()->id(),
                 ]);
             }
@@ -435,7 +439,7 @@ class SaleController extends Controller
 
             return redirect()->route('admin.sales.show', $sale->id)
                 ->with('success', 'Sale updated successfully.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
 
             return back()->withErrors($e->errors())->withInput();
@@ -450,11 +454,17 @@ class SaleController extends Controller
     {
         try {
             DB::beginTransaction();
+            DB::table('inventory_policies')->lockForUpdate()->find(1);
 
             $sale = Sale::with(['saleItems.product', 'customer'])->findOrFail($id);
+            if ($sale->payments()->exists()) {
+                throw new \LogicException('An invoice with later collections must be corrected using a linked return.');
+            }
 
             // Check if sale is within 7 days
             if ($sale->created_at->diffInDays(now()) > 7) {
+                DB::rollBack();
+
                 return response()->json([
                     'success' => false,
                     'massage' => 'Sales older than 7 days cannot be deleted.', // Changed 'message' to 'massage'
@@ -468,7 +478,7 @@ class SaleController extends Controller
                 }
 
                 // Get current stock with row lock to prevent race conditions
-                $currentStock = ProductStock::where('product_id', $item->product_id)
+                $currentStock = ProductStock::where('product_id', $item->product_id)->where('product_variant_id', $item->product_variant_id)
                     ->lockForUpdate()
                     ->orderBy('id', 'desc')
                     ->first();
@@ -479,6 +489,8 @@ class SaleController extends Controller
                 // Create new stock record to reverse the sale
                 ProductStock::create([
                     'product_id' => $item->product_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'source_stock_id' => ProductStock::where('sale_item_id', $item->id)->where('type', 'sale')->value('id'),
                     'quantity' => $item->quantity, // positive for reversal
                     'available_quantity' => $afterQuantity,
                     'type' => 'sale_reversal',
@@ -561,7 +573,7 @@ class SaleController extends Controller
         $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
         $amountInWords = ucfirst($f->format($sale->total)).' taka only';
 
-        $pdf = PDF::loadView('admin.sales.receipt', [
+        $pdf = Pdf::loadView('admin.sales.receipt', [
             'sale' => $sale,
             'itemsByCategory' => $itemsByCategory, // Added this line
             'categoryTotals' => $categoryTotals,

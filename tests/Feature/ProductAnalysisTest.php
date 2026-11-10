@@ -11,6 +11,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\InventoryPolicy;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -32,6 +33,7 @@ class ProductAnalysisTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        app(InventoryPolicy::class)->select('moving_weighted_average');
 
         // Create a role for foreign key constraint
         $this->role = Role::create(['name' => 'Admin', 'slug' => 'admin']);
@@ -94,6 +96,7 @@ class ProductAnalysisTest extends TestCase
         // Create sale in November: 80 units
         $sale = Sale::create([
             'invoice_no' => 'INV-001',
+            'business_date' => '2025-11-20',
             'customer_id' => null,
             'subtotal' => 12000, // 80 * 150
             'discount' => 0,
@@ -106,12 +109,18 @@ class ProductAnalysisTest extends TestCase
         $sale->created_at = Carbon::parse('2025-11-20');
         $sale->save();
 
-        SaleItem::create([
+        $saleItem = SaleItem::create([
             'sale_id' => $sale->id,
             'product_id' => $product->id,
             'quantity' => 80,
             'unit_price' => 150,
             'subtotal' => 12000,
+        ]);
+
+        ProductStock::create([
+            'product_id' => $product->id, 'sale_item_id' => $saleItem->id,
+            'type' => 'sale', 'quantity' => -80, 'unit_cost' => 0, 'total_cost' => 0,
+            'date' => '2025-11-20', 'created_by' => $this->user->id,
         ]);
 
         // Run analysis for November

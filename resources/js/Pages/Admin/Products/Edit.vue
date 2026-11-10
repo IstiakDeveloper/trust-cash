@@ -105,26 +105,13 @@
                         <!-- Category & Brand -->
                         <div class="sm:col-span-3">
                             <InputLabel for="category_id" :value="t('ক্যাটাগরি *', 'Category *')" class="text-xs font-bold" />
-                            <select id="category_id" v-model="form.category_id"
-                                class="mt-1 block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                                required>
-                                <option value="">{{ t('ক্যাটাগরি নির্বাচন করুন', 'Select Category') }}</option>
-                                <option v-for="category in categories" :key="category.id" :value="category.id">
-                                    {{ category.name }}
-                                </option>
-                            </select>
+                            <QuickCreateSelect v-model="form.category_id" resource="categories" :options="categories" @created="record => rememberLookup('categories', record)" />
                             <InputError :message="form.errors.category_id" class="mt-1" />
                         </div>
 
                         <div class="sm:col-span-3">
                             <InputLabel for="brand_id" :value="t('ব্র্যান্ড', 'Brand')" class="text-xs font-bold" />
-                            <select id="brand_id" v-model="form.brand_id"
-                                class="mt-1 block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                                <option value="">{{ t('ব্র্যান্ড নির্বাচন করুন', 'Select Brand') }}</option>
-                                <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-                                    {{ brand.name }}
-                                </option>
-                            </select>
+                            <QuickCreateSelect v-model="form.brand_id" resource="brands" :options="brands" @created="record => rememberLookup('brands', record)" />
                             <InputError :message="form.errors.brand_id" class="mt-1" />
                         </div>
 
@@ -146,14 +133,7 @@
 
                         <div class="sm:col-span-3">
                             <InputLabel for="unit_id" :value="t('পরিমাপের একক *', 'Unit *')" class="text-xs font-bold" />
-                            <select id="unit_id" v-model="form.unit_id"
-                                class="mt-1 block w-full rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 shadow-xs focus:ring-1 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                                required>
-                                <option value="">{{ t('একক নির্বাচন করুন', 'Select Unit') }}</option>
-                                <option v-for="unit in units" :key="unit.id" :value="unit.id">
-                                    {{ unit.name }} ({{ unit.short_name }})
-                                </option>
-                            </select>
+                            <QuickCreateSelect v-model="form.unit_id" resource="units" :options="units" @created="record => rememberLookup('units', record)" />
                             <InputError :message="form.errors.unit_id" class="mt-1" />
                         </div>
                     </div>
@@ -331,6 +311,7 @@
 </template>
 
 <script setup>
+import QuickCreateSelect from '@/Components/QuickCreateSelect.vue';
 import { ref, onMounted } from 'vue';
 import { useForm, Link, Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -358,6 +339,13 @@ const props = defineProps({
     brands: Array,
     units: Array
 });
+const categories = ref([...(props.categories || [])]);
+const brands = ref([...(props.brands || [])]);
+const units = ref([...(props.units || [])]);
+const rememberLookup = (resource, record) => {
+    ({ categories, brands, units })[resource].value.push(record);
+};
+
 
 const form = useForm({
     name: props.product?.name || '',

@@ -2,24 +2,54 @@
 
 namespace App\Models;
 
+use App\Services\SaleAccounting;
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class SaleItem extends Model
 {
+    protected $appends = ['returnable_quantity', 'return_unit_price'];
+
+    public function getReturnableQuantityAttribute(): string
+    {
+        $returned = (string) SaleReturnItem::where('sale_item_id', $this->id)->sum('quantity');
+
+        return bcsub((string) $this->quantity, $returned, 6);
+    }
+
+    public function getReturnUnitPriceAttribute(): string
+    {
+        $entry = DB::table('sale_accounting_entries')->where('source_type', 'sale')->where('source_id', $this->id)->first();
+
+        return $entry && bccomp((string) $this->quantity, '0', 6) > 0
+            ? bcdiv(bcadd((string) $entry->net, (string) $entry->tax, 6), (string) $this->quantity, 6)
+            : (string) $this->unit_price;
+    }
+
+    use PostsAccountingAtomically;
+
     protected $fillable = [
         'sale_id',
         'product_id',
         'product_variant_id',
         'quantity',
         'unit_price',
-        'subtotal'
+        'subtotal', 'cost_total', 'costing_method', 'lot_id', 'discount_amount', 'tax_amount',
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
+        'quantity' => 'decimal:6',
+        'cost_total' => 'decimal:6',
         'unit_price' => 'decimal:2',
-        'subtotal' => 'decimal:2'
+        'subtotal' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn ($item) => app(SaleAccounting::class)->record($item));
+        static::deleting(fn ($item) => app(SaleAccounting::class)->reverse($item));
+    }
 
     // Relationships
     public function sale()

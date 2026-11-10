@@ -139,7 +139,7 @@
                                     <input
                                         type="number"
                                         step="0.01"
-                                        v-model.number="item.unit_price"
+                                        v-model.number="item.unit_price" readonly
                                         min="0"
                                         class="w-full text-right text-xs rounded-lg border-slate-200 py-1.5 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                     />
@@ -151,7 +151,7 @@
                                     <input
                                         type="number"
                                         step="0.01"
-                                        v-model.number="item.quantity"
+                                        v-model.number="item.quantity" :max="item.max_quantity"
                                         min="0.01"
                                         class="w-full text-center text-xs rounded-lg border-slate-200 py-1.5 font-bold text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-400"
                                     />
@@ -188,7 +188,7 @@
                                         <input
                                             type="number"
                                             step="0.01"
-                                            v-model.number="item.unit_price"
+                                            v-model.number="item.unit_price" readonly
                                             min="0"
                                             class="w-full text-right text-xs rounded-lg border-slate-200 py-1 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         />
@@ -197,7 +197,7 @@
                                         <input
                                             type="number"
                                             step="0.01"
-                                            v-model.number="item.quantity"
+                                            v-model.number="item.quantity" :max="item.max_quantity"
                                             min="0.01"
                                             class="w-full text-center text-xs rounded-lg border-slate-200 py-1 font-bold text-indigo-600 dark:bg-slate-800 dark:border-slate-700 dark:text-indigo-400"
                                         />
@@ -282,7 +282,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import axios from 'axios'
 import { ArrowLeft as ArrowLeftIcon, Trash as TrashIcon } from 'lucide-vue-next'
@@ -302,10 +302,11 @@ const loadedSale = ref(props.initialSale || null)
 const submitting = ref(false)
 
 const form = ref({
+    idempotency_key: crypto.randomUUID(),
     sale_id: props.initialSale?.id || null,
     customer_id: props.initialSale?.customer_id || '',
     bank_account_id: props.bankAccounts?.[0]?.id || '',
-    return_date: new Date().toISOString().split('T')[0],
+    return_date: (usePage().props.business_date || new Date().toLocaleDateString('en-CA')),
     refund_status: 'completed',
     reason: '',
     items: [],
@@ -333,12 +334,14 @@ const searchInvoice = async () => {
 const loadItemsFromSale = () => {
     if (!loadedSale.value?.sale_items) return
     form.value.items = loadedSale.value.sale_items.map(item => ({
+        sale_item_id: item.id,
         product_id: item.product_id,
         product_name: item.product?.name || 'Product',
         product_variant_id: item.product_variant_id || null,
-        unit_price: Number(item.price || item.unit_price || 0),
-        quantity: 1,
-    }))
+        unit_price: Number(item.return_unit_price ?? item.unit_price ?? 0),
+        quantity: Math.min(1, Number(item.returnable_quantity ?? item.quantity)),
+        max_quantity: Number(item.returnable_quantity ?? item.quantity),
+    })).filter(item => item.max_quantity > 0)
 }
 
 const totalReturnAmount = computed(() => {

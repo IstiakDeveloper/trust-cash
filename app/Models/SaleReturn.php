@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 
 class SaleReturn extends Model
 {
+    use PostsAccountingAtomically;
+
     protected $fillable = [
         'return_number',
         'sale_id',
@@ -17,10 +20,11 @@ class SaleReturn extends Model
         'refund_status',
         'reason',
         'created_by',
+        'request_key', 'request_hash',
     ];
 
     protected $casts = [
-        'return_date' => 'date',
+        'return_date' => 'date:Y-m-d',
         'total_amount' => 'decimal:2',
         'refund_amount' => 'decimal:2',
     ];

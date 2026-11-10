@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class FixedAssetItem extends Model
 {
     use HasFactory, SoftDeletes;
+    use PostsAccountingAtomically;
 
     protected $fillable = [
         'fixed_asset_id',
@@ -20,13 +22,13 @@ class FixedAssetItem extends Model
         'bank_transaction_id',
         'status',
         'description',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [
-        'purchase_date' => 'date',
+        'purchase_date' => 'date:Y-m-d',
         'purchase_price' => 'decimal:2',
-        'current_value' => 'decimal:2'
+        'current_value' => 'decimal:2',
     ];
 
     public function asset()

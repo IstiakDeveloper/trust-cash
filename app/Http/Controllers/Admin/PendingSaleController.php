@@ -9,15 +9,16 @@ use App\Models\PendingSaleItem;
 use App\Models\Product;
 use App\Services\SaleCreator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 
 class PendingSaleController extends Controller
 {
     public function index(Request $request)
     {
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $pendingSales */
+        /** @var LengthAwarePaginator $pendingSales */
         $status = $request->input('status', 'pending');
         if (! in_array($status, ['pending', 'approved', 'rejected'], true)) {
             $status = 'pending';
@@ -37,7 +38,7 @@ class PendingSaleController extends Controller
             ->paginate(20)
             ->appends($request->only(['status', 'q']));
 
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $pendingSales */
+        /** @var LengthAwarePaginator $pendingSales */
         $pendingSales->getCollection()->transform(fn ($o) => [
             'id' => $o->id,
             'public_order_no' => $o->public_order_no,
@@ -83,6 +84,10 @@ class PendingSaleController extends Controller
 
         DB::beginTransaction();
         try {
+            $pendingSale = PendingSale::whereKey($pendingSale->id)->lockForUpdate()->firstOrFail();
+            if ($pendingSale->status !== 'pending') {
+                throw new \LogicException('This order has already been processed.');
+            }
             $pendingSale->load('items');
 
             $items = $pendingSale->items->map(fn ($i) => [
@@ -111,7 +116,8 @@ class PendingSaleController extends Controller
                 customerId: $pendingSale->customer_id,
                 note: $pendingSale->note ? ("Public order {$pendingSale->public_order_no}: ".$pendingSale->note) : ("Public order {$pendingSale->public_order_no}"),
                 createdBy: Auth::id(),
-                date: $orderDate
+                date: now()->toDateString(),
+                requestKey: 'pending-'.$pendingSale->id
             );
 
             $pendingSale->forceFill([
@@ -126,6 +132,7 @@ class PendingSaleController extends Controller
             return back()->with('success', 'Approved and converted to Sale.');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -180,9 +187,11 @@ class PendingSaleController extends Controller
             $this->recalcPendingSale($pendingSale);
 
             DB::commit();
+
             return back()->with('success', 'Item added.');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -219,9 +228,11 @@ class PendingSaleController extends Controller
             $this->recalcPendingSale($pendingSale);
 
             DB::commit();
+
             return back()->with('success', 'Item updated.');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -240,9 +251,11 @@ class PendingSaleController extends Controller
             $item->delete();
             $this->recalcPendingSale($pendingSale);
             DB::commit();
+
             return back()->with('success', 'Item removed.');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -292,4 +305,3 @@ class PendingSaleController extends Controller
         return (int) round((float) ($value ?? 0));
     }
 }
-

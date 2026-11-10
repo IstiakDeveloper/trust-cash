@@ -35,6 +35,17 @@
             <div class="rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
                 <form @submit.prevent="submit" class="p-6 sm:p-8 space-y-6">
 
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label class="text-xs font-bold dark:text-white">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}
+                            <input v-model="form.lot_number" maxlength="100" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
+                            <span v-if="form.errors.lot_number" class="text-red-600">{{ form.errors.lot_number }}</span>
+                        </label>
+                        <label class="text-xs font-bold dark:text-white">{{ t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') }}
+                            <input v-model="form.selling_price" type="number" min="0" step="0.01" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
+                            <span v-if="form.errors.selling_price" class="text-red-600">{{ form.errors.selling_price }}</span>
+                        </label>
+                    </div>
+
                     <!-- Product Selection Field -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
@@ -46,16 +57,11 @@
                             </span>
                         </div>
 
-                        <SearchableSelect
-                            v-model="form.product_id"
-                            :options="productsForSelect"
-                            label-key="displayName"
-                            value-key="id"
-                            description-key="stockInfo"
-                            :placeholder="t('নাম বা SKU দিয়ে পণ্য খুঁজুন...', 'Search and select a product by name or SKU...')"
-                            :show-badge="!!selectedProductData"
-                            :badge-text="selectedProductData ? `${t('মজুদ:', 'Stock:')} ${formatNumber(selectedProductData.current_stock)}` : ''"
-                            @change="onProductChange"
+                        <QuickCreateSelect
+                            v-model="form.product_id" resource="products"
+                            :options="productsForSelect" label-key="displayName" description-key="stockInfo"
+                            :placeholder="t('??? ?? SKU ???? ???? ??????...', 'Search by name or SKU...')"
+                            @change="onProductChange" @created="productCreated"
                         />
                         <p v-if="form.errors.product_id" class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
                             {{ form.errors.product_id }}
@@ -394,9 +400,10 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import QuickCreateSelect from '@/Components/QuickCreateSelect.vue';
 import { useLanguage } from '@/composables/useLanguage';
 import {
     CubeIcon,
@@ -425,12 +432,21 @@ const props = defineProps({
     }
 });
 
-const todayDate = new Date().toISOString().split('T')[0];
+const localProducts = ref([...props.products]);
+const productCreated = (product) => {
+    localProducts.value.push({ ...product, current_stock: 0, last_unit_cost: 0 });
+    form.product_id = product.id;
+    form.selling_price = product.selling_price;
+};
+
+const todayDate = (usePage().props.business_date || new Date().toLocaleDateString('en-CA'));
 
 const form = useForm({
     product_id: '',
     quantity: '',
     total_cost: '',
+    lot_number: '',
+    selling_price: '',
     date: todayDate,
     note: '',
     is_credit: false,
@@ -450,7 +466,7 @@ const toggleCreditSwitch = () => {
 
 // Transform products for searchable select
 const productsForSelect = computed(() => {
-    return props.products.map(product => ({
+    return localProducts.value.map(product => ({
         ...product,
         displayName: `${product.name} (${product.sku})`,
         stockInfo: `${t('মজুদ:', 'Stock:')} ${formatNumber(product.current_stock)} | ${t('শেষ ক্রয়:', 'Last Cost:')} ${formatCurrency(product.last_unit_cost)}`
@@ -475,7 +491,7 @@ const suppliersForSelect = computed(() => {
 });
 
 const selectedProductData = computed(() => {
-    return props.products.find(p => p.id === form.product_id);
+    return localProducts.value.find(p => p.id === form.product_id);
 });
 
 const selectedBank = computed(() => {

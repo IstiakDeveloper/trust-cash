@@ -4,20 +4,26 @@ namespace App\Console\Commands;
 
 use App\Models\Product;
 use App\Models\ProductStock;
-use App\Models\StockMovement;
-use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockMovement;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use Illuminate\Support\Facades\Schema;
 
 class PopulateStockMovements extends Command
 {
     protected $signature = 'stock:populate-movements {--product=}';
+
     protected $description = 'Populate stock movements from existing data';
 
     public function handle()
     {
+        if (Schema::hasColumn('product_stocks', 'costing_method') && ProductStock::whereNotNull('costing_method')->exists()) {
+            $this->error('This legacy repair command cannot change posted inventory. Use linked corrections and reconciliation.');
+
+            return 1;
+        }
         $this->info('Populating stock movements...');
 
         try {
@@ -39,11 +45,13 @@ class PopulateStockMovements extends Command
             }
 
             $this->info("\nStock movements populated successfully!");
+
             return 0;
 
         } catch (Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
-            $this->error('Stack trace: ' . $e->getTraceAsString());
+            $this->error('Error: '.$e->getMessage());
+            $this->error('Stack trace: '.$e->getTraceAsString());
+
             return 1;
         }
     }
@@ -54,9 +62,10 @@ class PopulateStockMovements extends Command
             DB::beginTransaction();
 
             $product = Product::find($productId);
-            if (!$product) {
+            if (! $product) {
                 $this->warn("Product ID {$productId} not found");
                 DB::rollBack();
+
                 return;
             }
 
@@ -122,7 +131,7 @@ class PopulateStockMovements extends Command
             }
 
             // Sort movements by date
-            usort($movements, function($a, $b) {
+            usort($movements, function ($a, $b) {
                 return strtotime($a['created_at']) - strtotime($b['created_at']);
             });
 
@@ -148,7 +157,7 @@ class PopulateStockMovements extends Command
 
         } catch (Exception $e) {
             DB::rollBack();
-            $this->error("Error processing product {$productId}: " . $e->getMessage());
+            $this->error("Error processing product {$productId}: ".$e->getMessage());
             throw $e;
         }
     }

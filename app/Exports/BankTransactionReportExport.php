@@ -12,10 +12,12 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BankTransactionReportExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles, WithTitle
+class BankTransactionReportExport implements FromArray, ShouldAutoSize, WithHeadings, WithStyles, WithTitle
 {
     protected array $transactions;
+
     protected float $previousBalance;
+
     protected string $title;
 
     public function __construct(array $transactions, float $previousBalance = 0, string $title = 'Bank Transactions')
@@ -37,13 +39,13 @@ class BankTransactionReportExport implements FromArray, WithHeadings, ShouldAuto
             'Fund In (BDT)',
             'Payment Received (BDT)',
             'Extra Income (BDT)',
-            'Refund In (BDT)',
+            'Refund / Other Receipts (BDT)',
             'Total In (BDT)',
-            'Supplier Payment (BDT)',
+            'Purchase / Supplier Payment (BDT)',
             'Expenses (BDT)',
             'Asset Purchase (BDT)',
             'Fund Refund (BDT)',
-            'Refund Out (BDT)',
+            'Refund / Other Payments (BDT)',
             'Total Out (BDT)',
             'Day Net (BDT)',
             'Closing Balance (BDT)',
@@ -52,6 +54,18 @@ class BankTransactionReportExport implements FromArray, WithHeadings, ShouldAuto
 
     public function array(): array
     {
+        if (isset($this->transactions[0]['in'])) {
+            $rows = [['Opening balance', '', '', '', '', '', '', '', '', '', '', '', '', $this->previousBalance]];
+            foreach ($this->transactions as $row) {
+                $rows[] = [$row['date'], (float) $row['in']['fund'], (float) $row['in']['payment'],
+                    (float) $row['in']['extra'], (float) bcadd($row['in']['refund'], $row['in']['other'], 6), (float) $row['in']['total'],
+                    (float) bcadd($row['out']['supplier_payment'], $row['out']['purchase'], 6), (float) $row['out']['expense'],
+                    (float) $row['out']['fixed_asset'], (float) $row['out']['fund'], (float) $row['out']['other'],
+                    (float) $row['out']['total'], (float) bcsub($row['in']['total'], $row['out']['total'], 6), (float) $row['balance']];
+            }
+
+            return $rows;
+        }
         $rows = [];
 
         // Opening balance row

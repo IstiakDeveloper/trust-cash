@@ -10,7 +10,17 @@
             <div class="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-2xl">
                     <div class="p-4 sm:p-6">
-                        <form @submit.prevent="submit">
+                        <form @submit.prevent="submit"><div class="mb-4 space-y-2">
+        <label class="block text-sm font-medium dark:text-white">Accounting category
+            <select v-model="form.counter_account" required class="mt-1 block w-full rounded-lg border-gray-300 dark:bg-gray-900 dark:text-white">
+                <option value="" disabled>Choose the purpose of this cash movement</option>
+                <option value="capital">Owner capital / withdrawal</option><option value="loan_payable">Loan principal / repayment</option>
+                <option value="other_income:0">Other income / reversal</option><option value="expense:0">Operating expense / reimbursement</option>
+            </select>
+        </label>
+        <label class="block text-sm font-medium dark:text-white">Reason / source reference<input v-model="form.classification_reason" required maxlength="1000" class="mt-1 block w-full rounded-lg border-gray-300 dark:bg-gray-900 dark:text-white" /></label>
+        <p v-if="$page.props.errors?.counter_account || $page.props.errors?.classification_reason || $page.props.errors?.transaction" class="text-sm text-red-600">{{ $page.props.errors.counter_account || $page.props.errors.classification_reason || $page.props.errors.transaction }}</p>
+    </div>
                             <div class="mb-4">
                                 <label for="bank_account_id" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
                                     Bank Account
@@ -104,10 +114,11 @@ export default {
                 bank_account_id: '',
                 transaction_type: 'in',
                 amount: '',
+                counter_account: '', classification_reason: '',
                 description: '',
-                date: new Date().toISOString().split('T')[0],
+                date: (this.$page.props.business_date || new Date().toLocaleDateString('en-CA')),
             },
-            today: new Date().toISOString().split('T')[0],
+            today: (this.$page.props.business_date || new Date().toLocaleDateString('en-CA')),
         }
     },
     methods: {

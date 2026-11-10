@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\OptimizeProductImagesJob;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Models\Brand;
@@ -12,7 +13,6 @@ use App\Models\ProductImage;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
 use App\Models\Unit;
-use App\Jobs\OptimizeProductImagesJob;
 use App\Services\ProductImageProcessor;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
@@ -45,14 +45,7 @@ class ProductController extends Controller
         $products = Product::query()
             ->with(['category', 'brand', 'unit', 'images'])
             ->select('products.*')
-            ->selectRaw('COALESCE((
-                SELECT ps.available_quantity
-                FROM product_stocks ps
-                WHERE ps.product_id = products.id
-                AND ps.deleted_at IS NULL
-                ORDER BY ps.id DESC
-                LIMIT 1
-            ), 0) as available_quantity')
+            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM inventory_balances WHERE product_id = products.id) as available_quantity')
             ->selectRaw('(
                 SELECT COALESCE(SUM(
                     CASE WHEN ps.quantity > 0
@@ -80,20 +73,10 @@ class ProductController extends Controller
             ->selectRaw("CASE
                 {$stockStatusCase}
                 WHEN COALESCE((
-                    SELECT available_quantity
-                    FROM product_stocks
-                    WHERE product_id = products.id
-                    AND deleted_at IS NULL
-                    ORDER BY id DESC
-                    LIMIT 1
+                    SELECT SUM(quantity) FROM inventory_balances WHERE product_id = products.id
                 ), 0) <= 0 THEN 'out'
                 WHEN COALESCE((
-                    SELECT available_quantity
-                    FROM product_stocks
-                    WHERE product_id = products.id
-                    AND deleted_at IS NULL
-                    ORDER BY id DESC
-                    LIMIT 1
+                    SELECT SUM(quantity) FROM inventory_balances WHERE product_id = products.id
                 ), 0) <= alert_quantity THEN 'low'
                 ELSE 'in'
             END as stock_status")
@@ -137,12 +120,20 @@ class ProductController extends Controller
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('sku', 'like', "%{$query}%");
             })
-            ->select('id', 'name', 'sku', 'selling_price', 'stock')
-            ->get();
+            ->select('id', 'name', 'sku', 'selling_price')
+            ->get()->map(fn ($product) => $product->toArray() + ['stock' => $product->availableQuantity(), 'lots' => $product->sellableLots()]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'categories' => Category::active()->get(['id', 'name']),
+                'brands' => Brand::active()->get(['id', 'name']),
+                'units' => Unit::active()->get(['id', 'name', 'short_name']),
+            ]);
+        }
+
         return Inertia::render('Admin/Products/Create', [
             'categories' => Category::active()->get(['id', 'name']),
             'brands' => Brand::active()->get(['id', 'name']),
@@ -218,6 +209,10 @@ class ProductController extends Controller
                     'sort_order' => $index,
                 ]);
             }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $product->load('unit'), 'message' => 'Product created successfully.'], 201);
         }
 
         return redirect()->route('admin.products.index')
@@ -462,15 +457,15 @@ class ProductController extends Controller
     private function ensureProductTypeColumn(): bool
     {
         try {
-            if (!Schema::hasColumn('products', 'type')) {
+            if (! Schema::hasColumn('products', 'type')) {
                 Schema::table('products', function (Blueprint $table) {
-                    if (!Schema::hasColumn('products', 'type')) {
+                    if (! Schema::hasColumn('products', 'type')) {
                         $table->string('type', 20)->default('product')->after('name')->index();
                     }
                 });
             }
         } catch (\Throwable $e) {
-            Log::warning("Could not auto-add type column to products table: " . $e->getMessage());
+            Log::warning('Could not auto-add type column to products table: '.$e->getMessage());
         }
 
         return Schema::hasColumn('products', 'type');
@@ -483,7 +478,7 @@ class ProductController extends Controller
     {
         $baseSlug = Str::slug($name);
         if (empty($baseSlug)) {
-            $baseSlug = 'product-' . Str::lower(Str::random(6));
+            $baseSlug = 'product-'.Str::lower(Str::random(6));
         }
 
         $slug = $baseSlug;
@@ -492,7 +487,7 @@ class ProductController extends Controller
         while (
             Product::withTrashed()
                 ->where('slug', $slug)
-                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
                 ->exists()
         ) {
             $slug = "{$baseSlug}-{$counter}";

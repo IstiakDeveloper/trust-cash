@@ -204,7 +204,7 @@ const calculateTotal = (items) => {
                         </div>
 
                         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-5">
-                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('বর্তমান বকেয়া', 'Current Due') }}</h3>
+                            <h3 class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('সময় শেষে বকেয়া', 'Closing receivable') }}</h3>
                             <p class="mt-1 text-base sm:text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 truncate">
                                 {{ formatCurrency(reportData.monthlyTotals.total_due) }}
                             </p>
@@ -232,7 +232,7 @@ const calculateTotal = (items) => {
                                                 {{ t('পরিশোধ', 'Paid') }}
                                             </th>
                                             <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-right">
-                                                {{ t('বকেয়া', 'Due') }}
+                                                {{ t('বকেয়ার পরিবর্তন', 'Due movement') }}
                                             </th>
                                             <th class="px-3 sm:px-6 py-2.5 sm:py-3 text-center">
                                                 {{ t('অ্যাকশন', 'Actions') }}

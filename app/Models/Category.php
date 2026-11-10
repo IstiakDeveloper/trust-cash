@@ -16,11 +16,11 @@ class Category extends Model
         'parent_id',
         'description',
         'image',
-        'status'
+        'status',
     ];
 
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
     ];
 
     protected $appends = ['image_url'];
@@ -31,7 +31,7 @@ class Category extends Model
             return null;
         }
 
-        return url('/storage/' . ltrim($this->image, '/'));
+        return url('/storage/'.ltrim($this->image, '/'));
     }
 
     public function parent()
@@ -51,12 +51,12 @@ class Category extends Model
 
     public static function generateUniqueSlug($name)
     {
-        $slug = str()->slug($name);
+        $slug = str()->slug($name) ?: 'category-'.str()->uuid();
         $originalSlug = $slug;
         $count = 1;
 
-        while (self::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
+        while (self::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $originalSlug.'-'.$count;
             $count++;
         }
 

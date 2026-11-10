@@ -4,146 +4,47 @@ namespace App\Observers;
 
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
+use Illuminate\Support\Facades\DB;
 
 class BankTransactionObserver
 {
-    /**
-     * Handle the BankTransaction "creating" event.
-     */
     public function creating(BankTransaction $transaction): void
     {
-        // Get the latest transaction for this bank account (exclude soft deleted)
-        $latestTransaction = BankTransaction::where('bank_account_id', $transaction->bank_account_id)
-            ->whereNull('deleted_at')
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $bank = BankAccount::find($transaction->bank_account_id);
-
-        // Start with previous balance or bank opening balance
-        $previousBalance = $latestTransaction ? (float) $latestTransaction->running_balance : ($bank ? (float) $bank->opening_balance : 0);
-
-        // Calculate new running balance
-        if ($transaction->transaction_type === 'in') {
-            $transaction->running_balance = $previousBalance + (float) $transaction->amount;
-        } else {
-            $transaction->running_balance = $previousBalance - (float) $transaction->amount;
-        }
+        $transaction->running_balance = '0';
     }
 
-    /**
-     * Handle the BankTransaction "created" event.
-     * Update bank account current balance after transaction is created.
-     */
     public function created(BankTransaction $transaction): void
     {
-        $bankAccount = BankAccount::find($transaction->bank_account_id);
-
-        if ($bankAccount) {
-            if ($transaction->transaction_type === 'in') {
-                $bankAccount->current_balance += (float) $transaction->amount;
-            } else {
-                $bankAccount->current_balance -= (float) $transaction->amount;
-            }
-
-            $bankAccount->saveQuietly(); // Save without triggering observers
-        }
+        $this->rebuild((int) $transaction->bank_account_id);
     }
 
-    /**
-     * Handle the BankTransaction "updated" event.
-     */
-    public function updated(BankTransaction $transaction): void
-    {
-        // If amount, transaction_type, or bank_account_id changed, we update bank balance
-        if ($transaction->isDirty(['amount', 'transaction_type', 'bank_account_id'])) {
-            $oldBankId = $transaction->getOriginal('bank_account_id');
-            $newBankId = $transaction->bank_account_id;
-            $oldAmount = (float) $transaction->getOriginal('amount');
-            $oldType = $transaction->getOriginal('transaction_type');
-            $newAmount = (float) $transaction->amount;
-            $newType = $transaction->transaction_type;
-
-            if ($oldBankId === $newBankId) {
-                $bankAccount = BankAccount::find($newBankId);
-                if ($bankAccount) {
-                    // Reverse old transaction effect
-                    if ($oldType === 'in') {
-                        $bankAccount->current_balance -= $oldAmount;
-                    } else {
-                        $bankAccount->current_balance += $oldAmount;
-                    }
-
-                    // Apply new transaction effect
-                    if ($newType === 'in') {
-                        $bankAccount->current_balance += $newAmount;
-                    } else {
-                        $bankAccount->current_balance -= $newAmount;
-                    }
-
-                    $bankAccount->saveQuietly();
-                }
-            } else {
-                // Different bank accounts
-                $oldBank = BankAccount::find($oldBankId);
-                if ($oldBank) {
-                    if ($oldType === 'in') {
-                        $oldBank->current_balance -= $oldAmount;
-                    } else {
-                        $oldBank->current_balance += $oldAmount;
-                    }
-                    $oldBank->saveQuietly();
-                }
-
-                $newBank = BankAccount::find($newBankId);
-                if ($newBank) {
-                    if ($newType === 'in') {
-                        $newBank->current_balance += $newAmount;
-                    } else {
-                        $newBank->current_balance -= $newAmount;
-                    }
-                    $newBank->saveQuietly();
-                }
-            }
-        }
-    }
-
-    /**
-     * Handle the BankTransaction "deleted" event.
-     */
     public function deleted(BankTransaction $transaction): void
     {
-        $bankAccount = BankAccount::find($transaction->bank_account_id);
+        $this->rebuild((int) $transaction->bank_account_id);
+    }
 
-        if ($bankAccount) {
-            // Reverse the transaction effect
-            if ($transaction->transaction_type === 'in') {
-                $bankAccount->current_balance -= $transaction->amount;
-            } else {
-                $bankAccount->current_balance += $transaction->amount;
-            }
+    public function restored(BankTransaction $transaction): void
+    {
+        $this->rebuild((int) $transaction->bank_account_id);
+    }
 
-            $bankAccount->saveQuietly();
+    public function updated(BankTransaction $transaction): void
+    {
+        $ids = array_unique([(int) $transaction->getRawOriginal('bank_account_id'), (int) $transaction->bank_account_id]);
+        sort($ids);
+        foreach ($ids as $id) {
+            $this->rebuild($id);
         }
     }
 
-    /**
-     * Handle the BankTransaction "restored" event.
-     */
-    public function restored(BankTransaction $transaction): void
+    private function rebuild(int $accountId): void
     {
-        $bankAccount = BankAccount::find($transaction->bank_account_id);
-
-        if ($bankAccount) {
-            // Reapply the transaction effect
-            if ($transaction->transaction_type === 'in') {
-                $bankAccount->current_balance += $transaction->amount;
-            } else {
-                $bankAccount->current_balance -= $transaction->amount;
-            }
-
-            $bankAccount->saveQuietly();
+        $account = BankAccount::withTrashed()->whereKey($accountId)->lockForUpdate()->firstOrFail();
+        $balance = (string) $account->opening_balance;
+        foreach (DB::table('bank_transactions')->where('bank_account_id', $accountId)->whereNull('deleted_at')->orderBy('date')->orderBy('id')->get() as $row) {
+            $balance = $row->transaction_type === 'in' ? bcadd($balance, (string) $row->amount, 2) : bcsub($balance, (string) $row->amount, 2);
+            DB::table('bank_transactions')->where('id', $row->id)->update(['running_balance' => $balance]);
         }
+        DB::table('bank_accounts')->where('id', $accountId)->update(['current_balance' => $balance]);
     }
 }

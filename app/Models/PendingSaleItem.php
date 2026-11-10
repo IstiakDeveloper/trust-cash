@@ -15,6 +15,7 @@ class PendingSaleItem extends Model
     ];
 
     protected $casts = [
+        'quantity' => 'decimal:6',
         'unit_price' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];
@@ -29,4 +30,3 @@ class PendingSaleItem extends Model
         return $this->belongsTo(Product::class);
     }
 }
-

@@ -293,6 +293,8 @@
                         </button>
                     </div>
 
+                    <InventoryLotTable class="mx-4" :lots="stockHistory.filter(entry => Number(entry.quantity) > 0).map(entry => ({ ...entry, received_quantity: entry.quantity, remaining_quantity: entry.lot_remaining_quantity, purchase_cost: entry.unit_cost }))" />
+
                     <!-- Scrollable Body -->
                     <div class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 min-h-0">
                         <div v-if="stockHistory.length === 0" class="py-12 text-center text-slate-400 text-xs">
@@ -421,7 +423,7 @@
                     {{ t('স্টক এন্ট্রি মুছে ফেলতে চান?', 'Delete Stock Entry?') }}
                 </template>
                 <template #content>
-                    {{ t('এটি স্থায়ীভাবে স্টক রেকর্ড থেকে মুছে যাবে এবং ব্যাংক ব্যালেন্স ও পণ্যের গড় দাম পুনঃহিসাব হবে।', 'This stock entry will be permanently removed and stock records/balance will be recalculated.') }}
+                    {{ t('অব্যবহৃত স্টক এন্ট্রি বিপরীত লেনদেন দিয়ে বাতিল হবে। আগের হিসাব সংরক্ষিত থাকবে।', 'An untouched receipt will be cancelled with linked stock and accounting reversals. Its history will be retained.') }}
                 </template>
                 <template #footer>
                     <button
@@ -445,6 +447,7 @@ import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import InventoryLotTable from '@/Components/Reports/InventoryLotTable.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import axios from 'axios';
 import { useLanguage } from '@/composables/useLanguage';

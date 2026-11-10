@@ -7,6 +7,7 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BrandController extends Controller
@@ -39,16 +40,29 @@ class BrandController extends Controller
                 'status' => 'boolean',
             ]);
 
-            $validated['slug'] = Str::slug($request->name);
+            $baseSlug = Str::slug($request->name) ?: 'brand';
+            $validated['slug'] = $baseSlug.'-'.Str::uuid();
 
             if ($request->hasFile('logo')) {
                 $validated['logo'] = $request->file('logo')->store('brands', 'public');
             }
 
-            Brand::create($validated);
+            $record = Brand::create($validated);
+
+            if ($request->expectsJson()) {
+                return response()->json(['data' => $record], 201);
+            }
 
             return redirect()->back()->with('success', 'Brand created successfully.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                report($e);
+
+                return response()->json(['message' => 'Unable to save. Please try again.'], 500);
+            }
+
             return redirect()->back()->with('error', 'Failed to create brand: '.$e->getMessage());
         }
     }

@@ -605,6 +605,7 @@
                 </table>
             </WordReportLayout>
         </div>
+        <InventoryLotTable class="print:hidden" :lots="filteredProducts.flatMap(product => (product.lots || []).map(lot => ({ ...lot, product_name: product.product_name })))" />
     </AdminLayout>
 </template>
 
@@ -613,6 +614,7 @@
 import { defineComponent, computed, ref, nextTick } from 'vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import WordReportLayout from '@/Components/Reports/WordReportLayout.vue'
+import InventoryLotTable from '@/Components/Reports/InventoryLotTable.vue'
 import { router } from '@inertiajs/vue3'
 import { format, parseISO } from 'date-fns'
 import axios from 'axios'
@@ -622,7 +624,8 @@ import { getNumberLocale } from '@/utils'
 export default defineComponent({
     components: {
         AdminLayout,
-        WordReportLayout
+        WordReportLayout,
+        InventoryLotTable
     },
     props: {
         products: {

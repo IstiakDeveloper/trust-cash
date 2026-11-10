@@ -11,6 +11,21 @@
             </div>
 
             <form @submit.prevent="saveSettings" class="space-y-4 sm:space-y-6">
+                <div class="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                    <label for="inventory-method" class="block text-sm font-bold dark:text-white">{{ t('স্টকের মূল্য নির্ধারণ পদ্ধতি', 'Inventory Costing Method') }}</label>
+                    <select id="inventory-method" v-model="form.inventory_costing_method" :disabled="inventoryMethodLocked" class="w-full rounded-xl border-slate-300 dark:bg-slate-800 dark:text-white disabled:opacity-60">
+                        <option value="fifo">{{ t('FIFO — আগে আসা স্টকের খরচ আগে', 'FIFO — First In, First Out') }}</option>
+                        <option value="moving_weighted_average">{{ t('চলমান গড় ক্রয়মূল্য', 'Moving Weighted Average') }}</option>
+                    </select>
+                    <p class="text-xs text-slate-500">{{ t('উভয় পদ্ধতিতে লটের ক্রয়মূল্য ও বিক্রয়মূল্য আলাদা থাকবে। নতুন স্টক এলে পুরোনো বিক্রির লাভ বদলাবে না।', 'Both methods retain lot purchase and selling prices. New stock never changes the cost of earlier sales.') }}</p>
+                    <p v-if="inventoryMethodLocked" class="text-xs text-amber-600">{{ t('স্টক লেনদেন হয়েছে। পদ্ধতি বদলাতে হিসাব মিলিয়ে নিয়ন্ত্রিত পরিবর্তন প্রয়োজন।', 'Inventory has been posted. Changing methods requires a reconciled accounting cutover.') }}</p>
+                    <p v-if="errors.inventory_costing_method" class="text-xs text-red-600">{{ errors.inventory_costing_method }}</p>
+                    <label class="block text-xs font-bold dark:text-white">{{ t('ব্যবসার সময় অঞ্চল', 'Business timezone') }}
+                        <input v-model="form.business_timezone" list="business-timezones" class="mt-2 block w-full rounded-xl border-slate-300 dark:bg-slate-800" />
+                        <datalist id="business-timezones"><option value="Asia/Dhaka" /><option value="UTC" /><option value="Asia/Kolkata" /></datalist>
+                    </label>
+                    <p v-if="errors.business_timezone" class="text-xs text-red-600">{{ errors.business_timezone }}</p>
+                </div>
                 <!-- Business Identity Card -->
                 <div class="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
                     <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -194,18 +209,22 @@ const { t } = useLanguage()
 
 const props = defineProps({
     settings: Object,
+    inventoryMethodLocked: Boolean,
 })
 
 const saving = ref(false)
+const errors = ref({})
 const form = ref({ ...props.settings })
 
 const saveSettings = () => {
+    errors.value = {}
     saving.value = true
     router.post(route('admin.settings.update'), form.value, {
         onSuccess: () => {
             saving.value = false
         },
-        onError: () => {
+        onError: (validationErrors) => {
+            errors.value = validationErrors
             saving.value = false
         }
     })

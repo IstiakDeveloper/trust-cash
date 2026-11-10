@@ -1,8 +1,15 @@
 <?php
 
+use App\Http\Middleware\ApplyBusinessTimezone;
+use App\Http\Middleware\EnsureSuperAdmin;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\InitializeTenancyFromSession;
+use App\Http\Middleware\InitializeTenancyIfTenantDomain;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,22 +19,23 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'superadmin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'superadmin' => EnsureSuperAdmin::class,
         ]);
 
         $middleware->web(prepend: [
-            \App\Http\Middleware\InitializeTenancyIfTenantDomain::class,
+            InitializeTenancyIfTenantDomain::class,
         ]);
 
         $middleware->web(append: [
-            \App\Http\Middleware\InitializeTenancyFromSession::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            InitializeTenancyFromSession::class,
+            ApplyBusinessTimezone::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->appendToPriorityList(
-            \Illuminate\Session\Middleware\StartSession::class,
-            \App\Http\Middleware\InitializeTenancyFromSession::class,
+            StartSession::class,
+            InitializeTenancyFromSession::class,
         );
 
         $middleware->trustProxies(at: '*');

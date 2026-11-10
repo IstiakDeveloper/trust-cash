@@ -20,7 +20,7 @@ class PurchaseItem extends Model
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
-        'quantity' => 'decimal:2',
+        'quantity' => 'decimal:6',
         'subtotal' => 'decimal:2',
     ];
 

@@ -166,7 +166,7 @@
                 </div>
 
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 p-3 sm:p-4">
-                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('মোট বকেয়া', 'Total Due') }}</div>
+                    <div class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('বকেয়ার পরিবর্তন', 'Receivable movement') }}</div>
                     <div class="mt-1 text-lg sm:text-2xl font-bold text-red-600">
                         {{ formatPrice(summary.due) }}
                     </div>
@@ -200,7 +200,7 @@
                             </p>
                         </div>
                         <div class="text-left sm:text-right">
-                            <div class="text-xs sm:text-sm text-gray-500">{{ t('প্রাপ্ত/বকেয়া', 'Received/Due') }}</div>
+                            <div class="text-xs sm:text-sm text-gray-500">{{ t('আদায় / বকেয়ার পরিবর্তন', 'Collected / Receivable movement') }}</div>
                             <div class="font-medium text-xs sm:text-base">
                                 <span class="text-green-600 font-bold">{{ formatPrice(report.summary.received) }}</span>
                                 /
@@ -306,7 +306,7 @@
                                             {{ formatPrice(day.summary.received) }}
                                         </td>
                                         <td colspan="2" class="px-2.5 sm:px-3 py-2 text-right text-red-600 font-bold font-mono">
-                                            {{ t('বকেয়া', 'Due') }}: {{ formatPrice(day.summary.due) }}
+                                            {{ t('বকেয়ার পরিবর্তন', 'Due movement') }}: {{ formatPrice(day.summary.due) }}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -356,7 +356,7 @@
                                 <th class="text-center">{{ t('মোট বিক্রয় ইনভয়েস', 'Total Sales Invoices') }}</th>
                                 <th class="text-right">{{ t('মোট বিক্রয় পরিমাণ', 'Total Sales Amount') }}</th>
                                 <th class="text-right">{{ t('মোট প্রাপ্ত (আদায়)', 'Total Received') }}</th>
-                                <th class="text-right">{{ t('মোট বকেয়া', 'Total Due') }}</th>
+                                <th class="text-right">{{ t('বকেয়ার পরিবর্তন', 'Receivable movement') }}</th>
                                 <th class="text-right">{{ t('আদায় শতকরা', 'Collection %') }}</th>
                             </tr>
                         </thead>
@@ -383,7 +383,7 @@
                             {{ t('বিক্রয়:', 'Sales:') }} <strong>{{ report.summary.total_sales }}</strong> |
                             {{ t('মোট:', 'Total:') }} <strong>{{ formatPrice(report.summary.total_amount) }}</strong> |
                             {{ t('আদায়:', 'Received:') }} <strong class="text-green-700">{{ formatPrice(report.summary.received) }}</strong> |
-                            {{ t('বকেয়া:', 'Due:') }} <strong class="text-red-700">{{ formatPrice(report.summary.due) }}</strong>
+                            {{ t('বকেয়ার পরিবর্তন:', 'Due movement:') }} <strong class="text-red-700">{{ formatPrice(report.summary.due) }}</strong>
                         </span>
                     </div>
 
@@ -396,7 +396,7 @@
                                 <th style="width: 24%;">{{ t('গ্রাহক', 'Customer') }}</th>
                                 <th class="text-right" style="width: 13%;">{{ t('মোট পরিমাণ', 'Total Amount') }}</th>
                                 <th class="text-right" style="width: 13%;">{{ t('পরিশোধ', 'Paid') }}</th>
-                                <th class="text-right" style="width: 10%;">{{ t('বকেয়া', 'Due') }}</th>
+                                <th class="text-right" style="width: 10%;">{{ t('বকেয়ার পরিবর্তন', 'Due movement') }}</th>
                                 <th class="text-center" style="width: 10%;">{{ t('স্ট্যাটাস', 'Status') }}</th>
                             </tr>
                         </thead>

@@ -2,19 +2,26 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Sale;
 use App\Models\ProductStock;
+use App\Models\Sale;
 use App\Models\StockMovement;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SoftDeleteStockForDeletedSales extends Command
 {
     protected $signature = 'stock:soft-delete-for-deleted-sales';
+
     protected $description = 'Soft delete stock entries for soft deleted sales';
 
     public function handle()
     {
+        if (Schema::hasColumn('product_stocks', 'costing_method') && ProductStock::whereNotNull('costing_method')->exists()) {
+            $this->error('This legacy repair command cannot change posted inventory. Use linked corrections and reconciliation.');
+
+            return 1;
+        }
         $this->info('Starting soft delete of stock entries for deleted sales...');
 
         DB::transaction(function () {
@@ -33,7 +40,7 @@ class SoftDeleteStockForDeletedSales extends Command
                         ->where('quantity', -$item->quantity)
                         ->whereBetween('created_at', [
                             $sale->created_at->startOfDay(),
-                            $sale->created_at->endOfDay()
+                            $sale->created_at->endOfDay(),
                         ])
                         ->delete(); // This will soft delete due to trait
 
@@ -56,7 +63,7 @@ class SoftDeleteStockForDeletedSales extends Command
                 ProductStock::where('type', 'sale')
                     ->whereBetween('created_at', [
                         $sale->created_at->startOfDay(),
-                        $sale->created_at->endOfDay()
+                        $sale->created_at->endOfDay(),
                     ])
                     ->whereHas('product', function ($query) use ($sale) {
                         $query->whereIn('id', $sale->saleItems->pluck('product_id'));
@@ -66,6 +73,7 @@ class SoftDeleteStockForDeletedSales extends Command
         });
 
         $this->info('Soft delete completed successfully!');
+
         return 0;
     }
 }

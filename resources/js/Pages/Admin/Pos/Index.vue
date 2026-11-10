@@ -167,13 +167,13 @@
                                                                     </span>
                                                                 </div>
                                                                 <div class="text-[11px] text-slate-400 font-mono">
-                                                                    {{ item.sku }}
+                                                                    {{ item.sku }}<span v-if="item.lot_number" class="block text-[10px]">{{ item.lot_number }}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td class="px-2 py-1.5 text-right text-xs font-medium text-slate-600 dark:text-slate-300">
-                                                        ৳{{ formatNumber(item.unit_price) }}
+                                                        <input type="number" min="0" step="0.01" v-model.number="item.unit_price" :aria-label="t('বিক্রয়মূল্য', 'Selling price')" class="w-20 rounded border-slate-200 text-right text-xs dark:bg-slate-800" />
                                                     </td>
                                                     <td class="px-2 py-1.5">
                                                         <div class="flex items-center justify-center space-x-1">
@@ -185,7 +185,7 @@
                                                             </button>
                                                             <input type="number" v-model.number="item.quantity"
                                                                 class="w-11 text-center font-bold border border-slate-200 rounded text-xs p-0.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                                                min="1" :max="item.max_stock"
+                                                                min="0.000001" step="0.000001" :max="item.max_stock"
                                                                 @change="updateCartItemQuantity(index, item.quantity)"
                                                                 @blur="updateCartItemQuantity(index, item.quantity)" />
                                                             <button @click="incrementQuantity(index)"
@@ -698,31 +698,42 @@ const addToCart = (product) => {
         return
     }
 
-    const existingItem = cartItems.value.find(item => item.product_id === product.id)
+    const lot = isService ? null : (product.lots || []).find(candidate => {
+        const reserved = cartItems.value.filter(row => row.lot_id === candidate.id).reduce((sum, row) => sum + Number(row.quantity), 0)
+        return Number(candidate.quantity) > reserved
+    })
+    if (!isService && !lot) {
+        alert(t('এই পণ্যের সব লট কার্টে যোগ হয়েছে। স্টক রিফ্রেশ করুন।', 'All available lots are already in the cart. Refresh stock.'))
+        return
+    }
+    const existingItem = cartItems.value.find(item => item.product_id === product.id && (item.lot_id || null) === (lot?.id || null))
     const imageUrl = getImageUrl(product.image_url || product.image || product.images?.[0]?.url || product.images?.[0]?.image)
 
     if (existingItem) {
         // Check if we can increment quantity
-        if (!isService && existingItem.quantity >= product.stock) {
+        if (!isService && existingItem.quantity >= Number(lot?.quantity || product.stock)) {
             const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
             errorSound.play()
             alert(`⚠️ Only ${product.stock} units available for ${product.name}`)
             return
         }
-        existingItem.quantity++
-        existingItem.max_stock = isService ? 999999 : product.stock // Track max available
+        existingItem.quantity = Math.min(Number(existingItem.quantity) + 1, Number(lot?.quantity || 999999))
+        existingItem.max_stock = isService ? 999999 : Number(lot.quantity) // Track max available
         existingItem.is_service = isService
         existingItem.image = imageUrl
     } else {
         cartItems.value.push({
             product_id: product.id,
+            product_variant_id: lot?.variant_id || null,
+            lot_id: lot?.id || null,
+            lot_number: lot?.number || null,
             name: product.name,
             sku: product.sku,
             type: product.type || (isService ? 'service' : 'product'),
             is_service: isService,
-            unit_price: Number(product.selling_price),
-            quantity: 1,
-            max_stock: isService ? 999999 : product.stock, // Track max available
+            unit_price: Number(lot?.selling_price ?? product.selling_price),
+            quantity: isService ? 1 : Math.min(1, Number(lot.quantity)),
+            max_stock: isService ? 999999 : Number(lot.quantity), // Track max available
             image: imageUrl,
         })
     }
@@ -763,7 +774,7 @@ const incrementQuantity = (index) => {
         return
     }
 
-    item.quantity++
+    item.quantity = Math.min(Number(item.quantity) + 1, Number(item.max_stock || 999999))
 }
 
 const decrementQuantity = (index) => {
@@ -776,7 +787,10 @@ const removeCartItem = (index) => {
     cartItems.value.splice(index, 1)
 }
 
+const saleRequestKey = ref(crypto.randomUUID())
+
 const resetCart = () => {
+    saleRequestKey.value = crypto.randomUUID()
     cartItems.value = []
     selectedCategory.value = null
     searchQuery.value = ''
@@ -799,6 +813,7 @@ const processSale = async () => {
         : dueAmount.value
 
     const saleData = {
+        idempotency_key: saleRequestKey.value,
         customer_id: selectedCustomer.value,
         items: cartItems.value,
         subtotal: cartSummary.value.subtotal,

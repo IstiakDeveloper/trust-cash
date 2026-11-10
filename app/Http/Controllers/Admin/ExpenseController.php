@@ -71,7 +71,7 @@ class ExpenseController extends Controller
             $expense = Expense::create($validated);
 
             // Create bank transaction (Observer automatically deducts from bank account balance)
-            BankTransaction::create([
+            $bankTransaction = BankTransaction::create([
                 'bank_account_id' => $validated['bank_account_id'],
                 'transaction_type' => 'out',
                 'amount' => $validated['amount'],
@@ -79,6 +79,7 @@ class ExpenseController extends Controller
                 'date' => $validated['date'],
                 'created_by' => auth()->id(),
             ]);
+            $expense->update(['bank_transaction_id' => $bankTransaction->id]);
 
             DB::commit();
 
@@ -118,13 +119,10 @@ class ExpenseController extends Controller
             }
 
             // Find the related bank transaction
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $oldBankAccountId,
-                'transaction_type' => 'out',
-                'amount' => $oldAmount,
-                'date' => $expense->date,
-            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
-                ->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($expense->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             // Update expense
             $expense->update($validated);
@@ -164,13 +162,10 @@ class ExpenseController extends Controller
         DB::beginTransaction();
         try {
             // Find and soft delete bank transaction (Observer automatically restores bank balance)
-            $bankTransaction = BankTransaction::where([
-                'bank_account_id' => $expense->bank_account_id,
-                'transaction_type' => 'out',
-                'amount' => $expense->amount,
-                'date' => $expense->date,
-            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
-                ->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($expense->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             if ($bankTransaction) {
                 $bankTransaction->delete();
@@ -196,13 +191,10 @@ class ExpenseController extends Controller
             $expense = Expense::withTrashed()->findOrFail($id);
 
             // Restore bank transaction (Observer automatically re-deducts bank balance)
-            $bankTransaction = BankTransaction::withTrashed()->where([
-                'bank_account_id' => $expense->bank_account_id,
-                'transaction_type' => 'out',
-                'amount' => $expense->amount,
-                'date' => $expense->date,
-            ])->where('description', 'LIKE', 'Expense: '.$expense->description)
-                ->first();
+            $bankTransaction = BankTransaction::withTrashed()->find($expense->bank_transaction_id);
+            if (! $bankTransaction) {
+                throw new \LogicException('Reconcile the original bank transaction link before changing this document.');
+            }
 
             if ($bankTransaction) {
                 $bankTransaction->restore();

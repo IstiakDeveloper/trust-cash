@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SalePayment extends Model
 {
+    use PostsAccountingAtomically;
     use SoftDeletes;
 
     protected $fillable = [
@@ -16,11 +18,11 @@ class SalePayment extends Model
         'bank_account_id',
         'transaction_id',
         'note',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2'
+        'amount' => 'decimal:2',
     ];
 
     public function sale()

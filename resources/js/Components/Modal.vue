@@ -29,11 +29,10 @@ watch(
 
             dialog.value?.showModal();
         } else {
-            document.body.style.overflow = '';
-
             setTimeout(() => {
                 dialog.value?.close();
                 showSlot.value = false;
+                document.body.style.overflow = document.querySelector('dialog[open]') ? 'hidden' : '';
             }, 200);
         }
     },
@@ -47,6 +46,8 @@ const close = () => {
 
 const closeOnEscape = (e) => {
     if (e.key === 'Escape') {
+        const openDialogs = document.querySelectorAll('dialog[open]');
+        if (openDialogs[openDialogs.length - 1] !== dialog.value) return;
         e.preventDefault();
 
         if (props.show) {
@@ -60,7 +61,7 @@ onMounted(() => document.addEventListener('keydown', closeOnEscape));
 onUnmounted(() => {
     document.removeEventListener('keydown', closeOnEscape);
 
-    document.body.style.overflow = '';
+    document.body.style.overflow = [...document.querySelectorAll('dialog[open]')].some(item => item !== dialog.value) ? 'hidden' : '';
 });
 
 const maxWidthClass = computed(() => {

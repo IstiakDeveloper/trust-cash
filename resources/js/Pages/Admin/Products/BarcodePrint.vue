@@ -404,27 +404,27 @@
                     <div class="space-y-2 text-xs text-amber-950 dark:text-amber-200">
                         <div class="flex items-center gap-2 font-bold text-sm text-amber-900 dark:text-amber-300">
                             <InformationCircleIcon class="h-5 w-5 text-amber-600 shrink-0" />
-                            <span>{{ t('থার্মাল বারকোড প্রিন্টার নিখুঁতভাবে প্রিন্ট করার গাইড', 'Thermal Barcode Printer Perfect Print Guide') }}</span>
+                            <span>{{ t('Gprinter / থার্মাল প্রিন্টারে (৩৮×২৫ মিমি) নিখুঁত প্রিন্ট করার গাইড', 'Gprinter / Thermal Printer Perfect Print Guide (38x25mm)') }}</span>
                         </div>
                         <p class="text-amber-800 dark:text-amber-300">
-                            {{ t('ব্রাউজারের প্রিন্ট ডায়ালগ (Ctrl + P) ওপেন হলে নিচের সেটিংসগুলো ঠিক রাখুন:', 'When browser print dialog opens, set the following options:') }}
+                            {{ t('Gprinter GP-3120TUC বা থার্মাল প্রিন্টারে ফুল পেজে সোজা প্রিন্ট পেতে নিচের সেটিংসগুলো ঠিক রাখুন:', 'Keep these settings to print full page straight labels on Gprinter GP-3120TUC:') }}
                         </p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 font-medium">
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                                <span class="font-bold text-amber-900 dark:text-amber-200">১. Destination (প্রিন্টার):</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">আপনার থার্মাল প্রিন্টার (যেমন: Xprinter, Rongta, TSC, Zebra) সিলেক্ট করুন।</p>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">১. Windows ড্রাইভার পেপার সাইজ (গুরুত্বপূর্ণ):</span>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">Control Panel > Printers > Gprinter 3120TUC > Printing Preferences > Page Setup এ গিয়ে একটি নতুন সাইজ তৈরি করুন: প্রস্থ 38mm, উচ্চতা 25mm, Margins: 0mm।</p>
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                                <span class="font-bold text-amber-900 dark:text-amber-200">২. Paper Size (কাগজের সাইজ):</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারে {{ effectiveWidth }}mm x {{ effectiveHeight }}mm সিলেক্ট করুন।</p>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">২. Margins (মার্জিন - ১ কোনায় যাওয়া ঠেকায়):</span>
+                                <p class="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">ব্রাউজার প্রিন্ট ডায়ালগে Margins অবশ্যই "None" দিন। Default রাখলে ১০ মিমি মার্জিনের কারণে বারকোড ১ কোনায় চলে যায়!</p>
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                                <span class="font-bold text-amber-900 dark:text-amber-200">৩. Margins (মার্জিন):</span>
-                                <p class="text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">"None" (কোনো মার্জিন নয়) সিলেক্ট করুন। ডিফল্ট মার্জিন রাখবেন না।</p>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">৩. পেপার সাইজ ও স্কেল:</span>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">Paper Size এ আপনার তৈরি করা "38x25" সিলেক্ট করুন এবং Scale: "Default" (100%) রাখুন।</p>
                             </div>
                             <div class="bg-white/80 dark:bg-slate-900/60 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                                <span class="font-bold text-amber-900 dark:text-amber-200">৪. Orientation & Headers:</span>
-                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারে Portrait রাখুন এবং "Headers and Footers" আনচেক রাখুন।</p>
+                                <span class="font-bold text-amber-900 dark:text-amber-200">৪. গ্যাপ সেন্সর ক্যালিব্রেশন (যদি স্টিকার স্কিপ করে):</span>
+                                <p class="text-slate-600 dark:text-slate-300 mt-0.5">প্রিন্টারের পাওয়ার অফ করুন। FEED বাটন চেপে ধরে রেখে পাওয়ার অন করুন। ৩টি স্টিকার বের হয়ে নিজে থেকেই থামবে।</p>
                             </div>
                         </div>
                     </div>
@@ -436,7 +436,7 @@
         </div>
 
         <!-- Barcode Sheet & Stickers Area -->
-        <div class="mx-auto max-w-5xl print:max-w-none print:w-full print:m-0 flex justify-center">
+        <div class="mx-auto max-w-5xl print:max-w-none print:w-full print:m-0 print:p-0 print:block flex justify-center">
             <div
                 :class="['barcode-container', currentModeClass]"
                 :style="previewContainerStyle"
@@ -826,6 +826,17 @@ const computedContentStyle = computed(() => {
     const padX = Math.max(0.8, w * 0.04).toFixed(1)
     const padY = Math.max(0.8, h * 0.04).toFixed(1)
 
+    if (deg === 0) {
+        return {
+            width: '100%',
+            height: '100%',
+            padding: `${padY}mm ${padX}mm`,
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            transform: 'none'
+        }
+    }
+
     let transform = 'none'
     if (deg === 90) {
         transform = 'rotate(90deg)'
@@ -1174,20 +1185,23 @@ const triggerPrint = () => {
         box-shadow: none !important;
     }
 
-    /* 1-Column Thermal Mode (Every label breaks to new page with exact rotated dimensions) */
+    /* 1-Column Thermal Mode (Every label breaks to new page with exact zero-margin alignment) */
     .mode-thermal-single {
         display: block !important;
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
     }
 
     .mode-thermal-single .label-wrapper {
-        margin: 0 auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         page-break-after: always !important;
         break-after: page !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         border-radius: 0 !important;
+        box-shadow: none !important;
     }
 
     .mode-thermal-single .label-wrapper:last-child {

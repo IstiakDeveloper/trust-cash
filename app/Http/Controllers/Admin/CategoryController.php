@@ -45,7 +45,11 @@ class CategoryController extends Controller
             $validatedData['image'] = $imagePath;
         }
 
-        Category::create($validatedData);
+        $record = Category::create($validatedData);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $record], 201);
+        }
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category created successfully');
