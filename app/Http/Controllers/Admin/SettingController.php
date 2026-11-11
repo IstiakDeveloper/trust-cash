@@ -27,6 +27,7 @@ class SettingController extends Controller
             'invoice_prefix' => 'INV-',
             'invoice_footer_note' => 'Thank you for shopping with us! Please come again.',
             'receipt_paper_size' => '80mm', // 80mm, 58mm, A4
+            'pos_require_customer_phone' => '0',
         ];
 
         $mergedSettings = array_merge($defaultSettings, $settings);
@@ -54,6 +55,7 @@ class SettingController extends Controller
             'currency_symbol', 'currency_code', 'tax_percentage', 'invoice_prefix',
             'invoice_footer_note', 'receipt_paper_size',
         ]);
+        $data['pos_require_customer_phone'] = $request->boolean('pos_require_customer_phone') ? '1' : '0';
 
         foreach ($data as $key => $value) {
             Setting::set($key, (string) $value);

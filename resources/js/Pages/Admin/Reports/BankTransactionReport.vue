@@ -147,7 +147,7 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
 
         <div class="py-6">
             <div class="mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="bg-white shadow-xl sm:rounded-lg overflow-hidden border border-gray-200">
+                <div class="bank-dashboard bg-white shadow-xl sm:rounded-lg overflow-hidden border border-gray-200">
                     <!-- Filter Section -->
                     <div class="p-3.5 sm:p-6 bg-white border-b border-gray-200 no-print">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
@@ -585,6 +585,82 @@ watch([currentMonth, currentYear, selectedBankAccount], () => {
 </template>
 
 <style scoped>
+.dark .bank-dashboard {
+    background-color: rgb(15 23 42);
+    color: rgb(226 232 240);
+    border-color: rgb(51 65 85);
+}
+.dark .bank-dashboard .bg-white,
+.dark .bank-dashboard select {
+    background-color: rgb(15 23 42);
+    color: rgb(241 245 249);
+    border-color: rgb(71 85 105);
+}
+.dark .bank-dashboard .text-gray-700,
+.dark .bank-dashboard .text-gray-800,
+.dark .bank-dashboard .text-gray-900 { color: rgb(226 232 240); }
+.dark .bank-dashboard .text-gray-500,
+.dark .bank-dashboard .text-gray-400 { color: rgb(148 163 184); }
+.dark .bank-dashboard .border-gray-100,
+.dark .bank-dashboard .border-gray-200,
+.dark .bank-dashboard .border-b { border-color: rgb(51 65 85); }
+.dark .bank-dashboard .bg-gray-50,
+.dark .bank-dashboard .bg-gray-100,
+.dark .bank-dashboard .bg-gray-200,
+.dark .bank-dashboard .bg-gray-50\/50 {
+    background-color: rgb(30 41 59);
+    color: rgb(226 232 240);
+}
+.dark .bank-dashboard .bg-emerald-50,
+.dark .bank-dashboard .bg-emerald-100,
+.dark .bank-dashboard .bg-emerald-50\/60,
+.dark .bank-dashboard .bg-emerald-200 {
+    background-color: rgba(6, 78, 59, 0.55);
+    border-color: rgba(16, 185, 129, 0.35);
+}
+.dark .bank-dashboard .bg-rose-50,
+.dark .bank-dashboard .bg-rose-100,
+.dark .bank-dashboard .bg-rose-50\/60 {
+    background-color: rgba(136, 19, 55, 0.45);
+    border-color: rgba(244, 63, 94, 0.35);
+}
+.dark .bank-dashboard .bg-blue-50,
+.dark .bank-dashboard .bg-blue-100 {
+    background-color: rgba(30, 58, 138, 0.45);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+.dark .bank-dashboard .bg-green-50,
+.dark .bank-dashboard .bg-green-200 {
+    background-color: rgba(20, 83, 45, 0.5);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+.dark .bank-dashboard .bg-amber-50 {
+    background-color: rgba(120, 53, 15, 0.5);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+.dark .bank-dashboard .text-emerald-700,
+.dark .bank-dashboard .text-emerald-800,
+.dark .bank-dashboard .text-emerald-900 { color: rgb(110 231 183); }
+.dark .bank-dashboard .text-rose-700,
+.dark .bank-dashboard .text-rose-800,
+.dark .bank-dashboard .text-rose-900 { color: rgb(253 164 175); }
+.dark .bank-dashboard .text-blue-700,
+.dark .bank-dashboard .text-blue-900 { color: rgb(147 197 253); }
+.dark .bank-dashboard .text-green-700,
+.dark .bank-dashboard .text-green-800 { color: rgb(134 239 172); }
+.dark .bank-dashboard .text-amber-700,
+.dark .bank-dashboard .text-amber-800 { color: rgb(252 211 77); }
+.dark .bank-dashboard .bg-green-200 { background-color: rgba(22, 101, 52, 0.8); color: rgb(220 252 231); }
+.dark .bank-dashboard th,
+.dark .bank-dashboard td,
+.dark .bank-dashboard .border-gray-300,
+.dark .bank-dashboard .border-gray-400 {
+    border-color: rgb(71 85 105);
+}
+.dark .bank-dashboard tr.hover\:bg-amber-50\/30:hover td {
+    background-color: rgba(120, 53, 15, 0.25);
+}
+
 .print-only {
     display: none;
 }

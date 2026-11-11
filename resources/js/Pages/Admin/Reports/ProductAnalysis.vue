@@ -7,7 +7,7 @@
                     <!-- Search Box -->
                     <div class="w-full sm:w-64">
                         <input type="text" v-model="searchQuery" @input="handleSearch" :placeholder="t('পণ্যের নাম খুঁজুন...', 'Search products...')"
-                            class="w-full px-3 py-1.5 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+                            class="w-full px-3 py-1.5 text-xs border-gray-300 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
                     </div>
                 </div>
 
@@ -19,7 +19,7 @@
                             <div class="relative">
                                 <input v-model="startDateText" type="text" inputmode="numeric"
                                     :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm"
+                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm"
                                     @change="handleTypedDate('start', startDateText)" />
                                 <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
                                     :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('start')">
@@ -36,7 +36,7 @@
                             <div class="relative">
                                 <input v-model="endDateText" type="text" inputmode="numeric"
                                     :placeholder="t('দিন/মাস/বছর', 'DD/MM/YYYY')"
-                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg shadow-sm"
+                                    class="w-28 sm:w-32 px-2 py-1 pr-7 text-xs border-gray-300 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm"
                                     @change="handleTypedDate('end', endDateText)" />
                                 <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500"
                                     :aria-label="t('তারিখ নির্বাচন করুন', 'Select date')" @click="openDatePicker('end')">
@@ -107,7 +107,7 @@
             </div>
         </template>
 
-        <div v-show="viewMode === 'dashboard'" class="no-print">
+        <div v-show="viewMode === 'dashboard'" class="pa-dashboard no-print">
             <div class="py-3">
                 <div class="max-w-full mx-auto">
                 <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
@@ -961,6 +961,68 @@ export default defineComponent({
     line-height: 1.25 !important;
     word-break: break-word;
 }
+
+.dark .pa-dashboard {
+    color: rgb(226 232 240);
+}
+.dark .pa-dashboard .bg-white {
+    background-color: rgb(15 23 42);
+    color: rgb(226 232 240);
+}
+.dark .pa-dashboard .bg-gray-50,
+.dark .pa-dashboard .hover\:bg-gray-50:hover {
+    background-color: rgb(30 41 59);
+}
+.dark .pa-dashboard .text-gray-900 { color: rgb(248 250 252); }
+.dark .pa-dashboard .text-gray-600,
+.dark .pa-dashboard .text-gray-500 { color: rgb(148 163 184); }
+.dark .pa-dashboard .text-gray-400 { color: rgb(100 116 139); }
+.dark .pa-dashboard .bg-yellow-50,
+.dark .pa-dashboard .bg-yellow-50\/30,
+.dark .pa-dashboard .bg-yellow-100 { background-color: rgba(113, 63, 18, 0.45); }
+.dark .pa-dashboard .bg-blue-50,
+.dark .pa-dashboard .bg-blue-50\/30,
+.dark .pa-dashboard .bg-blue-100 { background-color: rgba(30, 58, 138, 0.4); }
+.dark .pa-dashboard .bg-green-50,
+.dark .pa-dashboard .bg-green-50\/30,
+.dark .pa-dashboard .bg-green-100 { background-color: rgba(20, 83, 45, 0.45); }
+.dark .pa-dashboard .bg-orange-50,
+.dark .pa-dashboard .bg-orange-50\/30,
+.dark .pa-dashboard .bg-orange-100 { background-color: rgba(124, 45, 18, 0.45); }
+.dark .pa-dashboard .bg-purple-50,
+.dark .pa-dashboard .bg-purple-50\/30,
+.dark .pa-dashboard .bg-purple-100 { background-color: rgba(88, 28, 135, 0.4); }
+.dark .pa-dashboard .text-green-600,
+.dark .pa-dashboard .text-green-700,
+.dark .pa-dashboard .text-green-900 { color: rgb(134 239 172); }
+.dark .pa-dashboard .text-red-600,
+.dark .pa-dashboard .text-red-700 { color: rgb(252 165 165); }
+.dark .pa-dashboard .text-blue-700,
+.dark .pa-dashboard .text-blue-900 { color: rgb(191 219 254); }
+.dark .pa-dashboard .text-orange-700,
+.dark .pa-dashboard .text-orange-900 { color: rgb(253 186 116); }
+.dark .pa-dashboard .text-purple-700,
+.dark .pa-dashboard .text-purple-900 { color: rgb(216 180 254); }
+.dark .pa-dashboard .text-yellow-700,
+.dark .pa-dashboard .text-yellow-900 { color: rgb(253 224 71); }
+.dark .pa-dashboard th,
+.dark .pa-dashboard td,
+.dark .pa-dashboard .border-r,
+.dark .pa-dashboard .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgb(51 65 85);
+}
+.dark .pa-dashboard .border-blue-200\/60,
+.dark .pa-dashboard .border-green-200\/60,
+.dark .pa-dashboard .border-orange-200\/60,
+.dark .pa-dashboard .border-purple-200\/60,
+.dark .pa-dashboard .border-yellow-200\/60,
+.dark .pa-dashboard .border-red-200 {
+    border-color: rgb(71 85 105);
+}
+.dark .pa-dashboard .bg-red-50 {
+    background-color: rgba(127, 29, 29, 0.35);
+}
+.dark .pa-dashboard .text-red-800 { color: rgb(254 202 202); }
 
 .print-only {
     display: none;

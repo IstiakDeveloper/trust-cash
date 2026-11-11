@@ -191,10 +191,12 @@ class InventoryValuation
         $stock->available_quantity = $newQuantity;
         $stock->total_quantity ??= $incoming ? $quantity : '0';
         if ($incoming) {
-            $stock->selling_price ??= Product::withTrashed()->findOrFail($stock->product_id)->selling_price;
+            $product = Product::withTrashed()->findOrFail($stock->product_id);
+            $numberedPurchase = $policy->method === 'fifo' && $stock->type === 'purchase';
+            $stock->selling_price ??= $numberedPurchase ? $product->latestReceiptSellingPrice() : $product->selling_price;
             $stock->lot_remaining_quantity = $quantity;
             $stock->lot_remaining_value = $cost;
-            $stock->lot_number = $stock->lot_number ?: 'LOT-'.Str::ulid();
+            $stock->lot_number = $stock->lot_number ?: ($numberedPurchase ? $product->nextLotNumber() : 'LOT-'.Str::ulid());
         }
         DB::table('inventory_balances')->where('id', $balance->id)->update([
             'quantity' => $newQuantity, 'value' => $newValue, 'last_effective_date' => $date,

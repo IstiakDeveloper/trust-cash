@@ -79,7 +79,9 @@ class ProductStockController extends Controller
 
     public function create()
     {
-        $products = Product::all()->map(function ($product) {
+        $products = Product::all();
+        $lotDefaults = Product::fifoLotDefaults($products);
+        $products = $products->map(function ($product) use ($lotDefaults) {
             $latestStock = ProductStock::where('product_id', $product->id)->latest('id')->first();
 
             return [
@@ -87,6 +89,9 @@ class ProductStockController extends Controller
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'current_stock' => $product->availableQuantity(),
+                'selling_price' => (float) $product->selling_price,
+                'next_lot_number' => $lotDefaults[$product->id]['next_lot_number'],
+                'previous_selling_price' => (float) ($lotDefaults[$product->id]['previous_selling_price'] ?? $product->selling_price ?? 0),
                 'last_unit_cost' => $latestStock ? (float) $latestStock->unit_cost : (float) ($product->cost_price ?? 0),
             ];
         });

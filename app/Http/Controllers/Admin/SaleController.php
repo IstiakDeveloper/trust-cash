@@ -11,12 +11,11 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
 use App\Services\SaleAmounts;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\SaleReceipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use NumberFormatter;
 
 class SaleController extends Controller
 {
@@ -551,46 +550,7 @@ class SaleController extends Controller
 
     public function printReceipt($id)
     {
-        // Fetch the sale with related data, including product categories
-        $sale = Sale::with([
-            'saleItems.product.category', // Include product category relationship
-            'customer',
-            'createdBy',
-            'bankAccount',
-        ])->findOrFail($id);
-
-        // Group items by category
-        $itemsByCategory = $sale->saleItems->groupBy(function ($item) {
-            return $item->product->category->name ?? 'Uncategorized';
-        });
-
-        // Calculate category subtotals
-        $categoryTotals = [];
-        foreach ($itemsByCategory as $category => $items) {
-            $categoryTotals[$category] = $items->sum('subtotal');
-        }
-
-        $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
-        $amountInWords = ucfirst($f->format($sale->total)).' taka only';
-
-        $pdf = Pdf::loadView('admin.sales.receipt', [
-            'sale' => $sale,
-            'itemsByCategory' => $itemsByCategory, // Added this line
-            'categoryTotals' => $categoryTotals,
-            'amountInWords' => $amountInWords,
-            'company' => [
-                'name' => config('app.name'),
-                'address' => config('app.address'),
-                'phone' => config('app.phone'),
-                'email' => config('app.email'),
-                'logo' => public_path('images/logo.png'),
-            ],
-        ]);
-
-        // Set paper size for 80mm receipt (width: 80mm)
-        $pdf->setPaper([0, 0, 226.772, 841.89], 'portrait');
-
-        return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
+        return SaleReceipt::response((int) $id);
     }
 
     /**

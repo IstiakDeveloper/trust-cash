@@ -57,10 +57,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 my-4 sm:my-6">
                     <div class="bg-gray-50 dark:bg-gray-700/30 sm:bg-transparent sm:dark:bg-transparent p-3 sm:p-0 rounded-xl">
                         <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{{ t('সরবরাহকারী তথ্য', 'Supplier Info') }}</h4>
-                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ purchase.supplier?.name }}</div>
-                        <div v-if="purchase.supplier?.company_name" class="text-gray-600 dark:text-gray-300 font-medium text-xs sm:text-sm">{{ purchase.supplier?.company_name }}</div>
-                        <div class="text-xs text-gray-500 mt-1">{{ t('মোবাইল:', 'Phone:') }} {{ purchase.supplier?.phone || 'N/A' }}</div>
-                        <div class="text-xs text-gray-500">{{ t('ঠিকানা:', 'Address:') }} {{ purchase.supplier?.address || 'N/A' }}</div>
+                        <div class="font-bold text-gray-900 dark:text-white text-base">{{ purchase.supplier?.name || t('সাপ্লায়ার নেই', 'No supplier') }}</div>
+                        <template v-if="purchase.supplier">
+                            <div v-if="purchase.supplier.company_name" class="text-gray-600 dark:text-gray-300 font-medium text-xs sm:text-sm">{{ purchase.supplier.company_name }}</div>
+                            <div class="text-xs text-gray-500 mt-1">{{ t('মোবাইল:', 'Phone:') }} {{ purchase.supplier.phone || 'N/A' }}</div>
+                            <div class="text-xs text-gray-500">{{ t('ঠিকানা:', 'Address:') }} {{ purchase.supplier.address || 'N/A' }}</div>
+                        </template>
                     </div>
 
                     <div class="bg-gray-50 dark:bg-gray-700/30 sm:bg-transparent sm:dark:bg-transparent p-3 sm:p-0 rounded-xl sm:text-right">

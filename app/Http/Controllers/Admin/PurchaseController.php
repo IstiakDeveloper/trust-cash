@@ -75,6 +75,23 @@ class PurchaseController extends Controller
             ->with(['variants', 'unit'])
             ->select('id', 'name', 'sku', 'barcode', 'cost_price', 'selling_price', 'unit_id')
             ->get();
+        $lotDefaults = Product::fifoLotDefaults($products);
+        $products = $products->map(function ($product) use ($lotDefaults) {
+            $defaults = $lotDefaults[$product->id];
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'cost_price' => (float) $product->cost_price,
+                'selling_price' => (float) $product->selling_price,
+                'unit_id' => $product->unit_id,
+                'unit' => $product->unit ? $product->unit->only(['id', 'name']) : null,
+                'next_lot_number' => $defaults['next_lot_number'],
+                'previous_selling_price' => (float) ($defaults['previous_selling_price'] ?? $product->selling_price ?? 0),
+            ];
+        })->values();
 
         $bankAccounts = BankAccount::active()
             ->select('id', 'bank_name', 'account_number', 'current_balance')
@@ -93,7 +110,7 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'purchase_date' => 'required|date',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'discount_type' => 'nullable|string|in:fixed,percentage',
@@ -112,12 +129,7 @@ class PurchaseController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
         $validated['items'] = array_values($validated['items']);
-
-        if (($validated['paid_amount'] ?? 0) > 0 && empty($validated['bank_account_id'])) {
-            return back()->withErrors([
-                'bank_account_id' => 'Select a bank or cash account for the immediate payment.',
-            ])->withInput();
-        }
+        $validated['supplier_id'] = ($validated['supplier_id'] ?? null) ?: null;
 
         DB::beginTransaction();
         $policy = DB::table('inventory_policies')->lockForUpdate()->find(1);
@@ -159,6 +171,12 @@ class PurchaseController extends Controller
                 throw new \LogicException('Payment cannot exceed the invoice total. Record supplier advances separately.');
             }
             $dueAmount = bcsub($totalAmount, $paidAmount, 2);
+            if (bccomp($dueAmount, '0', 2) > 0 && empty($validated['supplier_id'])) {
+                throw new \LogicException('Choose a supplier to buy on due.');
+            }
+            if (bccomp($paidAmount, '0', 2) > 0 && empty($validated['bank_account_id'])) {
+                throw new \LogicException('Select a bank or cash account for the payment.');
+            }
             $paymentBankAccountId = $paidAmount > 0 ? ($validated['bank_account_id'] ?? null) : null;
 
             $paymentStatus = 'due';
@@ -271,19 +289,20 @@ class PurchaseController extends Controller
             if ($paidAmount > 0 && $paymentBankAccountId) {
                 $bankAccount = BankAccount::findOrFail($paymentBankAccountId);
 
-                SupplierPayment::create([
-                    'supplier_id' => $validated['supplier_id'],
-                    'purchase_id' => $purchase->id,
-                    'bank_account_id' => $bankAccount->id,
-                    'amount' => $paidAmount,
-                    'payment_method' => 'cash',
-                    'payment_date' => $validated['purchase_date'],
-                    'reference_no' => $purchaseNumber,
-                    'note' => "Payment for Purchase #{$purchaseNumber}",
-                    'created_by' => auth()->id(),
-                ]);
+                if (! empty($validated['supplier_id'])) {
+                    SupplierPayment::create([
+                        'supplier_id' => $validated['supplier_id'],
+                        'purchase_id' => $purchase->id,
+                        'bank_account_id' => $bankAccount->id,
+                        'amount' => $paidAmount,
+                        'payment_method' => 'cash',
+                        'payment_date' => $validated['purchase_date'],
+                        'reference_no' => $purchaseNumber,
+                        'note' => "Payment for Purchase #{$purchaseNumber}",
+                        'created_by' => auth()->id(),
+                    ]);
+                }
 
-                // Create bank transaction (Observer automatically deducts from bank account balance)
                 BankTransaction::create([
                     'bank_account_id' => $bankAccount->id,
                     'transaction_type' => 'out',
@@ -294,9 +313,9 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            // Update supplier balance (increase by due_amount)
-            $supplier = Supplier::findOrFail($validated['supplier_id']);
-            $supplier->increment('current_balance', $dueAmount);
+            if (! empty($validated['supplier_id']) && bccomp($dueAmount, '0', 2) > 0) {
+                Supplier::findOrFail($validated['supplier_id'])->increment('current_balance', $dueAmount);
+            }
 
             DB::commit();
 

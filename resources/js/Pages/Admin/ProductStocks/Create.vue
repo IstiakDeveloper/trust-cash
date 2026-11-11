@@ -33,19 +33,7 @@
 
             <!-- Main Form Card -->
             <div class="rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
-                <form @submit.prevent="submit" class="p-6 sm:p-8 space-y-6">
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label v-if="isFifo" class="text-xs font-bold dark:text-white">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}
-                            <input v-model="form.lot_number" maxlength="100" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
-                            <span v-if="form.errors.lot_number" class="text-red-600">{{ form.errors.lot_number }}</span>
-                        </label>
-                        <label class="text-xs font-bold dark:text-white">{{ isFifo ? t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') : t('বিক্রয়মূল্য', 'Selling price') }}
-                            <input v-model="form.selling_price" type="number" min="0" step="0.01" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
-                            <span class="mt-1 block text-[11px] font-normal text-slate-500">{{ isFifo ? t('এই দাম শুধু এই লট বিক্রি হওয়া পর্যন্ত।', 'This price applies while this lot is sold.') : t('এই দাম পণ্যের বিক্রয়মূল্য হয়ে যাবে।', 'This becomes the product selling price.') }}</span>
-                            <span v-if="form.errors.selling_price" class="text-red-600">{{ form.errors.selling_price }}</span>
-                        </label>
-                    </div>
+                <form @submit.prevent="submit" class="space-y-6 p-4 sm:p-8">
 
                     <!-- Product Selection Field -->
                     <div>
@@ -67,6 +55,19 @@
                         <p v-if="form.errors.product_id" class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
                             {{ form.errors.product_id }}
                         </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label v-if="isFifo" class="text-xs font-bold text-slate-700 dark:text-white">{{ t('লট নম্বর', 'Lot number') }}
+                            <input v-model="form.lot_number" maxlength="100" class="mt-2 block min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                            <span class="mt-1 block text-[11px] font-normal text-slate-500">{{ t('পণ্য বাছলে lot-1, lot-2 এভাবে বসে। চাইলে বদলান।', 'Choosing a product fills lot-1, lot-2, and so on. Change it if you want.') }}</span>
+                            <span v-if="form.errors.lot_number" class="text-red-600">{{ form.errors.lot_number }}</span>
+                        </label>
+                        <label class="text-xs font-bold text-slate-700 dark:text-white">{{ isFifo ? t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') : t('বিক্রয়মূল্য', 'Selling price') }}
+                            <input v-model="form.selling_price" type="number" min="0" step="0.01" class="mt-2 block min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                            <span class="mt-1 block text-[11px] font-normal text-slate-500">{{ isFifo ? t('আগের লটের বিক্রয়মূল্য বসানো আছে। চাইলে বদলান।', 'The previous lot’s selling price is filled in. Change it if you want.') : t('পণ্যের আগের বিক্রয়মূল্য বসানো আছে। বদলাতে চাইলে এখানে বদলান, না হলে আগের দামই থাকবে।', 'The product’s current selling price is filled in. Change it here only if the price should change.') }}</span>
+                            <span v-if="form.errors.selling_price" class="text-red-600">{{ form.errors.selling_price }}</span>
+                        </label>
                     </div>
 
                     <!-- Selected Product Info Banner -->
@@ -204,85 +205,49 @@
                         </div>
                     </div>
 
-                    <!-- BAKI / CREDIT SWITCH SECTION -->
                     <div class="rounded-2xl border p-4 sm:p-5 transition-all"
                         :class="form.is_credit 
                             ? 'bg-amber-50/60 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/60' 
                             : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/60'">
-                        
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-                                        <BanknotesIcon class="h-4 w-4" :class="form.is_credit ? 'text-amber-600' : 'text-indigo-600'" />
-                                        <span>{{ t('বাকিতে ক্রয় করবেন? (Credit Purchase)', 'Purchase on Credit / Baki?') }}</span>
-                                    </h3>
-                                    <!-- Badge -->
-                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold"
-                                        :class="form.is_credit 
-                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300' 
-                                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'">
-                                        {{ form.is_credit ? t('বাকি / দেনা ক্রয়', 'Credit (Due)') : t('নগদ / ব্যাংক পরিশোধ', 'Paid (Bank)') }}
-                                    </span>
-                                </div>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    {{ form.is_credit 
-                                        ? t('সুইচ অন রয়েছে: কোনো ব্যাংক ব্যালেন্স কাটা হবে না, সরবরাহকারীর হিসাবে বাকি দেনা যুক্ত হবে।', 'Switch is ON: No bank deduction. Due will be recorded under selected supplier.') 
-                                        : t('সুইচ অফ রয়েছে: আপনার ব্যাংক অ্যাকাউন্ট থেকে সরাসরি খরচ পরিশোধ হবে। বাকিতে কিনলে সুইচটি অন করুন।', 'Switch is OFF: Amount will be deducted from bank. Turn ON to buy on credit from a supplier.') }}
-                                </p>
-                            </div>
 
-                            <!-- Modern Toggle Switch Button -->
-                            <div class="flex items-center gap-2.5 shrink-0">
-                                <span class="text-xs font-bold" :class="!form.is_credit ? 'text-slate-900 dark:text-white' : 'text-slate-400'">
-                                    {{ t('নগদ/ব্যাংক', 'Cash/Bank') }}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    role="switch"
-                                    :aria-checked="form.is_credit"
-                                    @click="toggleCreditSwitch"
-                                    class="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
-                                    :class="form.is_credit ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'"
-                                >
-                                    <span
-                                        aria-hidden="true"
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
-                                        :class="form.is_credit ? 'translate-x-6' : 'translate-x-0'"
-                                    />
-                                </button>
-
-                                <span class="text-xs font-bold" :class="form.is_credit ? 'text-amber-600 dark:text-amber-400 font-extrabold' : 'text-slate-400'">
-                                    {{ t('বাকি', 'Credit') }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- CONDITIONAL: SUPPLIER SELECTION (If Credit / Baki is ON) -->
-                        <div v-if="form.is_credit" class="mt-4 pt-4 border-t border-amber-200/80 dark:border-amber-900/60 space-y-3">
-                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
-                                {{ t('সরবরাহকারী নির্বাচন করুন (Supplier)', 'Select Supplier') }} <span class="text-rose-500">*</span>
+                        <div class="space-y-3">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                {{ t('সরবরাহকারী (ঐচ্ছিক)', 'Supplier (optional)') }}
                             </label>
-
                             <SearchableSelect
                                 v-model="form.supplier_id"
                                 :options="suppliersForSelect"
                                 label-key="displayName"
                                 value-key="id"
                                 description-key="supplierInfo"
-                                :placeholder="t('সরবরাহকারীর নাম, কোম্পানি বা ফোন নম্বর খুঁজুন...', 'Search supplier by name, company, or phone...')"
+                                :placeholder="t('সাপ্লায়ার না থাকলে খালি রাখুন', 'Leave empty if there is no supplier')"
                                 :show-badge="!!selectedSupplier"
                                 :badge-text="selectedSupplier ? `${t('বকেয়া:', 'Due:')} ${formatCurrency(selectedSupplier.current_balance)}` : ''"
                                 @change="onSupplierChange"
                             />
-                            <p v-if="form.errors.supplier_id" class="mt-1 text-xs text-rose-600 dark:text-rose-400 font-medium">
-                                {{ form.errors.supplier_id }}
-                            </p>
+                            <p v-if="!form.supplier_id" class="text-xs text-amber-700 dark:text-amber-300">{{ t('সাপ্লায়ার না বাছলে বাকিতে কেনা যাবে না।', 'Without a supplier this stock cannot be bought on due.') }}</p>
+                            <p v-if="form.errors.supplier_id" class="text-xs text-rose-600 dark:text-rose-400 font-medium">{{ form.errors.supplier_id }}</p>
+                        </div>
 
-                            <!-- Supplier Details & Due Preview Card -->
-                            <div v-if="selectedSupplier"
-                                class="rounded-xl bg-white dark:bg-slate-900 p-3.5 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div v-if="form.supplier_id" class="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                            :class="form.is_credit ? 'border-amber-200/80 dark:border-amber-900/60' : 'border-slate-200 dark:border-slate-700'">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">{{ t('Due Purchase', 'Due Purchase') }}</h3>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ form.is_credit ? t('চালু থাকলে ব্যাংক অ্যাকাউন্ট লাগবে না। পুরো টাকা সাপ্লায়ারের বাকি।', 'On: no bank account. The full amount stays as this supplier’s due.') : t('বন্ধ থাকলে ব্যাংক অ্যাকাউন্ট থেকে পরিশোধ হবে।', 'Off: choose the bank or cash account that pays this stock.') }}</p>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                :aria-checked="form.is_credit"
+                                @click="toggleCreditSwitch"
+                                class="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
+                                :class="form.is_credit ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'"
+                            >
+                                <span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out" :class="form.is_credit ? 'translate-x-6' : 'translate-x-0'" />
+                            </button>
+                        </div>
+
+                        <div v-if="form.is_credit && selectedSupplier" class="mt-4 rounded-xl bg-white dark:bg-slate-900 p-3.5 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                                 <div>
                                     <div class="flex items-center gap-2">
                                         <BuildingOfficeIcon class="h-4 w-4 text-amber-600" />
@@ -311,10 +276,8 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- CONDITIONAL: BANK ACCOUNT SELECTION (If Credit is OFF) -->
-                        <div v-else class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                        <div v-if="!form.is_credit" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                                 {{ t('পরিশোধের ব্যাংক অ্যাকাউন্ট (Bank Account)', 'Payment Bank Account') }} <span class="text-rose-500">*</span>
                             </label>
@@ -347,7 +310,7 @@
                                         <strong class="font-bold">{{ formatCurrency(selectedBank.current_balance) }}</strong>,
                                         {{ t('কিন্তু মোট ক্রয়ের জন্য প্রয়োজন', 'but purchase total requires') }}
                                         <strong class="font-bold">{{ formatCurrency(form.total_cost) }}</strong>।
-                                        {{ t('অন্য অ্যাকাউন্ট নির্বাচন করুন অথবা ওপরের সুইচটি অন করে বাকিতে ক্রয় করুন।', 'Please choose another account or toggle ON Credit Purchase above.') }}
+                                        {{ form.supplier_id ? t('অন্য অ্যাকাউন্ট নিন, অথবা Due Purchase চালু করুন।', 'Choose another account, or turn on Due Purchase.') : t('অন্য অ্যাকাউন্ট নির্বাচন করুন।', 'Choose another account.') }}
                                     </p>
                                 </div>
                             </div>
@@ -400,7 +363,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -410,7 +373,6 @@ import {
     CubeIcon,
     ArrowLeftIcon,
     TagIcon,
-    BanknotesIcon,
     BuildingOfficeIcon,
     ExclamationTriangleIcon,
     CheckIcon
@@ -436,9 +398,16 @@ const props = defineProps({
 
 const localProducts = ref([...props.products]);
 const productCreated = (product) => {
-    localProducts.value.push({ ...product, current_stock: 0, last_unit_cost: 0 });
+    localProducts.value.push({
+        ...product,
+        current_stock: 0,
+        last_unit_cost: 0,
+        next_lot_number: 'lot-1',
+        previous_selling_price: product.selling_price,
+    });
     form.product_id = product.id;
     form.selling_price = product.selling_price;
+    if (isFifo.value) form.lot_number = 'lot-1';
 };
 
 const todayDate = (usePage().props.business_date || new Date().toLocaleDateString('en-CA'));
@@ -458,13 +427,14 @@ const form = useForm({
 
 // Toggle credit switch
 const toggleCreditSwitch = () => {
+    if (!form.supplier_id) return;
     form.is_credit = !form.is_credit;
-    if (form.is_credit) {
-        form.bank_account_id = '';
-    } else {
-        form.supplier_id = '';
-    }
+    if (form.is_credit) form.bank_account_id = '';
 };
+
+watch(() => form.supplier_id, (id) => {
+    if (!id) form.is_credit = false;
+});
 
 // Transform products for searchable select
 const productsForSelect = computed(() => {
@@ -530,9 +500,15 @@ const isSubmitDisabled = computed(() => {
 });
 
 const onProductChange = (product) => {
-    if (product) {
-        form.product_id = product.id;
+    if (!product) return;
+    form.product_id = product.id;
+    const source = localProducts.value.find(item => item.id === product.id) || product;
+    if (isFifo.value) {
+        form.lot_number = source.next_lot_number || 'lot-1';
+        form.selling_price = source.previous_selling_price ?? source.selling_price ?? '';
+        return;
     }
+    form.selling_price = source.selling_price ?? '';
 };
 
 const onBankChange = (account) => {
@@ -542,9 +518,8 @@ const onBankChange = (account) => {
 };
 
 const onSupplierChange = (supplier) => {
-    if (supplier) {
-        form.supplier_id = supplier.id;
-    }
+    form.supplier_id = supplier?.id || '';
+    if (!form.supplier_id) form.is_credit = false;
 };
 
 const submit = () => {

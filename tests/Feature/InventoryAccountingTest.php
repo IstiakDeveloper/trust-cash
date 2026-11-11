@@ -310,6 +310,23 @@ class InventoryAccountingTest extends TestCase
         $this->assertCount(0, $pos['lots']);
     }
 
+    public function test_fifo_receipts_continue_lot_numbers_and_reuse_the_previous_selling_price(): void
+    {
+        $this->receive('5', '100', sellingPrice: '150');
+        $this->assertSame('lot-1', ProductStock::value('lot_number'));
+        $supplier = Supplier::create(['name' => 'Lot supplier', 'opening_balance' => 0, 'current_balance' => 0]);
+        app(PurchaseController::class)->store(Request::create('/', 'POST', [
+            'supplier_id' => $supplier->id, 'purchase_date' => '2026-11-02', 'bank_account_id' => $this->bank->id, 'paid_amount' => 80,
+            'items' => [
+                ['product_id' => $this->product->id, 'quantity' => 4, 'purchase_price' => 20],
+            ],
+        ]));
+        $lots = ProductStock::orderBy('id')->get();
+        $this->assertSame(['lot-1', 'lot-2'], $lots->pluck('lot_number')->all());
+        $this->assertEquals(150, (float) $lots->last()->selling_price);
+        $this->assertEquals(180, (float) $this->product->fresh()->selling_price);
+    }
+
     public function test_average_purchase_updates_product_price_and_ignores_a_typed_lot_number(): void
     {
         app(InventoryPolicy::class)->select('moving_weighted_average');
@@ -323,6 +340,32 @@ class InventoryAccountingTest extends TestCase
         $this->assertEquals(40, (float) $this->product->fresh()->selling_price);
         $this->assertNotSame('USER-LOT', ProductStock::value('lot_number'));
         $this->assertStringStartsWith('LOT-', (string) ProductStock::value('lot_number'));
+    }
+
+    public function test_cash_purchase_without_a_supplier_is_paid_from_the_bank(): void
+    {
+        app(PurchaseController::class)->store(Request::create('/', 'POST', [
+            'purchase_date' => '2026-11-01', 'bank_account_id' => $this->bank->id, 'paid_amount' => 100,
+            'items' => [
+                ['product_id' => $this->product->id, 'quantity' => 4, 'purchase_price' => 25],
+            ],
+        ]));
+        $this->assertNull(DB::table('purchases')->value('supplier_id'));
+        $this->assertEquals(100, (float) DB::table('purchases')->value('paid_amount'));
+        $this->assertEquals(0, (float) DB::table('purchases')->value('due_amount'));
+        $this->assertEquals(9900, (float) $this->bank->fresh()->current_balance);
+    }
+
+    public function test_due_purchase_without_a_supplier_is_rejected(): void
+    {
+        app(PurchaseController::class)->store(Request::create('/', 'POST', [
+            'purchase_date' => '2026-11-01', 'paid_amount' => 0,
+            'items' => [
+                ['product_id' => $this->product->id, 'quantity' => 4, 'purchase_price' => 25],
+            ],
+        ]));
+        $this->assertDatabaseCount('purchases', 0);
+        $this->assertEquals(10000, (float) $this->bank->fresh()->current_balance);
     }
 
     public function test_cash_history_survives_source_update_and_deletion(): void

@@ -172,6 +172,14 @@
                             </select>
                         </div>
 
+                        <label class="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3 cursor-pointer">
+                            <span>
+                                <span class="block text-xs font-bold text-slate-800 dark:text-white">{{ t('POS সেলে মোবাইল নম্বর বাধ্যতামূলক', 'Require a mobile number on POS sales') }}</span>
+                                <span class="mt-0.5 block text-[11px] font-normal text-slate-500">{{ t('চালু থাকলে কাস্টমার না বাছলে সেলের আগে নম্বর চাইবে এবং কাস্টমার তালিকায় সেভ হবে।', 'When on, a sale without a selected customer asks for a mobile number and saves that customer.') }}</span>
+                            </span>
+                            <input v-model="form.pos_require_customer_phone" true-value="1" false-value="0" type="checkbox" class="h-5 w-5 rounded border-slate-300 text-indigo-600" />
+                        </label>
+
                         <div class="sm:col-span-2">
                             <label class="block font-bold text-xs text-slate-700 dark:text-slate-300 mb-1">
                                 {{ t('রসিদের নিচের মন্তব্য (Footer Note)', 'Receipt Footer Note') }}

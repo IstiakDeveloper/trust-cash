@@ -137,6 +137,44 @@ class Product extends Model
             ])->values();
     }
 
+    public function nextLotNumber(): string
+    {
+        return self::fifoLotDefaults([$this])[$this->id]['next_lot_number'];
+    }
+
+    public function latestReceiptSellingPrice(): mixed
+    {
+        return self::fifoLotDefaults([$this])[$this->id]['previous_selling_price'];
+    }
+
+    /** @param  iterable<int, self>  $products */
+    public static function fifoLotDefaults(iterable $products): array
+    {
+        $products = collect($products);
+        $rows = ProductStock::query()
+            ->whereIn('product_id', $products->pluck('id')->filter()->all())
+            ->orderBy('date')->orderBy('id')
+            ->get(['product_id', 'lot_number', 'selling_price', 'quantity'])
+            ->groupBy('product_id');
+        $defaults = [];
+        foreach ($products as $product) {
+            $lots = $rows->get($product->id, collect());
+            $max = 0;
+            foreach ($lots as $lot) {
+                if (preg_match('/^lot-(\d+)$/i', trim((string) $lot->lot_number), $match)) {
+                    $max = max($max, (int) $match[1]);
+                }
+            }
+            $previous = $lots->reverse()->first(fn ($lot) => (float) $lot->quantity > 0 && $lot->selling_price !== null);
+            $defaults[$product->id] = [
+                'next_lot_number' => 'lot-'.($max + 1),
+                'previous_selling_price' => $previous->selling_price ?? $product->selling_price,
+            ];
+        }
+
+        return $defaults;
+    }
+
     public function availableQuantity(): string
     {
         if (! DB::table('inventory_balances')->where('product_id', $this->id)->exists()) {

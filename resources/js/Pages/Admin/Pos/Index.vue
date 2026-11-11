@@ -272,6 +272,7 @@
                             <label class="block mb-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                                 {{ t('কাস্টমার নির্বাচন', 'Select Customer') }}
                             </label>
+                            <p v-if="requireCustomerPhone" class="mb-1.5 text-[11px] text-slate-500">{{ t('কাস্টমার না বাছলে সেলের আগে মোবাইল নম্বর চাইবে।', 'Without a customer, the sale asks for a mobile number first.') }}</p>
                             <select v-model="selectedCustomer"
                                 class="w-full py-1.5 text-xs font-medium text-slate-900 bg-slate-50 border-slate-200 rounded-lg dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-1 focus:ring-indigo-500">
                                 <option :value="null">{{ t('সাধারণ কাস্টমার (Walk-in)', 'Walk-in Customer') }}</option>
@@ -442,7 +443,7 @@
                             <span>{{ t('কার্ট খালি করুন (Reset)', 'Reset Cart') }}</span>
                         </button>
 
-                        <button @click="processSale" :disabled="!canProcessSale || processing"
+                        <button @click="requestSale" :disabled="!canProcessSale || processing"
                             class="flex items-center justify-center w-full py-3 text-xs font-bold text-white transition-all rounded-xl shadow-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98">
                             <i v-if="!processing" class="fas fa-check-circle mr-1.5 text-sm"></i>
                             <i v-else class="fas fa-spinner fa-spin mr-1.5 text-sm"></i>
@@ -462,7 +463,7 @@
         <!-- Fixed Display Corner Overlay Complete Sale Button (Desktop Only, hidden on mobile) -->
         <div class="hidden lg:flex fixed bottom-6 right-6 z-50 items-center gap-2 drop-shadow-2xl">
             <button
-                @click="processSale"
+                @click="requestSale"
                 :disabled="!canProcessSale || processing"
                 class="flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-2xl shadow-emerald-950/60 border border-emerald-400/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
             >
@@ -493,6 +494,19 @@
         </div>
 
         <!-- Success Modal -->
+        <div v-if="showPhoneModal" class="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/50 p-3 sm:items-center">
+            <form class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl dark:bg-slate-900" @submit.prevent="confirmPhone">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ t('মোবাইল নম্বর', 'Mobile number') }}</h3>
+                <p class="mt-1 text-xs text-slate-500">{{ t('সেল সেভ করতে ০১ দিয়ে ১১ সংখ্যার নম্বর দিন। নম্বর কাস্টমার তালিকায় যুক্ত হবে।', 'Enter an 11-digit number starting with 01. It is saved as a customer.') }}</p>
+                <input v-model="phoneDraft" type="tel" inputmode="numeric" maxlength="11" autofocus placeholder="01XXXXXXXXX" class="mt-3 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                <p v-if="phoneError" class="mt-1 text-xs text-rose-600">{{ phoneError }}</p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" class="min-h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 dark:border-slate-600 dark:text-slate-200" @click="showPhoneModal = false">{{ t('বাতিল', 'Cancel') }}</button>
+                    <button type="submit" class="min-h-11 rounded-xl bg-emerald-600 text-sm font-bold text-white">{{ t('সেল করুন', 'Complete sale') }}</button>
+                </div>
+            </form>
+        </div>
+
         <PosSuccessModal
             v-if="showSuccessModal"
             :sale="lastSale"
@@ -520,7 +534,8 @@ const isFifo = computed(() => usePage().props.inventory_costing_method === 'fifo
 const props = defineProps({
     customers: Array,
     bankAccounts: Array,
-    categories: Array
+    categories: Array,
+    requireCustomerPhone: Boolean,
 })
 
 // State
@@ -533,7 +548,14 @@ const selectedCategory = ref(null)
 const loading = ref(false)
 const processing = ref(false)
 const showSuccessModal = ref(false)
+const showPhoneModal = ref(false)
+const phoneDraft = ref('')
+const phoneError = ref('')
+const pendingPhone = ref('')
 const lastSale = ref(null)
+const requireCustomerPhone = computed(() => props.requireCustomerPhone === true || props.requireCustomerPhone === 1 || props.requireCustomerPhone === '1')
+const phoneDigits = (value) => String(value || '').replace(/\D/g, '')
+const isMobile = (value) => /^01\d{9}$/.test(phoneDigits(value))
 
 // Payment state
 const selectedCustomer = ref(null)
@@ -908,6 +930,42 @@ const resetCart = () => {
     note.value = ''
     paidAmount.value = 0
     isPaidManuallyEdited.value = false
+    pendingPhone.value = ''
+}
+
+const needsPhone = () => {
+    if (!requireCustomerPhone.value) return false
+    if (selectedCustomer.value && isMobile(selectedCustomerObj.value?.phone)) return false
+    return true
+}
+
+const requestSale = () => {
+    if (!canProcessSale.value || processing.value) return
+    if (needsPhone()) {
+        phoneDraft.value = ''
+        phoneError.value = ''
+        showPhoneModal.value = true
+        mobilePosTab.value = 'checkout'
+        return
+    }
+    pendingPhone.value = ''
+    processSale()
+}
+
+const confirmPhone = () => {
+    const phone = phoneDigits(phoneDraft.value)
+    if (!isMobile(phone)) {
+        phoneError.value = t('০১ দিয়ে ১১ সংখ্যার মোবাইল নম্বর দিন।', 'Enter an 11-digit mobile number starting with 01.')
+        return
+    }
+    const existing = (props.customers || []).find(customer => phoneDigits(customer.phone) === phone)
+    pendingPhone.value = phone
+    if (existing) {
+        selectedCustomer.value = existing.id
+        pendingPhone.value = ''
+    }
+    showPhoneModal.value = false
+    processSale()
 }
 
 const processSale = async () => {
@@ -941,6 +999,7 @@ const processSale = async () => {
     const saleData = {
         idempotency_key: saleRequestKey.value,
         customer_id: selectedCustomer.value,
+        customer_phone: pendingPhone.value || null,
         items: cartItems.value.map(item => ({
             product_id: item.product_id,
             product_variant_id: item.product_variant_id || null,
@@ -1018,7 +1077,7 @@ const processSale = async () => {
                 return
             }
             new Howl({ src: ['/sounds/error.mp3'] }).play()
-            alert(errors.error || 'Failed to process sale. Please try again.')
+            alert(errors.customer_phone || errors.error || 'Failed to process sale. Please try again.')
         },
         onFinish: () => {
             processing.value = false
@@ -1041,6 +1100,11 @@ const printReceipt = (saleId) => {
 
 const handleGlobalKeydown = (e) => {
     // If modal is open, let Escape close it
+    if (showPhoneModal.value) {
+        if (e.key === 'Escape') showPhoneModal.value = false
+        return
+    }
+
     if (showSuccessModal.value) {
         if (e.key === 'Escape') {
             closeSuccessModal()
@@ -1052,7 +1116,7 @@ const handleGlobalKeydown = (e) => {
     if (e.key === 'F4' || e.key === 'F8') {
         e.preventDefault()
         if (canProcessSale.value && !processing.value) {
-            processSale()
+            requestSale()
         }
     }
     // F2 -> Reset Cart

@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (! Schema::hasTable('purchases') || ! Schema::hasColumn('purchases', 'supplier_id')) {
+            return;
+        }
+
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->dropForeign(['supplier_id']);
+        });
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->unsignedBigInteger('supplier_id')->nullable()->change();
+        });
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->foreign('supplier_id')->references('id')->on('suppliers')->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        if (! Schema::hasTable('purchases') || ! Schema::hasColumn('purchases', 'supplier_id')) {
+            return;
+        }
+
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->dropForeign(['supplier_id']);
+        });
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->unsignedBigInteger('supplier_id')->nullable(false)->change();
+        });
+        Schema::table('purchases', function (Blueprint $table) {
+            $table->foreign('supplier_id')->references('id')->on('suppliers')->restrictOnDelete();
+        });
+    }
+};

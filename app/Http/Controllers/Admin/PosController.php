@@ -8,14 +8,14 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\Setting;
 use App\Services\SaleCreator;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\SaleReceipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use NumberFormatter;
 
 class PosController extends Controller
 {
@@ -32,6 +32,7 @@ class PosController extends Controller
             'categories' => Category::where('status', true)
                 ->select('id', 'name')
                 ->get(),
+            'requireCustomerPhone' => self::posRequiresCustomerPhone(),
         ]);
     }
 
@@ -133,13 +134,15 @@ class PosController extends Controller
             'subtotal' => 'required|numeric|min:0', 'discount' => 'required|numeric|min:0',
             'total' => 'required|numeric|min:0', 'paid' => 'required|numeric|min:0',
             'bank_account_id' => 'nullable|exists:bank_accounts,id', 'customer_id' => 'nullable|exists:customers,id',
+            'customer_phone' => 'nullable|string|max:20',
             'note' => 'nullable|string|max:1000', 'idempotency_key' => 'nullable|string|max:100',
         ]);
         try {
+            $customerId = $this->resolvePosCustomer($data['customer_id'] ?? null, $data['customer_phone'] ?? null);
             $sale = app(SaleCreator::class)->create(
                 $data['items'], (float) $data['subtotal'], (float) $data['discount'], (float) $data['total'],
                 min((float) $data['paid'], (float) $data['total']), $data['bank_account_id'] ?? null,
-                $data['customer_id'] ?? null, $data['note'] ?? null, Auth::id(), requestKey: $data['idempotency_key'] ?? null
+                $customerId, $data['note'] ?? null, Auth::id(), requestKey: $data['idempotency_key'] ?? null
             );
             if ($request->wantsJson() || $request->boolean('is_offline_sync')) {
                 return response()->json(['success' => true, 'message' => 'Sale processed successfully', 'sale' => $sale]);
@@ -157,43 +160,69 @@ class PosController extends Controller
         }
     }
 
-    public function printReceipt($id)
+    public static function posRequiresCustomerPhone(): bool
     {
-        // Fetch the sale with related data, including product categories
-        $sale = Sale::with([
-            'saleItems.product.category', // Include product category relationship
-            'customer',
-            'createdBy',
-        ])->findOrFail($id);
+        return in_array(Setting::get('pos_require_customer_phone', '0'), ['1', 'true', 'on'], true);
+    }
 
-        // Group items by category
-        $itemsByCategory = $sale->saleItems->groupBy(function ($item) {
-            return $item->product->category->name ?? 'Uncategorized';
-        });
-
-        // Calculate category subtotals
-        $categoryTotals = [];
-        foreach ($itemsByCategory as $category => $items) {
-            $categoryTotals[$category] = $items->sum('subtotal');
+    private function resolvePosCustomer(?int $customerId, ?string $phone): ?int
+    {
+        $phone = preg_replace('/\D+/', '', (string) $phone) ?? '';
+        if ($phone !== '' && ! preg_match('/^01\d{9}$/', $phone)) {
+            throw ValidationException::withMessages([
+                'customer_phone' => 'মোবাইল নম্বর ০১ দিয়ে ১১ সংখ্যার হতে হবে।',
+            ]);
         }
 
-        $f = new NumberFormatter('en', NumberFormatter::SPELLOUT);
-        $amountInWords = ucfirst($f->format((float) $sale->total)).' taka only';
+        $customer = $customerId ? Customer::withTrashed()->find($customerId) : null;
+        $customerPhone = preg_replace('/\D+/', '', (string) ($customer->phone ?? '')) ?? '';
+        $customerHasPhone = (bool) preg_match('/^01\d{9}$/', $customerPhone);
 
-        $pdf = Pdf::loadView('pdf.receipt', [
-            'sale' => $sale,
-            'itemsByCategory' => $itemsByCategory, // Pass the grouped items
-            'categoryTotals' => $categoryTotals,
-            'amountInWords' => $amountInWords,
-            'company' => [
-                'name' => config('app.name'),
-                'address' => config('app.address'),
-                'phone' => config('app.phone'),
-                'email' => config('app.email'),
-            ],
-        ]);
+        if (! self::posRequiresCustomerPhone()) {
+            return $customer?->id;
+        }
 
-        return $pdf->stream("receipt-{$sale->invoice_no}.pdf");
+        if ($customer && $customerHasPhone) {
+            return $customer->id;
+        }
+
+        if ($phone === '') {
+            throw ValidationException::withMessages([
+                'customer_phone' => 'সেলের আগে মোবাইল নম্বর দিন।',
+            ]);
+        }
+
+        return DB::transaction(function () use ($customer, $phone) {
+            $existing = Customer::withTrashed()->where('phone', $phone)->lockForUpdate()->first();
+            if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+                $existing->forceFill(['status' => true])->save();
+
+                return $existing->id;
+            }
+
+            if ($customer) {
+                $customer->forceFill(['phone' => $phone, 'status' => true])->save();
+
+                return $customer->id;
+            }
+
+            return Customer::create([
+                'name' => $phone,
+                'phone' => $phone,
+                'credit_limit' => 0,
+                'balance' => 0,
+                'points' => 0,
+                'status' => true,
+            ])->id;
+        });
+    }
+
+    public function printReceipt($id)
+    {
+        return SaleReceipt::response((int) $id);
     }
 
     protected function generateUniqueInvoiceNumber($date)
