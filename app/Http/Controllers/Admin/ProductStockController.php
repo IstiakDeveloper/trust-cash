@@ -49,6 +49,19 @@ class ProductStockController extends Controller
                     'current_stock_value' => $value, 'total_purchase_cost' => $calculator->sum($purchases, 'total_cost'),
                     'created_by' => $last->createdBy?->name ?? 'N/A', 'created_at' => $last->created_at,
                     'stock_status' => bccomp($quantity, '0', 6) <= 0 ? 'out' : ((float) $quantity <= $product->alert_quantity ? 'low' : 'in'),
+                    'lots' => $product->productStocks
+                        ->filter(fn ($lot) => (float) $lot->lot_remaining_quantity > 0)
+                        ->sortBy(fn ($lot) => ($lot->date ?? '').'-'.str_pad((string) $lot->id, 10, '0', STR_PAD_LEFT))
+                        ->values()
+                        ->map(fn ($lot) => [
+                            'id' => $lot->id,
+                            'lot_number' => $lot->lot_number,
+                            'date' => $lot->date,
+                            'received_quantity' => $lot->type === 'legacy_opening' ? $lot->total_quantity : $lot->quantity,
+                            'remaining_quantity' => $lot->lot_remaining_quantity,
+                            'purchase_cost' => $lot->unit_cost,
+                            'selling_price' => $lot->selling_price ?? $product->selling_price,
+                        ]),
                 ];
             });
         $balances = DB::table('inventory_balances')->get();
@@ -120,7 +133,8 @@ class ProductStockController extends Controller
 
         try {
             DB::beginTransaction();
-            DB::table('inventory_policies')->lockForUpdate()->find(1);
+            $policy = DB::table('inventory_policies')->lockForUpdate()->find(1);
+            $fifo = (($policy?->method ?? 'fifo') === 'fifo');
 
             $bankAccount = null;
             if (! $isCredit) {
@@ -165,7 +179,7 @@ class ProductStockController extends Controller
                 'available_quantity' => $newAvailableQuantity,
                 'total_cost' => $validated['total_cost'],
                 'unit_cost' => $unitCost,
-                'lot_number' => $validated['lot_number'] ?? null,
+                'lot_number' => $fifo ? ($validated['lot_number'] ?? null) : null,
                 'selling_price' => $validated['selling_price'] ?? null,
                 'type' => 'purchase',
                 'date' => $validated['date'],
@@ -240,8 +254,10 @@ class ProductStockController extends Controller
                 $transaction->save();
             }
 
-            // Update product's weighted average cost
             $this->updateProductWeightedAverageCost($validated['product_id']);
+            if (! $fifo && ! empty($validated['selling_price']) && $validated['selling_price'] > 0) {
+                Product::whereKey($validated['product_id'])->update(['selling_price' => $validated['selling_price']]);
+            }
 
             DB::commit();
 

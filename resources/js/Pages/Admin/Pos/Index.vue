@@ -167,7 +167,7 @@
                                                                     </span>
                                                                 </div>
                                                                 <div class="text-[11px] text-slate-400 font-mono">
-                                                                    {{ item.sku }}<span v-if="item.lot_number" class="block text-[10px]">{{ item.lot_number }}</span>
+                                                                    {{ item.sku }}<span v-if="isFifo && item.lot_number" class="block text-[10px]">{{ item.lot_number }}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -504,7 +504,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import PosSearch from './components/PosSearch.vue'
 import PosProductGrid from './components/PosProductGrid.vue'
@@ -515,6 +515,7 @@ import { getImageUrl } from '@/utils/image'
 import { offlineSync } from '@/services/offlineSync'
 
 const { t } = useLanguage()
+const isFifo = computed(() => usePage().props.inventory_costing_method === 'fifo')
 
 const props = defineProps({
     customers: Array,
@@ -688,54 +689,136 @@ const handleCategoryFilter = async (categoryId) => {
     }
 };
 
+const productImage = (product) => getImageUrl(product.image_url || product.image || product.images?.[0]?.url || product.images?.[0]?.image)
+
+const cartLine = (product, lot, quantity) => ({
+    product_id: product.id ?? product.product_id,
+    product_variant_id: lot?.variant_id ?? product.product_variant_id ?? null,
+    lot_id: lot?.id || null,
+    lot_number: lot?.number || null,
+    lots: product.lots || [],
+    name: product.name,
+    sku: product.sku,
+    type: product.type || 'product',
+    is_service: false,
+    unit_price: Number(lot?.selling_price ?? product.selling_price ?? product.unit_price),
+    quantity,
+    max_stock: Number(lot?.quantity ?? product.stock ?? product.max_stock),
+    image: product.image,
+})
+
+const addFifoUnits = (product, units) => {
+    let left = Number(units)
+    for (const lot of product.lots || []) {
+        if (left <= 0) break
+        const used = cartItems.value.filter(row => row.lot_id === lot.id).reduce((sum, row) => sum + Number(row.quantity), 0)
+        const room = Number(lot.quantity) - used
+        if (room <= 0) continue
+        const take = Math.min(room, left)
+        const existing = cartItems.value.find(row => row.lot_id === lot.id)
+        if (existing) existing.quantity = Number(existing.quantity) + take
+        else cartItems.value.push(cartLine(product, lot, take))
+        left -= take
+    }
+    return left
+}
+
+const repackFifo = (productId, variantId = null) => {
+    const variant = variantId || null
+    const lines = cartItems.value.filter(row => row.product_id === productId && (row.product_variant_id || null) === variant && row.lot_id)
+    if (!lines.length) return 0
+    const lots = lines.find(row => row.lots?.length)?.lots || []
+    let left = lines.reduce((sum, row) => sum + Number(row.quantity), 0)
+    const sample = lines[0]
+    const lotIds = new Set(lots.map(lot => lot.id))
+    for (const lot of lots) {
+        const take = Math.min(Number(lot.quantity), Math.max(left, 0))
+        const line = cartItems.value.find(row => row.lot_id === lot.id)
+        if (take <= 0) {
+            if (line) cartItems.value.splice(cartItems.value.indexOf(line), 1)
+            continue
+        }
+        if (line) {
+            line.quantity = take
+            line.max_stock = Number(lot.quantity)
+            line.lots = lots
+        } else {
+            cartItems.value.push(cartLine({ ...sample, lots, selling_price: sample.unit_price }, lot, take))
+        }
+        left -= take
+    }
+    for (const line of [...cartItems.value]) {
+        if (line.product_id === productId && (line.product_variant_id || null) === variant && line.lot_id && !lotIds.has(line.lot_id)) {
+            cartItems.value.splice(cartItems.value.indexOf(line), 1)
+        }
+    }
+    return left
+}
+
+const rejectStock = (message) => {
+    const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
+    errorSound.play()
+    alert(message)
+}
+
 const addToCart = (product) => {
     const isService = Boolean(product.is_service || product.type === 'service')
-    // Check if product has stock (only for physical products)
     if (!isService && (!product.stock || product.stock <= 0)) {
-        const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
-        errorSound.play()
-        alert(`❌ ${product.name} is out of stock!`)
+        rejectStock(`❌ ${product.name} is out of stock!`)
         return
     }
 
-    const lot = isService ? null : (product.lots || []).find(candidate => {
-        const reserved = cartItems.value.filter(row => row.lot_id === candidate.id).reduce((sum, row) => sum + Number(row.quantity), 0)
-        return Number(candidate.quantity) > reserved
-    })
-    if (!isService && !lot) {
-        alert(t('এই পণ্যের সব লট কার্টে যোগ হয়েছে। স্টক রিফ্রেশ করুন।', 'All available lots are already in the cart. Refresh stock.'))
-        return
-    }
-    const existingItem = cartItems.value.find(item => item.product_id === product.id && (item.lot_id || null) === (lot?.id || null))
-    const imageUrl = getImageUrl(product.image_url || product.image || product.images?.[0]?.url || product.images?.[0]?.image)
-
-    if (existingItem) {
-        // Check if we can increment quantity
-        if (!isService && existingItem.quantity >= Number(lot?.quantity || product.stock)) {
-            const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
-            errorSound.play()
-            alert(`⚠️ Only ${product.stock} units available for ${product.name}`)
+    if (!isService && isFifo.value) {
+        const left = addFifoUnits({ ...product, image: productImage(product) }, 1)
+        if (left > 0) {
+            rejectStock(t('এই পণ্যের সব লট কার্টে যোগ হয়েছে। স্টক রিফ্রেশ করুন।', 'All available lots are already in the cart. Refresh stock.'))
             return
         }
-        existingItem.quantity = Math.min(Number(existingItem.quantity) + 1, Number(lot?.quantity || 999999))
-        existingItem.max_stock = isService ? 999999 : Number(lot.quantity) // Track max available
-        existingItem.is_service = isService
-        existingItem.image = imageUrl
+    } else if (!isService) {
+        const existingItem = cartItems.value.find(item => item.product_id === product.id && !item.lot_id)
+        if (existingItem && Number(existingItem.quantity) >= Number(product.stock)) {
+            rejectStock(`⚠️ Only ${product.stock} units available for ${product.name}`)
+            return
+        }
+        if (existingItem) {
+            existingItem.quantity = Number(existingItem.quantity) + 1
+            existingItem.max_stock = Number(product.stock)
+        } else {
+            cartItems.value.push({
+                product_id: product.id,
+                product_variant_id: null,
+                lot_id: null,
+                lot_number: null,
+                name: product.name,
+                sku: product.sku,
+                type: product.type || 'product',
+                is_service: false,
+                unit_price: Number(product.selling_price),
+                quantity: 1,
+                max_stock: Number(product.stock),
+                image: productImage(product),
+            })
+        }
     } else {
-        cartItems.value.push({
-            product_id: product.id,
-            product_variant_id: lot?.variant_id || null,
-            lot_id: lot?.id || null,
-            lot_number: lot?.number || null,
-            name: product.name,
-            sku: product.sku,
-            type: product.type || (isService ? 'service' : 'product'),
-            is_service: isService,
-            unit_price: Number(lot?.selling_price ?? product.selling_price),
-            quantity: isService ? 1 : Math.min(1, Number(lot.quantity)),
-            max_stock: isService ? 999999 : Number(lot.quantity), // Track max available
-            image: imageUrl,
-        })
+        const existingItem = cartItems.value.find(item => item.product_id === product.id)
+        if (existingItem) {
+            existingItem.quantity = Number(existingItem.quantity) + 1
+        } else {
+            cartItems.value.push({
+                product_id: product.id,
+                product_variant_id: null,
+                lot_id: null,
+                lot_number: null,
+                name: product.name,
+                sku: product.sku,
+                type: 'service',
+                is_service: true,
+                unit_price: Number(product.selling_price),
+                quantity: 1,
+                max_stock: 999999,
+                image: productImage(product),
+            })
+        }
     }
 
     const beepSound = new Howl({ src: ['/sounds/beep.mp3'] })
@@ -755,7 +838,21 @@ const updateCartItemQuantity = (index, quantity) => {
         return
     }
 
-    if (!item.is_service && item.max_stock && quantity > item.max_stock) {
+    if (item.is_service) {
+        item.quantity = quantity
+        return
+    }
+
+    if (isFifo.value && item.lot_id) {
+        item.quantity = quantity
+        const left = repackFifo(item.product_id, item.product_variant_id)
+        if (left > 0) {
+            rejectStock(t('এই পরিমাণের স্টক নেই।', 'Not enough stock for that quantity.'))
+        }
+        return
+    }
+
+    if (item.max_stock && quantity > item.max_stock) {
         alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
         item.quantity = item.max_stock
         return
@@ -767,20 +864,33 @@ const updateCartItemQuantity = (index, quantity) => {
 const incrementQuantity = (index) => {
     const item = cartItems.value[index]
 
-    if (!item.is_service && item.max_stock && item.quantity >= item.max_stock) {
-        const errorSound = new Howl({ src: ['/sounds/error.mp3'] })
-        errorSound.play()
-        alert(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
+    if (item.is_service) {
+        item.quantity = Number(item.quantity) + 1
         return
     }
 
-    item.quantity = Math.min(Number(item.quantity) + 1, Number(item.max_stock || 999999))
+    if (isFifo.value && item.lot_id) {
+        item.quantity = Number(item.quantity) + 1
+        const left = repackFifo(item.product_id, item.product_variant_id)
+        if (left > 0) {
+            rejectStock(t('এই পণ্যের সব স্টক কার্টে আছে।', 'All available stock for this product is already in the cart.'))
+        }
+        return
+    }
+
+    if (item.max_stock && Number(item.quantity) >= Number(item.max_stock)) {
+        rejectStock(`⚠️ Only ${item.max_stock} units available for ${item.name}`)
+        return
+    }
+
+    item.quantity = Number(item.quantity) + 1
 }
 
 const decrementQuantity = (index) => {
-    if (cartItems.value[index].quantity > 1) {
-        cartItems.value[index].quantity--
-    }
+    const item = cartItems.value[index]
+    if (item.quantity <= 1) return
+    item.quantity = Number(item.quantity) - 1
+    if (isFifo.value && item.lot_id) repackFifo(item.product_id, item.product_variant_id)
 }
 
 const removeCartItem = (index) => {
@@ -812,10 +922,32 @@ const processSale = async () => {
         ? 0
         : dueAmount.value
 
+    if (isFifo.value) {
+        const groups = []
+        for (const item of cartItems.value) {
+            if (!item.lot_id) continue
+            const key = `${item.product_id}:${item.product_variant_id || ''}`
+            if (!groups.some(group => group.key === key)) groups.push({ key, productId: item.product_id, variantId: item.product_variant_id })
+        }
+        for (const group of groups) {
+            if (repackFifo(group.productId, group.variantId) > 0) {
+                processing.value = false
+                rejectStock(t('এই পরিমাণের স্টক নেই।', 'Not enough stock for that quantity.'))
+                return
+            }
+        }
+    }
+
     const saleData = {
         idempotency_key: saleRequestKey.value,
         customer_id: selectedCustomer.value,
-        items: cartItems.value,
+        items: cartItems.value.map(item => ({
+            product_id: item.product_id,
+            product_variant_id: item.product_variant_id || null,
+            lot_id: isFifo.value ? (item.lot_id || null) : null,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+        })),
         subtotal: cartSummary.value.subtotal,
         discount: discount.value,
         total: total.value,

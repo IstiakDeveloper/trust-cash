@@ -141,6 +141,14 @@
                         </div>
 
                         <!-- Footer Actions -->
+                        <div v-if="isFifo && stock.lots?.length" class="space-y-1 rounded-xl border border-slate-200 bg-white p-2 text-[11px] dark:border-slate-700 dark:bg-slate-900">
+                            <div class="font-bold text-slate-500">{{ t('লট অনুযায়ী স্টক', 'Stock by lot') }}</div>
+                            <div v-for="lot in stock.lots" :key="lot.id" class="flex items-center justify-between gap-2">
+                                <span class="truncate">{{ lot.lot_number || t('লট', 'Lot') }} · {{ lot.date }}</span>
+                                <span class="shrink-0 font-bold">{{ formatNumber(lot.remaining_quantity) }} · {{ formatCurrency(lot.selling_price) }}</span>
+                            </div>
+                        </div>
+
                         <div class="flex items-center justify-between pt-1">
                             <span class="text-[11px] text-slate-400">
                                 {{ t('মোট ক্রয়:', 'Purchased:') }} <strong class="text-slate-600 dark:text-slate-300">{{ formatNumber(stock.total_purchased) }}</strong>
@@ -197,7 +205,8 @@
                                     {{ t('কোনো পণ্য বা স্টক পাওয়া যায়নি।', 'No products found') }}
                                 </td>
                             </tr>
-                            <tr v-for="stock in stocks.data" :key="stock.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                            <template v-for="stock in stocks.data" :key="stock.id">
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                                 <td class="px-5 py-3.5 whitespace-nowrap">
                                     <div class="font-bold text-slate-900 dark:text-slate-100">
                                         {{ stock.product.name }}
@@ -242,6 +251,33 @@
                                     </button>
                                 </td>
                             </tr>
+                            <tr v-if="isFifo && stock.lots?.length" class="bg-slate-50/80 dark:bg-slate-800/30">
+                                <td :colspan="userIsAdmin ? 8 : 7" class="px-5 pb-3">
+                                    <table class="w-full text-[11px]">
+                                        <thead>
+                                            <tr class="text-slate-400">
+                                                <th class="py-1 text-left font-semibold">{{ t('লট', 'Lot') }}</th>
+                                                <th class="py-1 text-left font-semibold">{{ t('তারিখ', 'Date') }}</th>
+                                                <th class="py-1 text-right font-semibold">{{ t('এসেছিল', 'Received') }}</th>
+                                                <th class="py-1 text-right font-semibold">{{ t('বাকি', 'Remaining') }}</th>
+                                                <th class="py-1 text-right font-semibold">{{ t('ক্রয়মূল্য', 'Cost') }}</th>
+                                                <th class="py-1 text-right font-semibold">{{ t('বিক্রয়মূল্য', 'Selling price') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="lot in stock.lots" :key="lot.id">
+                                                <td class="py-1">{{ lot.lot_number || t('লট', 'Lot') }}</td>
+                                                <td class="py-1">{{ lot.date }}</td>
+                                                <td class="py-1 text-right">{{ formatNumber(lot.received_quantity) }}</td>
+                                                <td class="py-1 text-right font-bold">{{ formatNumber(lot.remaining_quantity) }}</td>
+                                                <td class="py-1 text-right">{{ formatCurrency(lot.purchase_cost) }}</td>
+                                                <td class="py-1 text-right">{{ formatCurrency(lot.selling_price) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
@@ -293,7 +329,7 @@
                         </button>
                     </div>
 
-                    <InventoryLotTable class="mx-4" :lots="stockHistory.filter(entry => entry.costing_method && (Number(entry.quantity) > 0 || entry.type === 'legacy_opening')).map(entry => ({ ...entry, received_quantity: entry.received_quantity ?? entry.quantity, remaining_quantity: entry.lot_remaining_quantity, purchase_cost: entry.unit_cost }))" />
+                    <InventoryLotTable v-if="isFifo" class="mx-4" :lots="stockHistory.filter(entry => entry.costing_method && (Number(entry.quantity) > 0 || entry.type === 'legacy_opening')).map(entry => ({ ...entry, received_quantity: entry.received_quantity ?? entry.quantity, remaining_quantity: entry.lot_remaining_quantity, purchase_cost: entry.unit_cost }))" />
 
                     <!-- Scrollable Body -->
                     <div class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 min-h-0">
@@ -466,6 +502,8 @@ const user = computed(() => page.props.auth.user);
 const userIsAdmin = computed(() => {
     return user.value?.role?.name?.toLowerCase() === 'admin';
 });
+
+const isFifo = computed(() => page.props.inventory_costing_method === 'fifo');
 
 const stockToDelete = ref(null);
 const showHistoryModal = ref(false);

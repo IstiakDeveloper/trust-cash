@@ -6,6 +6,8 @@ use App\Models\PendingSale;
 use App\Models\Setting;
 use App\Support\TenancyHost;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -103,6 +105,17 @@ class HandleInertiaRequests extends Middleware
                 return null;
             },
             'impersonation' => fn () => $request->session()->get('impersonator_id') ? true : null,
+            'inventory_costing_method' => function () {
+                try {
+                    if (! function_exists('tenancy') || ! tenancy()->initialized || ! Schema::hasTable('inventory_policies')) {
+                        return null;
+                    }
+
+                    return DB::table('inventory_policies')->where('id', 1)->value('method');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            },
             'shop_url' => function () {
                 if (! function_exists('tenancy') || ! tenancy()->initialized || ! tenant()) {
                     return null;

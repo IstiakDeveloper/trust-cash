@@ -120,7 +120,8 @@ class PurchaseController extends Controller
         }
 
         DB::beginTransaction();
-        DB::table('inventory_policies')->lockForUpdate()->find(1);
+        $policy = DB::table('inventory_policies')->lockForUpdate()->find(1);
+        $fifo = (($policy?->method ?? 'fifo') === 'fifo');
         try {
             // Generate unique purchase number
             $today = date('Ymd');
@@ -222,7 +223,7 @@ class PurchaseController extends Controller
                     'unit_cost' => bcdiv($landedCost, (string) $item['quantity'], 8),
                     'total_cost' => $landedCost,
                     'purchase_item_id' => $purchaseItem->id,
-                    'lot_number' => $item['lot_number'] ?? null,
+                    'lot_number' => $fifo ? ($item['lot_number'] ?? null) : null,
                     'selling_price' => $item['selling_price'] ?? null,
                     'type' => 'purchase',
                     'date' => $validated['purchase_date'],
@@ -256,7 +257,7 @@ class PurchaseController extends Controller
                         if ($item['purchase_price'] > 0) {
                             $prodUpdates['cost_price'] = $item['purchase_price'];
                         }
-                        if (! empty($item['selling_price']) && $item['selling_price'] > 0) {
+                        if (! $fifo && ! empty($item['selling_price']) && $item['selling_price'] > 0) {
                             $prodUpdates['selling_price'] = $item['selling_price'];
                         }
                         if (! empty($prodUpdates)) {

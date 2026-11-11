@@ -78,7 +78,7 @@
                                 </div>
                             </div>
                         </div>
-                        <p v-if="productSearch.trim() && !filteredProducts.length" class="mt-1 text-xs text-slate-500">{{ t('???? ????? ?????? ?????? ???? ?????', 'No product found. Create it here.') }}</p>
+                        <p v-if="productSearch.trim() && !filteredProducts.length" class="mt-1 text-xs text-slate-500">{{ t('কোনো পণ্য পাওয়া যায়নি। এখানে তৈরি করুন।', 'No product found. Create it here.') }}</p>
                         <QuickCreateSelect trigger-only resource="products" :initial-name="productSearch" @created="productCreated" />
                     </div>
                 </div>
@@ -99,7 +99,7 @@
                                         <span class="text-gray-400 font-normal mr-1">#{{ index + 1 }}</span>
                                         {{ item.product_name }}
                                     </div>
-                                    <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
+                                    <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label v-if="isFifo" class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
                                 </div>
                                 <button
                                     type="button"
@@ -145,7 +145,7 @@
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ t('বিক্রয় মূল্য (৳)', 'Selling Price (৳)') }}</label>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">{{ isFifo ? t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') : t('বিক্রয়মূল্য (৳)', 'Selling Price (৳)') }}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -178,7 +178,7 @@
                                     <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-32">{{ t('একক', 'Unit') }}</th>
                                     <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-32">{{ t('ক্রয় মূল্য (৳)', 'Cost Price (৳)') }}</th>
                                     <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-28">{{ t('পরিমাণ', 'Quantity') }}</th>
-                                    <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-32">{{ t('বিক্রয় মূল্য (৳)', 'Selling Price (৳)') }}</th>
+                                    <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-32">{{ isFifo ? t('এই লটের বিক্রয়মূল্য', 'Lot selling price') : t('বিক্রয়মূল্য (৳)', 'Selling Price (৳)') }}</th>
                                     <th class="px-4 py-3 text-right font-bold text-gray-600 dark:text-gray-300 w-32">{{ t('উপমোট (৳)', 'Subtotal (৳)') }}</th>
                                     <th class="px-4 py-3 text-center font-bold text-gray-600 dark:text-gray-300 w-16"></th>
                                 </tr>
@@ -188,7 +188,7 @@
                                     <td class="px-4 py-3 text-gray-400 text-xs">{{ index + 1 }}</td>
                                     <td class="px-4 py-3">
                                         <div class="font-bold text-gray-900 dark:text-white">{{ item.product_name }}</div>
-                                        <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
+                                        <div v-if="item.sku" class="text-xs text-gray-400">SKU: {{ item.sku }}</div><label v-if="isFifo" class="mt-2 block text-xs text-slate-500">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}<input v-model="item.lot_number" maxlength="100" class="mt-1 block w-full rounded-lg border-slate-200 text-xs dark:bg-slate-800" /></label>
                                     </td>
                                     <td class="px-4 py-3">
                                         <select
@@ -401,6 +401,7 @@ import {
 } from 'lucide-vue-next'
 
 const { t } = useLanguage()
+const isFifo = computed(() => usePage().props.inventory_costing_method === 'fifo')
 
 const props = defineProps({
     suppliers: Array,

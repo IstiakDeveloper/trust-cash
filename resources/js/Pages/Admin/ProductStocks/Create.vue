@@ -36,12 +36,13 @@
                 <form @submit.prevent="submit" class="p-6 sm:p-8 space-y-6">
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label class="text-xs font-bold dark:text-white">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}
+                        <label v-if="isFifo" class="text-xs font-bold dark:text-white">{{ t('লট নম্বর (ঐচ্ছিক)', 'Lot number (optional)') }}
                             <input v-model="form.lot_number" maxlength="100" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
                             <span v-if="form.errors.lot_number" class="text-red-600">{{ form.errors.lot_number }}</span>
                         </label>
-                        <label class="text-xs font-bold dark:text-white">{{ t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') }}
+                        <label class="text-xs font-bold dark:text-white">{{ isFifo ? t('এই লটের বিক্রয়মূল্য', 'Selling price for this lot') : t('বিক্রয়মূল্য', 'Selling price') }}
                             <input v-model="form.selling_price" type="number" min="0" step="0.01" class="mt-2 block w-full rounded-xl border-slate-200 dark:bg-slate-800" />
+                            <span class="mt-1 block text-[11px] font-normal text-slate-500">{{ isFifo ? t('এই দাম শুধু এই লট বিক্রি হওয়া পর্যন্ত।', 'This price applies while this lot is sold.') : t('এই দাম পণ্যের বিক্রয়মূল্য হয়ে যাবে।', 'This becomes the product selling price.') }}</span>
                             <span v-if="form.errors.selling_price" class="text-red-600">{{ form.errors.selling_price }}</span>
                         </label>
                     </div>
@@ -60,7 +61,7 @@
                         <QuickCreateSelect
                             v-model="form.product_id" resource="products"
                             :options="productsForSelect" label-key="displayName" description-key="stockInfo"
-                            :placeholder="t('??? ?? SKU ???? ???? ??????...', 'Search by name or SKU...')"
+                            :placeholder="t('নাম বা SKU দিয়ে খুঁজুন...', 'Search by name or SKU...')"
                             @change="onProductChange" @created="productCreated"
                         />
                         <p v-if="form.errors.product_id" class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
@@ -416,6 +417,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const { t, formatCurrency, formatNumber } = useLanguage();
+const isFifo = computed(() => usePage().props.inventory_costing_method === 'fifo');
 
 const props = defineProps({
     products: {

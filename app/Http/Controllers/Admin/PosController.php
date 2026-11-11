@@ -12,12 +12,14 @@ use App\Services\SaleCreator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use NumberFormatter;
 
 class PosController extends Controller
 {
+    private ?bool $fifoCosting = null;
     public function index()
     {
         return Inertia::render('Admin/Pos/Index', [
@@ -35,76 +37,26 @@ class PosController extends Controller
 
     public function products()
     {
-        return Product::with([
-            'productStocks',
-            'primaryImage',
-            'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
-        ])
+        return Product::with($this->posProductRelations())
             ->where('status', true)
             ->get()
-            ->map(function ($product) {
-                $latestStock = $product->productStocks->sortByDesc('id')->first();
-                $img = $product->primaryImage ?: $product->images->first();
-
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'type' => $product->type ?? 'product',
-                    'is_service' => $product->isService(),
-                    'sku' => $product->sku,
-                    'selling_price' => $product->sellableLots()->first()['selling_price'] ?? $product->selling_price,
-                    'lots' => $product->sellableLots(),
-                    'stock' => $product->isService() ? 999999 : $product->availableQuantity(),
-                    'image' => $img ? $img->image : null,
-                    'image_url' => $img
-                        ? ('/storage/'.ltrim($img->image, '/'))
-                        : null,
-                ];
-            });
+            ->map(fn ($product) => $this->posProduct($product));
     }
 
     public function productsByCategory(Request $request)
     {
-        $query = Product::with([
-            'productStocks',
-            'primaryImage',
-            'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
-        ])
-            ->where('status', true);
+        $query = Product::with($this->posProductRelations())->where('status', true);
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        return $query->get()->map(function ($product) {
-            $latestStock = $product->productStocks->sortByDesc('id')->first();
-            $img = $product->primaryImage ?: $product->images->first();
-
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'type' => $product->type ?? 'product',
-                'is_service' => $product->isService(),
-                'sku' => $product->sku,
-                'selling_price' => $product->sellableLots()->first()['selling_price'] ?? $product->selling_price,
-                'lots' => $product->sellableLots(),
-                'stock' => $product->isService() ? 999999 : $product->availableQuantity(),
-                'image' => $img ? $img->image : null,
-                'image_url' => $img
-                    ? ('/storage/'.ltrim($img->image, '/'))
-                    : null,
-            ];
-        });
+        return $query->get()->map(fn ($product) => $this->posProduct($product));
     }
 
     public function searchProducts(Request $request)
     {
-        $query = Product::with([
-            'productStocks',
-            'primaryImage',
-            'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
-        ])
-            ->where('status', true);
+        $query = Product::with($this->posProductRelations())->where('status', true);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -115,25 +67,7 @@ class PosController extends Controller
             });
         }
 
-        return $query->take(10)->get()->map(function ($product) {
-            $latestStock = $product->productStocks->sortByDesc('id')->first();
-            $img = $product->primaryImage ?: $product->images->first();
-
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'type' => $product->type ?? 'product',
-                'is_service' => $product->isService(),
-                'sku' => $product->sku,
-                'selling_price' => $product->sellableLots()->first()['selling_price'] ?? $product->selling_price,
-                'lots' => $product->sellableLots(),
-                'stock' => $product->isService() ? 999999 : $product->availableQuantity(),
-                'image' => $img ? $img->image : null,
-                'image_url' => $img
-                    ? ('/storage/'.ltrim($img->image, '/'))
-                    : null,
-            ];
-        });
+        return $query->take(10)->get()->map(fn ($product) => $this->posProduct($product));
     }
 
     public function searchByBarcode(Request $request)
@@ -150,27 +84,44 @@ class PosController extends Controller
             return response()->json([]);
         }
 
-        $latestStock = $product->productStocks->sortByDesc('id')->first();
-        $img = $product->primaryImage;
-        if (! $img) {
-            $product->load(['images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id')]);
-            $img = $product->images->first();
-        }
+        $product->loadMissing($this->posProductRelations());
 
-        return response()->json([[
+        return response()->json([$this->posProduct($product)]);
+    }
+
+    private function usesFifo(): bool
+    {
+        return $this->fifoCosting ??= DB::table('inventory_policies')->where('id', 1)->value('method') === 'fifo';
+    }
+
+    private function posProductRelations(): array
+    {
+        return [
+            'productStocks',
+            'primaryImage',
+            'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id'),
+        ];
+    }
+
+    private function posProduct(Product $product): array
+    {
+        $img = $product->primaryImage ?: $product->images->first();
+        $fifo = $this->usesFifo();
+        $lots = $fifo && ! $product->isService() ? $product->sellableLots() : collect();
+        $next = $lots->first();
+
+        return [
             'id' => $product->id,
             'name' => $product->name,
             'type' => $product->type ?? 'product',
             'is_service' => $product->isService(),
             'sku' => $product->sku,
-            'selling_price' => $product->sellableLots()->first()['selling_price'] ?? $product->selling_price,
-            'lots' => $product->sellableLots(),
+            'selling_price' => ($fifo && $next) ? $next['selling_price'] : $product->selling_price,
+            'lots' => $lots->values(),
             'stock' => $product->isService() ? 999999 : $product->availableQuantity(),
             'image' => $img ? $img->image : null,
-            'image_url' => $img
-                ? ('/storage/'.ltrim($img->image, '/'))
-                : null,
-        ]]);
+            'image_url' => $img ? ('/storage/'.ltrim($img->image, '/')) : null,
+        ];
     }
 
     public function store(Request $request)

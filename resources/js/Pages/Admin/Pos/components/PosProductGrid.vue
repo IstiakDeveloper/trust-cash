@@ -60,6 +60,9 @@
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
                                 {{ formatCurrency(product.selling_price) }}
+                                <span v-if="product.lots?.length" class="block text-[10px] font-semibold text-slate-400">
+                                    {{ product.lots[0].number || t('লট', 'Lot') }} · {{ t('বাকি', 'Left') }} {{ formatNumber(product.lots[0].quantity) }}
+                                </span>
                             </span>
                             <button v-if="isAvailable(product)"
                                     class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white dark:bg-slate-600 dark:text-slate-200 transition-all">

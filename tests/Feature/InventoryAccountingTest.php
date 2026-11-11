@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\IncomeExpenditureController;
 use App\Http\Controllers\Admin\ProductAnalysisReportController;
 use App\Http\Controllers\Admin\ProductStockReportController;
+use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\ProductStockController;
 use App\Http\Controllers\Admin\PurchaseController;
 use App\Http\Controllers\Admin\ReceiptPaymentController;
 use App\Http\Controllers\Admin\SaleController;
@@ -275,9 +277,52 @@ class InventoryAccountingTest extends TestCase
         $this->assertEquals(325, ProductStock::sum('total_cost'));
         $this->assertEquals(275, $supplier->fresh()->current_balance);
         $this->assertEquals(9950, $this->bank->fresh()->current_balance);
+        $this->assertEquals(180, $this->product->fresh()->selling_price);
+        $this->assertEquals([15, 30], ProductStock::orderBy('id')->pluck('selling_price')->map(fn ($price) => (float) $price)->all());
         foreach (app(FinancialReport::class)->balanceSheet('2026-11-01')['reconciliation'] as $name => $difference) {
             $this->assertEquals(0, $difference, $name);
         }
+    }
+
+    public function test_fifo_screens_price_the_oldest_lot_and_list_what_remains(): void
+    {
+        $this->receive('10', '100', sellingPrice: '150');
+        $this->receive('4', '120', '2026-11-02', '220');
+        $pos = app(PosController::class)->products()->firstWhere('id', $this->product->id);
+        $this->assertEquals(150, (float) $pos['selling_price']);
+        $this->assertCount(2, $pos['lots']);
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Inertia', 'true');
+        $page = json_decode(app(ProductStockController::class)->index($request)->toResponse($request)->getContent(), true);
+        $lots = $page['props']['stocks']['data'][0]['lots'];
+        $this->assertCount(2, $lots);
+        $this->assertEquals(10, (float) $lots[0]['remaining_quantity']);
+        $this->assertEquals(150, (float) $lots[0]['selling_price']);
+        $this->assertEquals(220, (float) $lots[1]['selling_price']);
+    }
+
+    public function test_average_pos_uses_the_product_price_and_sends_no_lots(): void
+    {
+        app(InventoryPolicy::class)->select('moving_weighted_average');
+        $this->receive('10', '100', sellingPrice: '150');
+        $pos = app(PosController::class)->products()->firstWhere('id', $this->product->id);
+        $this->assertEquals(180, (float) $pos['selling_price']);
+        $this->assertCount(0, $pos['lots']);
+    }
+
+    public function test_average_purchase_updates_product_price_and_ignores_a_typed_lot_number(): void
+    {
+        app(InventoryPolicy::class)->select('moving_weighted_average');
+        $supplier = Supplier::create(['name' => 'Average supplier', 'opening_balance' => 0, 'current_balance' => 0]);
+        app(PurchaseController::class)->store(Request::create('/', 'POST', [
+            'supplier_id' => $supplier->id, 'purchase_date' => '2026-11-01', 'bank_account_id' => $this->bank->id, 'paid_amount' => 100,
+            'items' => [
+                ['product_id' => $this->product->id, 'quantity' => 4, 'purchase_price' => 25, 'selling_price' => 40, 'lot_number' => 'USER-LOT'],
+            ],
+        ]));
+        $this->assertEquals(40, (float) $this->product->fresh()->selling_price);
+        $this->assertNotSame('USER-LOT', ProductStock::value('lot_number'));
+        $this->assertStringStartsWith('LOT-', (string) ProductStock::value('lot_number'));
     }
 
     public function test_cash_history_survives_source_update_and_deletion(): void
