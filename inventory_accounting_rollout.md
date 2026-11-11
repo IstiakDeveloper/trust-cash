@@ -18,60 +18,53 @@
 
 The focused inventory/accounting suite includes both methods, historical stability, split layers, variants, fractional quantities, over-return prevention, repeated return rounding, partial payments, invoice corrections/cancellation, purchase landed costs, method cutover, tenant database isolation, cash classifications, migration preview/apply/retry, supporting reports, Excel amounts, and real PDF rendering of the four principal reports.
 
-Latest focused result: 31 tests passed, 228 assertions; eight report PDF outputs were rendered. Production asset build passed.
+Latest focused SQLite result: **48 tests passed, 367 assertions**. The isolated MySQL run passed **47 tests, 364 assertions**; the subsequent preserved-invoice deletion guard was also checked by the SQLite suite. Coverage includes immutable legacy records, both initial choices, historical reports, archived stock, preview/apply/retry, separate tenant schemas, atomic interruption rollback, preserved bank/customer balances, old-invoice returns, fractional variants, and consistent invoice costs even when a legacy stock movement is missing. Eight report PDF outputs rendered in the accounting suite. Production frontend build and changed-PHP syntax checks passed.
 
 Run safely against an isolated database:
 
 ```powershell
 $env:DB_CONNECTION = 'sqlite'
 $env:DB_DATABASE = ':memory:'
-php artisan test --filter='InventoryAccountingTest|ProductAnalysisTest'
+php artisan test --filter='InventoryAccountingTest|ProductAnalysisTest|QuickCreateTest|LegacyInventoryCarryForwardTest'
 ```
 
-This environment's existing full test suite also has unrelated authentication/profile/registration setup failures, including factories that omit required `users.role_id`. Do not treat the whole suite as green. SQLite tests validate calculations and isolation; production MySQL contention, deployment, and real tenant data still require staging validation.
+This environment's existing full test suite also has unrelated authentication/profile/registration setup failures, including factories that omit required `users.role_id`. Do not treat the whole suite as green. SQLite and isolated MySQL tests validate calculations and compatibility. Real tenant data and production contention still require staging validation.
 
 Production assets: `npm.cmd run build`. Formatting: `php vendor/bin/pint --dirty`.
 
-## Existing-data rollout
+## Existing-data carry-forward (2026-11-11 fix)
 
-No live/production database was migrated or reconstructed during implementation. The following is an operator runbook, not a record of commands already run against live data.
+The earlier release read only `inventory_balances` even for unmigrated historical stock, and blocked reports behind strict reconstruction. The compatibility cutover now retains the original business records and restores usable balances and reports.
 
-1. Back up central and tenant databases and test restoration. Export issued historical statements before deploying this version. Use a restored staging clone first; record the agreed costing policy and treatment of historical differences.
-2. Stop posting while migrating and initializing. Existing tenants become `accounting_ready=false`; new financial postings/reports are intentionally blocked until reconstruction reconciles. Do not resume traffic for an uninitialized database.
-3. Apply the standalone/central migrations and tenant migrations on staging, then repeat the reviewed process in the deployment window:
+- Apply central and tenant migrations, including `2026_11_11_000001_add_legacy_inventory_carry_forward.php`.
+- Existing tenant purchases, sales, returns, bank entries, quantities, prices, due amounts and soft-deleted records are not rewritten or removed.
+- Each product/variant's active historical stock quantity and existing purchase-weighted average carrying value become its opening pool. A zero-movement `legacy_opening` record provides one physical opening lot without adding the same quantity twice. Original stock movements remain in the history.
+- FIFO starts with that opening lot, then creates separate lots for later receipts. Average continues from the same preserved quantity and value. Settings can choose either method until the first new stock posting; later changes still require a prospective cutover.
+- Legacy reporting costs and sale snapshots are stored separately. Later purchases do not recost them. Existing uniquely attributable returns count against the original invoice entitlement, and new returns restore its frozen legacy cost. Ambiguous old return attribution requires verification before another return; reports remain readable.
+- Historical journal entries are built from available active source documents; archived history remains archived. Explicit carry-forward records preserve the existing stored customer, supplier and bank balances where the available source documents differ. Those differences go to opening equity, with the stored value, reconstructed value, difference and date shown on Balance Sheet, PDF and Excel. They are not revenue/expenses or a claim that missing historical evidence has been recovered. Unclassified clearing differences remain visible.
+- Every tenant has its own transaction and policy lock. Carry-forward is repeatable and does not run on an already ready tenant. A partially reconstructed/valued tenant is rejected without overwriting its inventory.
+- Authenticated admin access automatically completes an outstanding carry-forward once the schema exists. Product quantity also falls back to original active movements when no balance projection exists. GET validation failures render a visible explanation; flash/form errors are visible in the admin layout.
+
+Back up and test restoration on the actual server before deployment. Stop posting during the rollout and preview a restored staging tenant first:
 
 ```text
 php artisan migrate --force
-php artisan tenants:migrate --tenants=TENANT_ID --force
+php artisan tenants:migrate --force
+php artisan inventory:carry-forward --all-tenants --dry-run
+php artisan inventory:carry-forward --all-tenants --apply
 ```
 
-4. Select the initial method in that tenant's Settings. Existing tenants initially retain a moving-average policy selection; this is not a claim that the old retrospective purchase-average calculation was correct moving-average accounting.
-5. Preview reconstruction for the tenant:
+For one tenant, replace `--all-tenants` with `--tenant=TENANT_ID`. Preview is the default and rolls back all generated rows. A standalone installation with no tenants omits the scope option. Missing tenant databases are reported, never created empty or silently replaced. Inspect the command exit status and every tenant's totals.
 
-```text
-php artisan inventory:initialize --tenant=TENANT_ID --dry-run
-```
+The repository deployment workflow enters maintenance mode, runs both migration sets, applies carry-forward to all tenants, caches the application and reopens traffic only on success (`set -e`). A failure leaves maintenance enabled for investigation; do not run `artisan up` until it is resolved. This is per-tenant atomicity: previously successful tenants are retained if a later tenant fails, and rerunning skips those completed tenants.
 
-The command rolls back its work by default. It shows reconstructed inventory/earnings/cash and refuses ambiguous sale links, unsupported legacy deleted history, missing return/reversal evidence, incomplete costs, unexplained clearing, or subledger differences. It does not fabricate lots or silently treat unknown cost as zero. A failure requires source reconciliation or a separately reviewed opening-balance cutover; bypassing the validator is not a migration procedure.
+Check Product/Stock/POS quantities, opening lots, customer/supplier due, bank balance, the four principal reports and exports. Where old records were edited/deleted, past historical accounting cannot be certified from unavailable versions; preserved current balances are explicit evidence of the existing state, not invented historical transactions. Keep issued statements and review reconciliation differences.
 
-6. For an evidenced standalone cash movement with no owning invoice/expense/fund, explicitly classify it before reconstruction. Supported accounts are `capital`, `loan_payable`, `other_income:0`, and `expense:0`. This tool is not for replacing source document accounting:
+No production tenant database was changed in this session. The local central database lists five tenants, but four corresponding databases are missing and the available demo database has no stock or the new inventory schema. Consequently this workspace cannot verify or repair the user's actual production records directly. Tests run only on isolated SQLite and a newly created disposable MySQL database, which was removed afterward.
 
-```text
-php artisan accounting:classify-cash TRANSACTION_ID capital --tenant=TENANT_ID --reason="Verified capital deposit reference ..."
-php artisan accounting:classify-cash TRANSACTION_ID capital --tenant=TENANT_ID --reason="Verified capital deposit reference ..." --apply
-```
+The strict `inventory:initialize --tenant=TENANT_ID --dry-run` historical replay remains available as an alternative for a fully evidenced, unreconstructed database. It intentionally rejects deleted/ambiguous history; it is not required for the carry-forward path and safely reports an already carried-forward tenant. Do not run competing initialization processes during rollout.
 
-7. Review the preview against stock count, supplier/customer statements, bank statements and the opening trial balance. Existing edited records may lack earlier versions; a successful replay is not proof of unavailable historical facts. Legacy deleted financial records require evidence-backed reconstruction or a separately prepared cutover and are explicitly rejected by automatic replay.
-8. Apply only after that review:
-
-```text
-php artisan inventory:initialize --tenant=TENANT_ID --apply
-```
-
-For a genuine standalone installation with no tenants, omit `--tenant`. On a multi-tenant installation the commands refuse to guess the target database. Repeat the audited process for each tenant before reopening posting.
-
-9. Check all Balance Sheet reconciliation lines, bank balances, lot quantities/value, customer and supplier controls, and report/export totals. Pilot on the restored tenant clone and validate two tills competing for the last stock on MySQL. Verify duplicate-request behavior through the actual HTTP/offline path.
-10. Resume posting only when differences are explained and resolved. Before any new posting, rollback can restore the tested backup and previous application version. After posting resumes, use a reviewed forward correction/recovery procedure; never restore an old backup over new business transactions. Migration `down` is not a data-preserving application rollback once journals exist.
+Carry-forward evidence is retained by migration rollback. Rollback before reopening requires the verified database backup and previous application version. After new business postings, use forward corrections; never restore an old backup over new transactions.
 
 ## Later policy change
 

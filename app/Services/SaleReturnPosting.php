@@ -21,6 +21,7 @@ class SaleReturnPosting
     public function post(array $data): SaleReturn
     {
         return DB::transaction(function () use ($data) {
+            app(LegacyInventoryCarryForward::class)->ensure();
             DB::table('inventory_policies')->lockForUpdate()->find(1);
             $key = $data['idempotency_key'] ?? null;
             $hash = hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));
@@ -56,7 +57,11 @@ class SaleReturnPosting
                 if (! $original || $original->cost === null) {
                     $this->fail('Original sale costing must be reconciled before returning it.');
                 }
-                $returned = (string) SaleReturnItem::where('sale_item_id', $line->id)->sum('quantity');
+                $legacy = DB::table('legacy_sale_openings')->where('sale_item_id', $line->id)->first();
+                if ($legacy?->return_history_ambiguous) {
+                    $this->fail('This old invoice has returns without a unique invoice-line reference. Verify their attribution before adding another return.');
+                }
+                $returned = (string) $line->returnedItems()->sum('quantity');
                 $available = bcsub((string) $line->quantity, $returned, 6);
                 $quantity = DecimalInput::normalize($input['quantity'], 6);
                 if (bccomp($quantity, '0', 6) <= 0 || bccomp($quantity, $available, 6) > 0) {
@@ -66,7 +71,7 @@ class SaleReturnPosting
                 // partial returns therefore cannot refund more tax/revenue than the invoice.
                 $ratio = bcdiv(bcadd($returned, $quantity, 6), (string) $line->quantity, 12);
                 $prior = DB::table('sale_accounting_entries')->where('source_type', 'return')->where('sale_id', $sale->id)
-                    ->whereIn('source_id', SaleReturnItem::where('sale_item_id', $line->id)->select('id'))->get();
+                    ->whereIn('source_id', $line->returnedItems()->select('id'))->get();
                 $calculator = app(InventoryReport::class);
                 $last = bccomp($quantity, $available, 6) === 0;
                 $grossTarget = $last ? (string) $original->gross : bcadd(bcmul((string) $original->gross, $ratio, 8), '0.005', 2);
@@ -83,12 +88,13 @@ class SaleReturnPosting
                 ]);
                 $cost = '0';
                 if (! Product::withTrashed()->findOrFail($line->product_id)->isService()) {
-                    $source = ProductStock::where('sale_item_id', $line->id)->where('type', 'sale')->firstOrFail();
+                    $source = $legacy ? null : ProductStock::where('sale_item_id', $line->id)->where('type', 'sale')->firstOrFail();
                     $stock = ProductStock::create([
                         'product_id' => $line->product_id, 'product_variant_id' => $line->product_variant_id,
-                        'quantity' => $quantity, 'source_stock_id' => $source->id, 'sale_return_item_id' => $returnItem->id,
+                        'quantity' => $quantity, 'source_stock_id' => $source?->id, 'sale_return_item_id' => $returnItem->id,
+                        'legacy_sale_item_id' => $legacy ? $line->id : null,
                         'type' => 'sale_return', 'date' => $data['return_date'], 'total_cost' => 0, 'unit_cost' => 0,
-                        'selling_price' => $source->selling_price, 'note' => 'Return '.$return->return_number, 'created_by' => auth()->id(),
+                        'selling_price' => $source?->selling_price, 'note' => 'Return '.$return->return_number, 'created_by' => auth()->id(),
                     ]);
                     $cost = (string) $stock->total_cost;
                     StockMovement::create([

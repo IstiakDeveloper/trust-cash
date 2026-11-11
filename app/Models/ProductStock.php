@@ -24,7 +24,7 @@ class ProductStock extends Model
         'type',
         'date',
         'bank_account_id',
-        'costing_method', 'inventory_value', 'lot_remaining_quantity', 'lot_remaining_value',
+        'costing_method', 'inventory_value', 'lot_remaining_quantity', 'lot_remaining_value', 'legacy_sale_item_id',
         'lot_number', 'selling_price', 'sale_item_id', 'purchase_item_id', 'source_stock_id', 'sale_return_item_id',
     ];
 
@@ -38,7 +38,7 @@ class ProductStock extends Model
     public function save(array $options = [])
     {
         if ($this->exists) {
-            if ($this->costing_method && $this->isDirty(['quantity', 'total_cost', 'unit_cost', 'date', 'product_id', 'product_variant_id', 'type', 'sale_item_id', 'source_stock_id', 'costing_method', 'available_quantity', 'inventory_value', 'lot_remaining_quantity', 'lot_remaining_value'])) {
+            if (($this->costing_method || DB::table('legacy_inventory_values')->where('stock_id', $this->id)->exists()) && $this->isDirty(['quantity', 'total_cost', 'unit_cost', 'date', 'product_id', 'product_variant_id', 'type', 'sale_item_id', 'source_stock_id', 'legacy_sale_item_id', 'costing_method', 'available_quantity', 'inventory_value', 'lot_remaining_quantity', 'lot_remaining_value'])) {
                 throw new \LogicException('Posted inventory is immutable. Use a linked reversal or correction.');
             }
 
@@ -61,7 +61,7 @@ class ProductStock extends Model
     protected static function booted(): void
     {
         static::deleting(function ($stock) {
-            if ($stock->costing_method) {
+            if ($stock->costing_method || DB::table('legacy_inventory_values')->where('stock_id', $stock->id)->exists()) {
                 throw new \LogicException('Posted inventory cannot be deleted. Use a linked reversal or correction.');
             }
         });

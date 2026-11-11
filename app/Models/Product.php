@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\InventoryReport;
+use App\Services\LegacyInventoryCarryForward;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -127,6 +128,8 @@ class Product extends Model
 
     public function sellableLots()
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
+
         return $this->productStocks()->where('lot_remaining_quantity', '>', 0)->orderBy('date')->orderBy('id')->get()
             ->map(fn ($lot) => [
                 'id' => $lot->id, 'number' => $lot->lot_number, 'variant_id' => $lot->product_variant_id,
@@ -136,6 +139,10 @@ class Product extends Model
 
     public function availableQuantity(): string
     {
+        if (! DB::table('inventory_balances')->where('product_id', $this->id)->exists()) {
+            return (string) $this->productStocks()->sum('quantity');
+        }
+
         return (string) DB::table('inventory_balances')->where('product_id', $this->id)->sum('quantity');
     }
 

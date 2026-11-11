@@ -11,12 +11,22 @@ class InventoryReport
 {
     public function analysis($from, $through): array
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
+        $legacyCosts = DB::table('legacy_inventory_values')->pluck('reporting_cost', 'stock_id');
         $start = Carbon::parse($from)->toDateString();
         $end = Carbon::parse($through)->toDateString();
         if ($start > $end) {
             throw new \InvalidArgumentException('End date must follow start date.');
         }
-        $stocks = DB::table('product_stocks')->whereNull('deleted_at')->where('date', '<=', $end)->orderBy('date')->orderBy('id')->get()->groupBy('product_id');
+        $stocks = DB::table('product_stocks')->whereNull('deleted_at')->whereRaw('COALESCE(date, DATE(created_at)) <= ?', [$end])->orderByRaw('COALESCE(date, DATE(created_at))')->orderBy('id')->get()->map(function ($row) use ($legacyCosts) {
+            $row->date = $row->date ?: substr($row->created_at, 0, 10);
+            if ($legacyCosts->has($row->id)) {
+                $row->total_cost = $legacyCosts[$row->id];
+                $row->costing_method = 'legacy_average';
+            }
+
+            return $row;
+        })->groupBy('product_id');
         $entries = DB::table('sale_accounting_entries')->whereBetween('date', [$start, $end])->get()->groupBy('product_id');
         $consumptions = DB::table('inventory_allocations as allocation')->join('product_stocks as stock', 'stock.id', '=', 'allocation.stock_id')
             ->where('stock.date', '<=', $end)->whereNull('stock.deleted_at')->get(['allocation.lot_id', 'allocation.quantity'])->groupBy('lot_id');
@@ -54,12 +64,12 @@ class InventoryReport
                 'available_quantity' => $closingQuantity, 'available_stock_value' => $closingValue,
                 'return_quantity' => bcmul($this->sum($sales->where('source_type', 'return'), 'quantity'), '-1', 6),
                 'adjustment_quantity' => $this->sum($period->whereNotIn('type', ['purchase', 'sale', 'sale_return', 'sale_reversal']), 'quantity'),
-                'lots' => $history->where('quantity', '>', 0)->map(fn ($lot) => [
-                    'id' => $lot->id, 'number' => $lot->lot_number, 'received_quantity' => $lot->quantity,
+                'lots' => $history->filter(fn ($lot) => $lot->costing_method !== 'legacy_average' && ((float) $lot->quantity > 0 || $lot->type === 'legacy_opening'))->map(fn ($lot) => [
+                    'id' => $lot->id, 'number' => $lot->lot_number, 'received_quantity' => $lot->type === 'legacy_opening' ? $lot->total_quantity : $lot->quantity,
                     'purchase_cost' => $lot->unit_cost, 'selling_price' => $lot->selling_price,
                     'variant_id' => $lot->product_variant_id,
                     'date' => $lot->date,
-                    'remaining_quantity' => bcsub((string) $lot->quantity, $this->sum($consumptions->get($lot->id, collect()), 'quantity'), 6),
+                    'remaining_quantity' => bcsub((string) ($lot->type === 'legacy_opening' ? $lot->total_quantity : $lot->quantity), $this->sum($consumptions->get($lot->id, collect()), 'quantity'), 6),
                 ])->values(),
             ];
         })->filter(fn ($row) => $stocks->has($row['product_id']) || $entries->has($row['product_id']))->values();
@@ -76,6 +86,11 @@ class InventoryReport
     {
         $value = '0.000000';
         foreach ($rows as $row) {
+            if ($row->type === 'legacy_opening') {
+                $value = bcadd($value, (string) $row->total_cost, 6);
+
+                continue;
+            }
             $value = bccomp((string) $row->quantity, '0', 6) > 0
                 ? bcadd($value, (string) $row->total_cost, 6) : bcsub($value, (string) $row->total_cost, 6);
         }

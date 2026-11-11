@@ -293,7 +293,7 @@
                         </button>
                     </div>
 
-                    <InventoryLotTable class="mx-4" :lots="stockHistory.filter(entry => Number(entry.quantity) > 0).map(entry => ({ ...entry, received_quantity: entry.quantity, remaining_quantity: entry.lot_remaining_quantity, purchase_cost: entry.unit_cost }))" />
+                    <InventoryLotTable class="mx-4" :lots="stockHistory.filter(entry => entry.costing_method && (Number(entry.quantity) > 0 || entry.type === 'legacy_opening')).map(entry => ({ ...entry, received_quantity: entry.received_quantity ?? entry.quantity, remaining_quantity: entry.lot_remaining_quantity, purchase_cost: entry.unit_cost }))" />
 
                     <!-- Scrollable Body -->
                     <div class="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 min-h-0">
@@ -345,7 +345,7 @@
                                     "{{ entry.note }}"
                                 </div>
 
-                                <div v-if="entry.type === 'purchase' && userIsAdmin" class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                                <div v-if="entry.can_delete && userIsAdmin" class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-end">
                                     <button
                                         @click="openDeleteConfirmation(entry)"
                                         class="text-rose-600 hover:text-rose-800 font-bold text-xs py-1 px-2.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
@@ -393,7 +393,7 @@
                                         <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ entry.created_by }}</td>
                                         <td class="px-4 py-3 text-center">
                                             <button
-                                                v-if="entry.type === 'purchase' && userIsAdmin"
+                                                v-if="entry.can_delete && userIsAdmin"
                                                 @click="openDeleteConfirmation(entry)"
                                                 class="text-rose-600 hover:text-rose-800 font-bold text-xs py-1 px-2 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
                                                 {{ t('মুছুন', 'Delete') }}

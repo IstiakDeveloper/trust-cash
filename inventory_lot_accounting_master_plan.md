@@ -1,6 +1,6 @@
 # TrustCash: lot inventory and reconciled financial reports
 
-Date: 2026-11-10. Status: core tenant-selectable costing and shared accounting/report implementation added. See `inventory_accounting_rollout.md` for implemented behavior, validation, deployment commands, and explicit remaining module boundaries. Live data has not been migrated.
+Date: 2026-11-10. Status: core tenant-selectable costing and shared accounting/report implementation added. See `inventory_accounting_rollout.md` for implemented behavior, validation, deployment commands, and explicit remaining module boundaries. Live data has not been migrated. Updated 2026-11-11: the compatibility fix preserves original records, carries existing stock/value into one opening lot per product/variant, supports either initial tenant choice and restores reports without requiring a strict historical replay. The rollout document describes the carry-forward procedure and its validation.
 
 ## 1. Recommended policy
 

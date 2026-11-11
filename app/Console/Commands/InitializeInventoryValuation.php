@@ -55,7 +55,13 @@ class InitializeInventoryValuation extends Command
             date_default_timezone_set($timezone);
             DB::beginTransaction();
             app(FinancialLedger::class)->initializing = true;
-            DB::table('inventory_policies')->lockForUpdate()->find(1);
+            $policy = DB::table('inventory_policies')->lockForUpdate()->find(1);
+            if ($policy->accounting_ready && ($policy->legacy_cutover_at ?? null)) {
+                DB::rollBack();
+                $this->info('Legacy stock is already carried forward; no original history was changed.');
+
+                return self::SUCCESS;
+            }
             if (! DB::table('inventory_policies')->where('id', 1)->value('accounting_ready')) {
                 foreach (['product_stocks', 'sales', 'bank_transactions', 'expenses', 'extra_incomes', 'funds', 'purchases', 'fixed_asset_items'] as $table) {
                     if (DB::table($table)->whereNotNull('deleted_at')->exists()) {

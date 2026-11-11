@@ -23,13 +23,16 @@ class BalanceSheetExport implements FromArray, ShouldAutoSize, WithHeadings, Wit
 
     protected string $endDate;
 
-    public function __construct(array $fundAndLiabilities, array $propertyAndAssets, string $startDate = '', string $endDate = '', array $reconciliation = [])
+    protected array $legacyCarryForwards;
+
+    public function __construct(array $fundAndLiabilities, array $propertyAndAssets, string $startDate = '', string $endDate = '', array $reconciliation = [], array $legacyCarryForwards = [])
     {
         $this->fundAndLiabilities = $fundAndLiabilities;
         $this->propertyAndAssets = $propertyAndAssets;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->reconciliation = $reconciliation;
+        $this->legacyCarryForwards = $legacyCarryForwards;
     }
 
     public function title(): string
@@ -60,6 +63,9 @@ class BalanceSheetExport implements FromArray, ShouldAutoSize, WithHeadings, Wit
             $rows[] = ['RECONCILIATION', 'Assets minus liabilities and equity', (float) bcsub((string) $this->propertyAndAssets['total'], (string) $this->fundAndLiabilities['total'], 6), ''];
             foreach ($this->reconciliation as $name => $difference) {
                 $rows[] = ['RECONCILIATION', str_replace('_', ' ', $name), (float) $difference, ''];
+            }
+            foreach ($this->legacyCarryForwards as $row) {
+                $rows[] = ['LEGACY OPENING', $row['name'].' ('.$row['date'].')', (float) $row['difference'], 'Preserved balance: '.$row['stored_balance']];
             }
 
             return $rows;

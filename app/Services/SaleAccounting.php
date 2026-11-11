@@ -57,6 +57,9 @@ class SaleAccounting
 
     public function reverse(SaleItem $item): void
     {
+        if (DB::table('legacy_sale_openings')->where('sale_item_id', $item->id)->exists()) {
+            throw new \LogicException('This invoice is preserved in the opening stock. Use a linked return or credit instead of editing or deleting its original lines.');
+        }
         $entry = DB::table('sale_accounting_entries')->where('source_type', 'sale')->where('source_id', $item->id)->first();
         if (! $entry) {
             throw new \LogicException('Initialize historical sales accounting before changing this sale.');

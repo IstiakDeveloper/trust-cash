@@ -38,6 +38,7 @@ class SaleCreator
         $requestHash = hash('sha256', json_encode([$items, $subtotal, $discount, $total, $paid, $bankAccountId, $customerId, $note], JSON_THROW_ON_ERROR));
 
         return DB::transaction(function () use ($items, $subtotal, $discount, $total, $paid, $bankAccountId, $customerId, $note, $createdBy, $date, $requestKey, $requestHash) {
+            app(LegacyInventoryCarryForward::class)->ensure();
             DB::table('inventory_policies')->lockForUpdate()->find(1);
             if ($requestKey && ($existing = Sale::withTrashed()->where('request_key', $requestKey)->first())) {
                 if ($existing->trashed() || $existing->request_hash !== $requestHash) {

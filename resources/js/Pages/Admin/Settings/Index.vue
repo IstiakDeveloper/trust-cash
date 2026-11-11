@@ -17,6 +17,7 @@
                         <option value="fifo">{{ t('FIFO — আগে আসা স্টকের খরচ আগে', 'FIFO — First In, First Out') }}</option>
                         <option value="moving_weighted_average">{{ t('চলমান গড় ক্রয়মূল্য', 'Moving Weighted Average') }}</option>
                     </select>
+                    <p class="text-xs text-slate-500">{{ t('???? ?????? ?????? ? ?? ????? ???? ?????? Lot/FIFO ???? ???? ??????? ???? ???? opening lot ??? ??????? ??????? ???? ???? lot ???? Average ???? ??? ?????? ??? ?? ????? ?????', 'Existing quantity and average value stay intact. FIFO starts with one opening lot per product/variant; new purchases create new lots. Average continues from the existing stock value.') }}</p>
                     <p class="text-xs text-slate-500">{{ t('উভয় পদ্ধতিতে লটের ক্রয়মূল্য ও বিক্রয়মূল্য আলাদা থাকবে। নতুন স্টক এলে পুরোনো বিক্রির লাভ বদলাবে না।', 'Both methods retain lot purchase and selling prices. New stock never changes the cost of earlier sales.') }}</p>
                     <p v-if="inventoryMethodLocked" class="text-xs text-amber-600">{{ t('স্টক লেনদেন হয়েছে। পদ্ধতি বদলাতে হিসাব মিলিয়ে নিয়ন্ত্রিত পরিবর্তন প্রয়োজন।', 'Inventory has been posted. Changing methods requires a reconciled accounting cutover.') }}</p>
                     <p v-if="errors.inventory_costing_method" class="text-xs text-red-600">{{ errors.inventory_costing_method }}</p>

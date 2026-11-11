@@ -15,6 +15,9 @@ class InventoryValuation
 {
     public function prepare(ProductStock $stock, bool $initializing = false): array
     {
+        if (! $initializing) {
+            app(LegacyInventoryCarryForward::class)->ensure();
+        }
         $policy = DB::table('inventory_policies')->lockForUpdate()->find(1);
         if (! $policy) {
             throw new \LogicException('Run inventory migrations before posting stock.');
@@ -37,7 +40,7 @@ class InventoryValuation
                 $this->fail('Sale stock must reference its matching, unposted invoice line.');
             }
         }
-        if (! $initializing && $scope()->whereNull('costing_method')->exists()) {
+        if (! $initializing && $scope()->whereNull('costing_method')->whereNotIn('id', DB::table('legacy_inventory_values')->select('stock_id'))->exists()) {
             $this->fail('Legacy stock needs reconciliation. Run inventory:initialize --dry-run, then initialize this tenant before posting.');
         }
         DB::table('inventory_balances')->insertOrIgnore([
@@ -67,7 +70,25 @@ class InventoryValuation
             $this->fail('Stock direction does not match its document type.');
         }
         $cost = bcadd((string) ($stock->total_cost ?? '0'), '0', 6);
-        if ($incoming && in_array($stock->type, ['sale_return', 'sale_reversal'], true)) {
+        if ($incoming && $stock->type === 'sale_return' && $stock->legacy_sale_item_id) {
+            $legacy = DB::table('legacy_sale_openings')->where('sale_item_id', $stock->legacy_sale_item_id)->first();
+            $line = SaleItem::find($stock->legacy_sale_item_id);
+            if (! $legacy || $legacy->return_history_ambiguous || ! $line || $line->product_id != $stock->product_id || $line->product_variant_id != $stock->product_variant_id) {
+                $this->fail('This legacy return does not match its preserved invoice line.');
+            }
+            $oldReturned = (string) DB::table('sale_return_items')->whereIn('id', DB::table('legacy_sale_return_links')
+                ->where('sale_item_id', $line->id)->select('return_item_id'))->sum('quantity');
+            $newReturns = ProductStock::where('legacy_sale_item_id', $line->id)->where('type', 'sale_return')->get();
+            $returnedQuantity = bcadd($oldReturned, app(InventoryReport::class)->sum($newReturns, 'quantity'), 6);
+            $available = bcsub((string) $legacy->quantity, $returnedQuantity, 6);
+            if (bccomp($quantity, $available, 6) > 0) {
+                $this->fail('Legacy return exceeds the quantity remaining on the original invoice.');
+            }
+            $oldCost = bcmul(bcdiv((string) $legacy->cost, (string) $legacy->quantity, 12), $oldReturned, 6);
+            $remainingCost = bcsub(bcsub((string) $legacy->cost, $oldCost, 6), app(InventoryReport::class)->sum($newReturns, 'total_cost'), 6);
+            $cost = bccomp($quantity, $available, 6) === 0 ? $remainingCost
+                : bcmul(bcdiv((string) $legacy->cost, (string) $legacy->quantity, 12), $quantity, 6);
+        } elseif ($incoming && in_array($stock->type, ['sale_return', 'sale_reversal'], true)) {
             $cost = '0.000000';
             $original = ProductStock::whereKey($stock->source_stock_id)->lockForUpdate()->first();
             if (! $original || $original->type !== 'sale' || $original->product_id != $stock->product_id || $original->product_variant_id != $stock->product_variant_id) {

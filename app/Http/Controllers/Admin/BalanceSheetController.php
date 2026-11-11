@@ -42,6 +42,6 @@ class BalanceSheetController extends Controller
         $data = $this->data($request);
 
         return Excel::download(new BalanceSheetExport($data['fund_and_liabilities'], $data['property_and_assets'],
-            $data['start_date'], $data['end_date'], $data['reconciliation']), 'balance-sheet-'.$data['end_date'].'.xlsx');
+            $data['start_date'], $data['end_date'], $data['reconciliation'], $data['legacy_carry_forwards']), 'balance-sheet-'.$data['end_date'].'.xlsx');
     }
 }

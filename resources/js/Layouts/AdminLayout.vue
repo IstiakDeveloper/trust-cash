@@ -307,6 +307,11 @@
 
             <!-- Main Page Content (Responsive padding with mobile bottom nav spacing) -->
             <main class="flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8">
+                <div v-if="$page.props.flash?.error || Object.keys($page.props.errors || {}).length" role="alert" class="mb-4 space-y-1 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
+                    <p v-if="$page.props.flash?.error">{{ $page.props.flash.error }}</p>
+                    <p v-for="(message, field) in $page.props.errors" :key="field">{{ message }}</p>
+                </div>
+
                 <!-- Page Header Slot -->
                 <div v-if="$slots.header" class="mb-4 sm:mb-6">
                     <slot name="header" />

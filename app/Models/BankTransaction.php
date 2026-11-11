@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\CashTransactionCategory;
+use App\Services\LegacyInventoryCarryForward;
 use App\Traits\PostsAccountingAtomically;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -31,6 +32,7 @@ class BankTransaction extends Model
     public function save(array $options = [])
     {
         return DB::transaction(function () use ($options) {
+            app(LegacyInventoryCarryForward::class)->ensure();
             $ids = array_filter(array_unique([$this->getRawOriginal('bank_account_id'), $this->bank_account_id]));
             sort($ids);
             BankAccount::withTrashed()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
@@ -42,6 +44,7 @@ class BankTransaction extends Model
     public function delete()
     {
         return DB::transaction(function () {
+            app(LegacyInventoryCarryForward::class)->ensure();
             BankAccount::withTrashed()->whereKey($this->bank_account_id)->lockForUpdate()->firstOrFail();
 
             return parent::delete();

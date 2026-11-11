@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { useLanguage } from '@/composables/useLanguage'
-const props = defineProps({ fund_and_liabilities: Object, property_and_assets: Object, filters: Object, reconciliation: Object })
+const props = defineProps({ fund_and_liabilities: Object, property_and_assets: Object, filters: Object, reconciliation: Object, legacy_carry_forwards: { type: Array, default: () => [] } })
 const { t, formatCurrency } = useLanguage()
 const through = ref(props.filters.end_date)
 const apply = () => router.get(route('admin.reports.balance-sheet'), { end_date: through.value })
@@ -28,6 +28,11 @@ const printReport = () => window.print()
             </form>
             <p class="text-sm text-slate-600 dark:text-slate-300">{{ t('এই তারিখে আর্থিক অবস্থান', 'Financial position as of') }} {{ props.filters.end_date }}</p>
             <div v-if="differences.length" role="alert" class="rounded-xl bg-red-50 p-4 text-sm text-red-700"><p class="font-bold">{{ t('হিসাব মিলিয়ে দেখা প্রয়োজন', 'Reconciliation required') }}</p><p v-for="[name, value] in differences" :key="name">{{ name.replaceAll('_', ' ') }}: {{ formatCurrency(value) }}</p></div>
+            <details v-if="legacy_carry_forwards.length" class="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                <summary class="cursor-pointer font-semibold">{{ t('?????? ????? ???? ???? ???? opening balance', 'Opening balances preserved from previous records') }}</summary>
+                <p class="mt-2 text-slate-500">{{ t('???????? ????????? ??? ????? ?????? ???????? ???????? ????? opening equity ?????? ???? ?????? ??? ?? ?? ??? ???', 'Differences between stored balances and available historical transactions are recorded separately in opening equity, outside income and expenses.') }}</p>
+                <table class="mt-3 w-full text-left"><thead><tr><th>{{ t('?????', 'Account') }}</th><th>{{ t('???? ?????????', 'Preserved balance') }}</th><th>{{ t('Opening ????????', 'Opening difference') }}</th></tr></thead><tbody><tr v-for="row in legacy_carry_forwards" :key="row.account"><td class="py-2">{{ row.name }} ? {{ row.date }}</td><td>{{ formatCurrency(row.stored_balance) }}</td><td>{{ formatCurrency(row.difference) }}</td></tr></tbody></table>
+            </details>
             <div class="grid gap-5 lg:grid-cols-2">
                 <section v-for="section in sections" :key="section.title" class="rounded-2xl border dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
                     <h2 class="p-4 font-bold text-slate-900 dark:text-white border-b dark:border-slate-800">{{ section.title }}</h2>

@@ -13,9 +13,15 @@ class SaleItem extends Model
 
     public function getReturnableQuantityAttribute(): string
     {
-        $returned = (string) SaleReturnItem::where('sale_item_id', $this->id)->sum('quantity');
+        $returned = (string) $this->returnedItems()->sum('quantity');
 
         return bcsub((string) $this->quantity, $returned, 6);
+    }
+
+    public function returnedItems()
+    {
+        return SaleReturnItem::where(fn ($query) => $query->where('sale_item_id', $this->id)
+            ->orWhereIn('id', DB::table('legacy_sale_return_links')->where('sale_item_id', $this->id)->select('return_item_id')));
     }
 
     public function getReturnUnitPriceAttribute(): string

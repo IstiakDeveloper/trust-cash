@@ -41,9 +41,18 @@ class BankTransactionObserver
     {
         $account = BankAccount::withTrashed()->whereKey($accountId)->lockForUpdate()->firstOrFail();
         $balance = (string) $account->opening_balance;
+        $carry = DB::table('legacy_balance_carry_forwards')->where('account', 'cash:'.$accountId)->first();
+        $carryApplied = false;
         foreach (DB::table('bank_transactions')->where('bank_account_id', $accountId)->whereNull('deleted_at')->orderBy('date')->orderBy('id')->get() as $row) {
+            if ($carry && ! $carryApplied && $row->date >= $carry->date) {
+                $balance = bcadd($balance, (string) $carry->difference, 2);
+                $carryApplied = true;
+            }
             $balance = $row->transaction_type === 'in' ? bcadd($balance, (string) $row->amount, 2) : bcsub($balance, (string) $row->amount, 2);
             DB::table('bank_transactions')->where('id', $row->id)->update(['running_balance' => $balance]);
+        }
+        if ($carry && ! $carryApplied) {
+            $balance = bcadd($balance, (string) $carry->difference, 2);
         }
         DB::table('bank_accounts')->where('id', $accountId)->update(['current_balance' => $balance]);
     }

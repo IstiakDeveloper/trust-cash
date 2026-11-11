@@ -12,6 +12,7 @@ use App\Models\PurchaseItem;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Services\InventoryReport;
+use App\Services\LegacyInventoryCarryForward;
 use App\Services\PurchaseReversalService;
 use App\Traits\ManagesStock;
 use Carbon\Carbon;
@@ -26,6 +27,7 @@ class ProductStockController extends Controller
 
     public function index(Request $request)
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         $request->validate(['per_page' => 'nullable|integer|min:1|max:100', 'sort_order' => 'nullable|in:asc,desc']);
         $query = Product::query()->where(fn ($q) => $q->whereNull('type')->orWhere('type', '!=', 'service'))
             ->whereHas('productStocks')->with('productStocks')
@@ -291,6 +293,7 @@ class ProductStockController extends Controller
                     'id' => $stock->id,
                     'type' => $stock->type,
                     'quantity' => $stock->quantity,
+                    'received_quantity' => $stock->type === 'legacy_opening' ? $stock->total_quantity : $stock->quantity,
                     'unit_cost' => $stock->unit_cost,
                     'total_cost' => $stock->total_cost,
                     'lot_number' => $stock->lot_number, 'lot_remaining_quantity' => $stock->lot_remaining_quantity,
@@ -301,7 +304,7 @@ class ProductStockController extends Controller
                     'note' => $stock->note,
                     'created_by' => $stock->createdBy?->name ?? 'N/A',
                     'created_at' => $stock->created_at->format('d M Y, h:i A'),
-                    'can_delete' => $stock->type === 'purchase' && Auth::user()->role->name === 'Admin',
+                    'can_delete' => $stock->type === 'purchase' && $stock->costing_method !== null && Auth::user()->role->name === 'Admin',
                 ];
             });
 

@@ -12,8 +12,11 @@ class FinancialLedger
 
     public function sync(string $type, int $id, array $lines, string $date): void
     {
-        if ($date > now()->toDateString()) {
+        if (! $this->initializing && $date > now()->toDateString()) {
             throw ValidationException::withMessages(['date' => 'Future accounting postings are not allowed.']);
+        }
+        if (! $this->initializing) {
+            app(LegacyInventoryCarryForward::class)->ensure();
         }
         if (! $this->initializing && ! DB::table('inventory_policies')->where('id', 1)->value('accounting_ready')) {
             throw ValidationException::withMessages(['accounting' => 'Reconcile historical accounting before posting new transactions.']);
@@ -81,6 +84,7 @@ class FinancialLedger
 
     public function balances(string $end, ?string $start = null): array
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         if (! DB::table('inventory_policies')->where('id', 1)->value('accounting_ready')) {
             throw ValidationException::withMessages(['accounting' => 'Historical accounting must be reconciled before financial reports are available.']);
         }

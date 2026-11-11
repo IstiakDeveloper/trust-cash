@@ -15,6 +15,7 @@ class FinancialReport
 {
     public function income(string $start, string $end): array
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         if (DB::table('sale_accounting_entries')->where('date', '<=', $end)->whereNull('cost')->exists()) {
             throw ValidationException::withMessages(['accounting' => 'Some physical sale lines have incomplete stock costing. Reconcile them before reporting profit.']);
         }
@@ -149,6 +150,17 @@ class FinancialReport
                     ['name' => 'Loans receivable / advances', 'amount' => $loansReceivable],
                 ],
             ],
+            'legacy_carry_forwards' => DB::table('legacy_balance_carry_forwards')->where('date', '<=', $end)
+                ->get(['account', 'stored_balance', 'document_balance', 'difference', 'date'])->map(function ($row) {
+                    [$type, $id] = explode(':', $row->account);
+                    $name = match ($type) {
+                        'cash' => 'Bank / cash: '.(BankAccount::withTrashed()->find($id)?->account_name ?? $id),
+                        'payable' => 'Supplier: '.(Supplier::withTrashed()->find($id)?->name ?? $id),
+                        default => 'Customer: '.(Customer::withTrashed()->find($id)?->name ?? $id),
+                    };
+
+                    return (array) $row + ['name' => $name];
+                })->all(),
             'reconciliation' => $controls + [
                 'balance_sheet_difference' => bcsub($assets, $liabilities, 6),
                 'unreconciled_clearing' => $ledger->total($balances, 'clearing'),

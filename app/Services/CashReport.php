@@ -11,6 +11,7 @@ class CashReport
 {
     public function build(string $start, string $end, ?int $accountId = null): array
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         if ($start > $end) {
             throw new \InvalidArgumentException('End date must follow start date.');
         }
@@ -64,6 +65,7 @@ class CashReport
 
     public function movements(string $start, string $end, ?int $accountId = null, bool $includeOpenings = true)
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         if (! DB::table('inventory_policies')->where('id', 1)->value('accounting_ready')) {
             throw ValidationException::withMessages(['accounting' => 'Reconcile historical cash accounting before reporting.']);
         }
@@ -71,7 +73,7 @@ class CashReport
 
         return DB::table('ledger_lines as line')->join('ledger_documents as doc', 'doc.id', '=', 'line.document_id')
             ->leftJoin('bank_transactions as tx', fn ($join) => $join->on('tx.id', '=', 'doc.source_id')->where('doc.source_type', 'bank_transactions'))
-            ->whereIn('doc.source_type', $includeOpenings ? ['bank_transactions', 'bank_accounts'] : ['bank_transactions'])
+            ->whereIn('doc.source_type', $includeOpenings ? ['bank_transactions', 'bank_accounts', 'legacy_bank_opening'] : ['bank_transactions'])
             ->whereIn('line.account', $accounts->map(fn ($id) => 'cash:'.$id))->where('line.amount', '!=', 0)->whereBetween('line.date', [$start, $end])
             ->orderBy('line.date')->orderBy('line.id')->get([
                 'line.id', 'line.date', 'line.account', 'line.amount', 'line.category', 'line.reversal',
@@ -81,6 +83,10 @@ class CashReport
                 $line->transaction_type = bccomp((string) $line->amount, '0', 6) >= 0 ? 'in' : 'out';
                 $line->amount = ltrim((string) $line->amount, '-');
                 $line->date = Carbon::parse($line->date);
+                if ($line->source_type === 'legacy_bank_opening') {
+                    $line->category = 'legacy_balance_carry_forward';
+                    $line->description = 'Stored bank balance carried forward at upgrade';
+                }
                 if ($line->source_type === 'bank_accounts') {
                     $line->category = 'account_opening';
                     $line->description = 'Account opening balance';

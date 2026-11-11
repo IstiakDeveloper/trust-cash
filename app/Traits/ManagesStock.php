@@ -3,12 +3,15 @@
 namespace App\Traits;
 
 use App\Models\StockMovement;
+use App\Services\LegacyInventoryCarryForward;
 use Illuminate\Support\Facades\DB;
 
 trait ManagesStock
 {
     public function getCurrentStock($productId)
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
+
         return DB::table('inventory_balances')->where('product_id', $productId)->sum('quantity');
     }
 

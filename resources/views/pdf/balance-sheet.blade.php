@@ -4,4 +4,10 @@
 <h2>{{ $title }}</h2><table><tbody>@foreach($section['rows'] as $row)<tr><td>{{ $row['name'] }}</td><td class="amount">{{ format_amount($row['amount'],true,$isBn) }}</td></tr>@endforeach<tr><th>Total</th><th class="amount">{{ format_amount($section['total'],true,$isBn) }}</th></tr></tbody></table>
 @endforeach
 @foreach($reconciliation as $name=>$amount) @if(bccomp($amount,'0',6)!==0)<p>Reconciliation required: {{ str_replace('_',' ',$name) }} = {{ $amount }}</p>@endif @endforeach
+@if(!empty($legacy_carry_forwards))
+<h2>Preserved legacy opening balances</h2><p>Differences from available historical transactions are recorded in opening equity, not income or expenses.</p>
+<table><thead><tr><th>Account / date</th><th>Preserved balance</th><th>Opening difference</th></tr></thead><tbody>
+@foreach($legacy_carry_forwards as $row)<tr><td>{{ $row['name'] }} / {{ $row['date'] }}</td><td class="amount">{{ $row['stored_balance'] }}</td><td class="amount">{{ $row['difference'] }}</td></tr>@endforeach
+</tbody></table>
+@endif
 </body></html>

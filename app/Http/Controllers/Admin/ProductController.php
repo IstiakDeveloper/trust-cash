@@ -13,6 +13,7 @@ use App\Models\ProductImage;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
 use App\Models\Unit;
+use App\Services\LegacyInventoryCarryForward;
 use App\Services\ProductImageProcessor;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+        app(LegacyInventoryCarryForward::class)->ensure();
         $hasType = $this->ensureProductTypeColumn();
 
         $stockStatusCase = $hasType
